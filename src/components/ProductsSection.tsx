@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // Shared black <-> white scroll-turn colors, used by the 3-item section's
 // transition below.
@@ -312,11 +311,10 @@ function ExistingProductsGrid() {
             </div>
 
             {/* PRODUCT INFORMATION */}
-
             <div
               style={{
-                height: "72px",
-                padding: "10px 7px 8px",
+                height: "auto",
+                padding: "12px 10px 10px",
                 background: "#f4f4f2",
                 color: "#252421",
                 display: "flex",
@@ -324,12 +322,12 @@ function ExistingProductsGrid() {
                 borderBottom: "1px solid #000",
               }}
             >
+              {/* PRODUCT NAME */}
               <p
                 style={{
                   margin: 0,
-                  fontFamily:
-                    "Arial, Helvetica, sans-serif",
-                  fontSize: "8px",
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                  fontSize: "11px",
                   fontWeight: 600,
                   lineHeight: 1.35,
                   letterSpacing: "0.35px",
@@ -340,6 +338,7 @@ function ExistingProductsGrid() {
                 {product.name}
               </p>
 
+              {/* COLOR SWATCHES */}
               <div
                 className="flex items-center"
                 style={{
@@ -349,30 +348,27 @@ function ExistingProductsGrid() {
                 }}
               >
                 {product.swatches.length > 0 &&
-                  product.swatches.map(
-                    (swatch, swatchIndex) => (
-                      <span
-                        key={`${swatch}-${swatchIndex}`}
-                        style={{
-                          width: "10px",
-                          height: "10px",
-                          borderRadius: "50%",
-                          background: swatch,
-                          border:
-                            "1px solid rgba(30,30,30,0.35)",
-                          display: "inline-block",
-                        }}
-                      />
-                    )
-                  )}
+                  product.swatches.map((swatch, swatchIndex) => (
+                    <span
+                      key={`${swatch}-${swatchIndex}`}
+                      style={{
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "50%",
+                        background: swatch,
+                        border: "1px solid rgba(30,30,30,0.35)",
+                        display: "inline-block",
+                        flex: "0 0 auto",
+                      }}
+                    />
+                  ))}
 
                 {product.extra && (
                   <span
                     style={{
                       marginLeft: "1px",
-                      fontFamily:
-                        "Arial, Helvetica, sans-serif",
-                      fontSize: "8px",
+                      fontFamily: "Arial, Helvetica, sans-serif",
+                      fontSize: "9px",
                       color: "#6b6964",
                     }}
                   >
@@ -381,19 +377,20 @@ function ExistingProductsGrid() {
                 )}
               </div>
 
+              {/* PRICE AND ADD BUTTON CONTAINER */}
               <div
                 className="flex items-center justify-between"
                 style={{
-                  marginTop: "7px",
+                  marginTop: "8px",
                   width: "100%",
                 }}
               >
+                {/* PRICE */}
                 <span
                   style={{
-                    fontFamily:
-                      "Arial, Helvetica, sans-serif",
-                    fontSize: "9px",
-                    fontWeight: 400,
+                    fontFamily: "Arial, Helvetica, sans-serif",
+                    fontSize: "12px",
+                    fontWeight: 500,
                     color: "#34322e",
                     lineHeight: 1,
                   }}
@@ -401,18 +398,17 @@ function ExistingProductsGrid() {
                   {product.price}
                 </span>
 
+                {/* ADD BUTTON */}
                 <button
                   type="button"
                   style={{
                     border: 0,
-                    borderBottom:
-                      "1px solid rgba(50,50,45,0.45)",
+                    borderBottom: "1px solid rgba(50,50,45,0.45)",
                     background: "transparent",
                     padding: "0 0 1px",
-                    fontFamily:
-                      "Arial, Helvetica, sans-serif",
-                    fontSize: "7px",
-                    fontWeight: 400,
+                    fontFamily: "Arial, Helvetica, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 500,
                     color: "#55524c",
                     cursor: "pointer",
                     letterSpacing: "0.2px",
@@ -431,13 +427,13 @@ function ExistingProductsGrid() {
 }
 
 /* =====================================================================
-   EDITORIAL FLOATING COLLAGE
+   EDITORIAL FLOATING COLLAGE (UPDATED)
 ===================================================================== */
 
 interface CollageImage {
   src: string;
   alt: string;
-  height: string;
+  aspectRatio: string;
   offsetTop: string;
   priority?: boolean;
 }
@@ -455,76 +451,76 @@ const COLLAGE_IMAGES: CollageImage[] = [
   {
     src: "/products/man-image-1.webp",
     alt: "Man leaning out of a car window",
-    height: "clamp(220px, 26vw, 360px)",
+    aspectRatio: "3 / 4",
     offsetTop: "0px",
     priority: true,
   },
   {
     src: "/products/man-image-2.webp",
     alt: "Man in a trucker cap",
-    height: "clamp(190px, 21vw, 290px)",
+    aspectRatio: "4 / 5",
     offsetTop: "96px",
     priority: true,
   },
   {
     src: "/products/dice-image-3.webp",
     alt: "Dice and a matchbook on a table",
-    height: "clamp(140px, 15vw, 210px)",
+    aspectRatio: "1 / 1",
     offsetTop: "0px",
     priority: true,
   },
   {
     src: "/products/man-image-4.webp",
     alt: "Man in white outfit beside a car",
-    height: "clamp(220px, 23vw, 320px)",
+    aspectRatio: "3 / 4",
     offsetTop: "150px",
   },
   {
     src: "/products/man-image-5.webp",
     alt: "Man on a red sofa",
-    height: "clamp(190px, 20vw, 270px)",
+    aspectRatio: "4 / 3",
     offsetTop: "24px",
   },
   {
     src: "/products/man-image-6.webp",
     alt: "Man playing guitar reclined",
-    height: "clamp(230px, 27vw, 360px)",
+    aspectRatio: "3 / 4",
     offsetTop: "12px",
   },
   {
     src: "/products/man-image-7.webp",
     alt: "Couple against a blue sky",
-    height: "clamp(230px, 25vw, 340px)",
+    aspectRatio: "2 / 3",
     offsetTop: "24px",
   },
   {
     src: "/products/billboard-image-8.webp",
     alt: "Roadside billboard sign reading him",
-    height: "clamp(170px, 19vw, 240px)",
+    aspectRatio: "4 / 5",
     offsetTop: "24px",
   },
   {
     src: "/products/man-image-9.webp",
     alt: "Man against a stone wall",
-    height: "clamp(210px, 23vw, 300px)",
+    aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
     src: "/products/man-image-10.webp",
     alt: "Wide leg trousers, man walking",
-    height: "clamp(230px, 27vw, 340px)",
+    aspectRatio: "2 / 3",
     offsetTop: "12px",
   },
   {
     src: "/products/man-image-11.webp",
     alt: "Man in shirt on a motorbike",
-    height: "clamp(210px, 23vw, 300px)",
+    aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
     src: "/products/man-image-12.webp",
     alt: "Close portrait with sunglasses",
-    height: "clamp(210px, 23vw, 300px)",
+    aspectRatio: "4 / 5",
     offsetTop: "24px",
   },
 ];
@@ -637,7 +633,7 @@ function EditorialCollage() {
         padding: "0 25px",
       }}
     >
-      {/* TYPOGRAPHY OVERLAY */}
+      {/* TOP TYPOGRAPHY OVERLAY */}
 
       <div
         className="absolute left-0 top-0 z-20 w-full"
@@ -681,12 +677,15 @@ function EditorialCollage() {
         </h2>
       </div>
 
+      {/* OVERLAPPING BOTTOM TYPOGRAPHY OVERLAY */}
+
       <div
-        className="absolute bottom-0 left-0 z-20 w-full"
+        className="absolute bottom-[18%] left-0 z-30 w-full"
         style={{
-          padding: "0 34px 34px",
+          padding: "0 34px",
           pointerEvents: "none",
-          textAlign: "right",
+          display: "flex",
+          justifyContent: "flex-end",
         }}
       >
         <h2
@@ -695,11 +694,12 @@ function EditorialCollage() {
             color: TEXT_LIGHT,
             fontFamily:
               "'Helvetica Neue', Arial, sans-serif",
-            fontWeight: 700,
-            fontSize: "clamp(34px, 8vw, 88px)",
-            lineHeight: 0.92,
-            letterSpacing: "-0.02em",
+            fontWeight: 650,
+            fontSize: "clamp(48px, 10.5vw, 120px)",
+            lineHeight: 0.85,
+            letterSpacing: "-0.03em",
             textTransform: "uppercase",
+            whiteSpace: "nowrap",
           }}
         >
           To Stay Still
@@ -712,7 +712,7 @@ function EditorialCollage() {
         className="relative z-10 flex h-full w-full"
         style={{
           gap: "8px",
-          padding: "70px 0",
+          padding: "70px 0 40px",
         }}
       >
         {columnGroups.map((group, colIndex) => (
@@ -728,28 +728,12 @@ function EditorialCollage() {
             }}
           >
             {group.map((img, imgIndex) => {
-              const row =
-                ROW_MOTION[
-                imgIndex % ROW_MOTION.length
-                ];
-
-              const rowGoesUp =
-                imgIndex % 2 === 0;
-
-              const magnitudeNum = parseFloat(
-                row.magnitude
-              );
-
-              const signedDistance = `${rowGoesUp ? "-" : ""
-                }${row.magnitude}`;
-
-              const reservedTop = rowGoesUp
-                ? magnitudeNum
-                : 0;
-
-              const reservedBottom = rowGoesUp
-                ? 0
-                : magnitudeNum;
+              const row = ROW_MOTION[imgIndex % ROW_MOTION.length];
+              const rowGoesUp = imgIndex % 2 === 0;
+              const magnitudeNum = parseFloat(row.magnitude);
+              const signedDistance = `${rowGoesUp ? "-" : ""}${row.magnitude}`;
+              const reservedTop = rowGoesUp ? magnitudeNum : 0;
+              const reservedBottom = rowGoesUp ? 0 : magnitudeNum;
 
               return (
                 <div
@@ -757,7 +741,8 @@ function EditorialCollage() {
                   className="collage-float relative w-full overflow-hidden"
                   style={
                     {
-                      height: img.height,
+                      aspectRatio: img.aspectRatio || "3 / 4",
+                      width: "100%",
 
                       marginTop:
                         imgIndex === 0
@@ -766,29 +751,21 @@ function EditorialCollage() {
 
                       marginBottom: `${reservedBottom}px`,
 
-                      background: "#1a1712",
-
                       willChange: "transform",
 
-                      animationDuration:
-                        row.duration,
+                      animationDuration: row.duration,
 
                       animationDelay: row.delay,
 
-                      animationDirection:
-                        "alternate",
+                      animationDirection: "alternate",
 
-                      animationName:
-                        "collageFloat",
+                      animationName: "collageFloat",
 
-                      animationTimingFunction:
-                        "ease-in-out",
+                      animationTimingFunction: "ease-in-out",
 
-                      animationIterationCount:
-                        "infinite",
+                      animationIterationCount: "infinite",
 
-                      ["--float-distance" as string]:
-                        signedDistance,
+                      ["--float-distance" as string]: signedDistance,
                     } as React.CSSProperties
                   }
                 >

@@ -3,142 +3,142 @@
 import Image from "next/image";
 
 const lookbooks = [
-    {
-        image: "/lookbook/where-the-sun-settles.webp",
-        date: "29.05.26",
-        title: "WHERE THE SUN SETTLES",
-        description:
-            "Shot in Lisbon, our second drop of summer is built for long days in the sun. Inspired by coastal living and vintage travel culture, the collection combines lightweight fabrics, washed textures and summer-ready colourways designed for the season ahead...",
-    },
-    {
-        image: "/lookbook/on-set-lane-splitters.webp",
-        date: "24.04.26",
-        title: "ON SET: LANE SPLITTERS",
-        description:
-            "Join us on set as we shoot our first instalment of summer — a meeting of studio and the open road, inspired by the golden era of film. Mid-century silhouettes, elevated bowling shirts, and nostalgic detailing come together in motion, capturing the spirit of the season as it unfolds...",
-    },
-    {
-        image: "/lookbook/archives-from-brooklyn.webp",
-        date: "27.03.26",
-        title: "ARCHIVES FROM BROOKLYN",
-        description:
-            "The final instalment of spring, this collection celebrates the versatility of heritage workwear fabrics — herringbone, chunky stripe, and classic denim. Featuring classic fits and transitional styling, from spring through to summer, this collection features raw hems, heavy fabrics, experimental prints & washes...",
-    },
+  {
+    image: "/lookbook/where-the-sun-settles.webp",
+    date: "29.05.26",
+    title: "WHERE THE SUN SETTLES",
+    description:
+      "Shot in Lisbon, our second drop of summer is built for long days in the sun. Inspired by coastal living and vintage travel culture, the collection combines lightweight fabrics, washed textures and summer-ready colourways designed for the season ahead...",
+  },
+  {
+    image: "/lookbook/on-set-lane-splitters.webp",
+    date: "24.04.26",
+    title: "ON SET: LANE SPLITTERS",
+    description:
+      "Join us on set as we shoot our first instalment of summer — a meeting of studio and the open road, inspired by the golden era of film. Mid-century silhouettes, elevated bowling shirts, and nostalgic detailing come together in motion, capturing the spirit of the season as it unfolds...",
+  },
+  {
+    image: "/lookbook/archives-from-brooklyn.webp",
+    date: "27.03.26",
+    title: "ARCHIVES FROM BROOKLYN",
+    description:
+      "The final instalment of spring, this collection celebrates the versatility of heritage workwear fabrics — herringbone, chunky stripe, and classic denim. Featuring classic fits and transitional styling, from spring through to summer, this collection features raw hems, heavy fabrics, experimental prints & washes...",
+  },
 ];
 
 function Arrow() {
-    return (
-        <svg
-            width="14"
-            height="10"
-            viewBox="0 0 14 10"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-        >
-            <path
-                d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
-                stroke="currentColor"
-                strokeWidth="0.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    );
+  return (
+    <svg
+      width="14"
+      height="10"
+      viewBox="0 0 14 10"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
+        stroke="currentColor"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export default function Lookbook() {
-    return (
-        <section className="lookbook-section">
-            {/* =========================================================
+  return (
+    <section className="lookbook-section">
+      {/* =========================================================
           HEADER
       ========================================================= */}
-            <div className="lookbook-header">
-                <div className="lookbook-header-title">VIEW LOOKBOOKS</div>
+      <div className="lookbook-header">
+        <div className="lookbook-header-title">VIEW LOOKBOOKS</div>
 
-                <a href="#lookbooks" className="lookbook-header-link">
-                    <span>VIEW LOOKBOOK</span>
-                    <Arrow />
-                </a>
-            </div>
+        <a href="#lookbooks" className="lookbook-header-link">
+          <span>VIEW LOOKBOOK</span>
+          <Arrow />
+        </a>
+      </div>
 
-            {/* =========================================================
+      {/* =========================================================
           LOOKBOOK GRID
       ========================================================= */}
-            <div id="lookbooks" className="lookbook-grid">
-                {lookbooks.map((lookbook, index) => (
-                    <article className="lookbook-card" key={lookbook.title}>
-                        {/* IMAGE */}
-                        <div className="lookbook-image">
-                            <Image
-                                src={lookbook.image}
-                                alt={lookbook.title}
-                                fill
-                                priority={index === 0}
-                                quality={90}
-                                sizes="(max-width: 768px) 100vw, 33.33vw"
-                                className="lookbook-image-element"
-                            />
-                        </div>
-
-                        {/* CONTENT */}
-                        <div className="lookbook-content">
-                            <h2>{lookbook.title}</h2>
-
-                            <p className="lookbook-description">
-                                <span>{lookbook.date}</span> | {lookbook.description}
-                            </p>
-
-                            <a href="#" className="lookbook-read-more">
-                                <span>VIEW LOOKBOOK</span>
-                                <Arrow />
-                            </a>
-                        </div>
-                    </article>
-                ))}
-                <div className="review-bar">
-  <div className="review-bar-inner">
-    <span className="review-stars">★★★★★</span>
-    <span className="review-text">4.8/5 STARS ON REVIEWS.IO</span>
-  </div>
-</div>
+      <div id="lookbooks" className="lookbook-grid">
+        {lookbooks.map((lookbook, index) => (
+          <article className="lookbook-card" key={lookbook.title}>
+            {/* IMAGE */}
+            <div className="lookbook-image">
+              <Image
+                src={lookbook.image}
+                alt={lookbook.title}
+                fill
+                priority={index === 0}
+                quality={90}
+                sizes="(max-width: 768px) 100vw, 33.33vw"
+                className="lookbook-image-element"
+              />
             </div>
-            <section className="summer-feature">
-                <div className="summer-feature-media">
-                    <video
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        className="summer-feature-video"
-                    >
-                        <source src="/videos/footer-video.mp4" type="video/mp4" />
-                    </video>
-                </div>
 
-                <div className="summer-feature-content">
-                    <div className="summer-feature-inner">
-                        <h2>WHERE THE SUN SETTLES</h2>
+            {/* CONTENT */}
+            <div className="lookbook-content">
+              <h2>{lookbook.title}</h2>
 
-                        <p>
-                            Shot in Lisbon, our second drop of summer is built for long days in the
-                            sun. Inspired by coastal living and vintage travel culture, the
-                            collection combines lightweight fabrics, washed textures and
-                            summer-ready colourways designed for the season ahead.
-                        </p>
+              <p className="lookbook-description">
+                <span>{lookbook.date}</span> | {lookbook.description}
+              </p>
 
-                        <a href="#" className="summer-feature-link">
-                            <span>VIEW THE LOOKBOOK</span>
-                            <Arrow />
-                        </a>
-                    </div>
-                </div>
-            </section>
+              <a href="#" className="lookbook-read-more">
+                <span>VIEW LOOKBOOK</span>
+                <Arrow />
+              </a>
+            </div>
+          </article>
+        ))}
+        <div className="review-bar">
+          <div className="review-bar-inner">
+            <span className="review-stars">★★★★★</span>
+            <span className="review-text">4.8/5 STARS ON REVIEWS.IO</span>
+          </div>
+        </div>
+      </div>
+      <section className="summer-feature">
+        <div className="summer-feature-media">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="summer-feature-video"
+          >
+            <source src="/videos/footer-video.mp4" type="video/mp4" />
+          </video>
+        </div>
 
-            {/* =========================================================
+        <div className="summer-feature-content">
+          <div className="summer-feature-inner">
+            <h2>WHERE THE SUN SETTLES</h2>
+
+            <p>
+              Shot in Lisbon, our second drop of summer is built for long days in the
+              sun. Inspired by coastal living and vintage travel culture, the
+              collection combines lightweight fabrics, washed textures and
+              summer-ready colourways designed for the season ahead.
+            </p>
+
+            <a href="#" className="summer-feature-link">
+              <span>VIEW THE LOOKBOOK</span>
+              <Arrow />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
           STYLES
       ========================================================= */}
-            <style jsx>{`
+      <style jsx>{`
         .lookbook-section {
           width: 100%;
           background: #0b0502;
@@ -507,6 +507,7 @@ export default function Lookbook() {
 ===================================================== */
 
 .review-bar {
+  grid-column: 1 / -1;
   width: 100%;
   height: 22px;
   display: flex;
@@ -547,6 +548,6 @@ export default function Lookbook() {
   line-height: 1;
 }
       `}</style>
-        </section>
-    );
+    </section>
+  );
 }
