@@ -41,6 +41,34 @@ const HOLE = { x0: 1321, y0: 250, x1: 1845, y1: 1131 };
 const HOLE_SAFE = { x0: 1327, y0: 257, x1: 1839, y1: 1123 };
 const HOLE_C = { x: (HOLE.x0 + HOLE.x1) / 2, y: (HOLE.y0 + HOLE.y1) / 2 };
 
+/** Both windows share this plate and hole. A later room can swap paths if the plate matches. */
+const WINDOWS = [
+  {
+    id: "room-1",
+    wall: "/room/wall.webp",
+    room: "/room/room.webp",
+    wallAlt: "Panelled walnut wall with an open shuttered window",
+    roomAlt: "Panelled walnut room with an open armoire of folded fabrics and a rack of fabric rolls",
+  },
+  {
+    id: "room-2",
+    wall: "/room/wall.webp",
+    room: "/room/room.webp",
+    wallAlt: "Panelled walnut wall with an open shuttered window",
+    roomAlt: "Panelled walnut room with an open armoire of folded fabrics and a rack of fabric rolls",
+  },
+] as const;
+
+/** `.hotspot` top + height, so Next sits under the shutter frame rather than in the hole. */
+const WINDOW_FRAME_BOTTOM = 0.1488 + 0.755;
+const SLIDE_MS = 700;
+const SLIDE_EASE = "cubic-bezier(0.22, 0.7, 0.18, 1)";
+
+const WINDOW_PANELS = [
+  ...WINDOWS.map((room) => ({ ...room, key: room.id, clone: false })),
+  { ...WINDOWS[0], key: `${WINDOWS[0].id}-clone`, clone: true },
+];
+
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -67,6 +95,35 @@ function bezier(x1: number, y1: number, x2: number, y2: number) {
 }
 
 const camEase = bezier(...CAMERA_EASE);
+
+type Panel = {
+  root: HTMLElement;
+  roomLayer: HTMLDivElement;
+  roomInner: HTMLDivElement;
+  roomImg: HTMLImageElement;
+  wall: HTMLDivElement;
+  wallImg: HTMLImageElement;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+};
+
+function readPanels(track: HTMLElement): Panel[] | null {
+  const roots = [...track.querySelectorAll<HTMLElement>("[data-window-panel]")];
+  if (!roots.length) return null;
+  const panels: Panel[] = [];
+  for (const root of roots) {
+    const roomLayer = root.querySelector<HTMLDivElement>("[data-room-layer]");
+    const roomInner = root.querySelector<HTMLDivElement>("[data-room-inner]");
+    const roomImg = root.querySelector<HTMLImageElement>("[data-room-img]");
+    const wall = root.querySelector<HTMLDivElement>("[data-wall]");
+    const wallImg = root.querySelector<HTMLImageElement>("[data-wall-img]");
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-frame]");
+    const ctx = canvas?.getContext("2d") ?? null;
+    if (!roomLayer || !roomInner || !roomImg || !wall || !wallImg || !canvas || !ctx) return null;
+    panels.push({ root, roomLayer, roomInner, roomImg, wall, wallImg, canvas, ctx });
+  }
+  return panels;
+}
 
 function CharacterWheel({
   selected,
@@ -162,22 +219,19 @@ export default function ScrollSection() {
 
   const appRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const wallRef = useRef<HTMLDivElement>(null);
-  const wallImgRef = useRef<HTMLImageElement>(null);
-  const roomLayerRef = useRef<HTMLDivElement>(null);
-  const roomInnerRef = useRef<HTMLDivElement>(null);
-  const roomImgRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const bloomRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const veilRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene>("character");
+  const windowIndexRef = useRef({ logical: 0, slide: 0 });
   const flagsRef = useRef({
     booted: false,
     uiIn: true,
     dragging: false,
     veilOut: false,
     wallHidden: true,
+    sliding: false,
   });
 
   const apiRef = useRef<{
@@ -185,11 +239,13 @@ export default function ScrollSection() {
     exit: () => void;
     select: (i: number) => void;
     hover: (on: boolean) => void;
+    next: () => void;
   }>({
     enter: () => { },
     exit: () => { },
     select: () => { },
     hover: () => { },
+    next: () => { },
   });
 
   // React owns `data-scene="entry"` for the first paint. Later scene changes
@@ -202,24 +258,31 @@ export default function ScrollSection() {
     app.classList.toggle(styles.booted, flags.booted);
     app.classList.toggle(styles.uiIn, flags.uiIn);
     app.classList.toggle(styles.dragging, flags.dragging);
+    app.classList.toggle(styles.sliding, flags.sliding);
     veilRef.current?.classList.toggle(styles.out, flags.veilOut);
-    if (wallRef.current) wallRef.current.style.display = flags.wallHidden ? "none" : "";
+    const index = windowIndexRef.current;
+    app.querySelectorAll<HTMLElement>("[data-wall]").forEach((wall) => {
+      wall.style.display = flags.wallHidden ? "none" : "";
+    });
+    app.querySelectorAll<HTMLElement>("[data-window-panel]").forEach((el) => {
+      const i = Number(el.dataset.windowPanel);
+      const visible = i === index.slide || i === index.logical;
+      if (visible) el.removeAttribute("inert");
+      else el.setAttribute("inert", "");
+      const btn = el.querySelector("button");
+      if (btn) btn.tabIndex = i === index.logical && !flags.sliding && i < WINDOWS.length ? 0 : -1;
+    });
   });
 
   useEffect(() => {
     const app = appRef.current;
     const stage = stageRef.current;
-    const wall = wallRef.current;
-    const wallImg = wallImgRef.current;
-    const roomLayer = roomLayerRef.current;
-    const roomInner = roomInnerRef.current;
-    const roomImg = roomImgRef.current;
-    const canvas = canvasRef.current;
+    const track = trackRef.current;
     const bloom = bloomRef.current;
     const hint = hintRef.current;
     const veil = veilRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!app || !stage || !wall || !wallImg || !roomLayer || !roomInner || !roomImg || !canvas || !bloom || !hint || !veil || !ctx) {
+    const panels = track ? readPanels(track) : null;
+    if (!app || !stage || !track || !panels || !bloom || !hint || !veil) {
       return;
     }
 
@@ -247,6 +310,10 @@ export default function ScrollSection() {
     let drawnIdx = -1;
     let hasFrame = false;
     let drag: { id: number; x: number; p0: number; lt: number; v: number } | null = null;
+    let logicalIndex = 0;
+    let slideIndex = 0;
+    let sliding = false;
+    let drawnCanvas: HTMLCanvasElement | null = null;
 
     const timers = new Set<number>();
     const later = (fn: () => void, ms: number) => {
@@ -284,6 +351,13 @@ export default function ScrollSection() {
     }
 
     function drawFrame() {
+      const panel = panels![logicalIndex];
+      const canvas = panel.canvas;
+      const ctx = panel.ctx;
+      if (canvas !== drawnCanvas) {
+        drawnCanvas = canvas;
+        drawnIdx = -1;
+      }
       const n = frames.n;
       const i = ((Math.floor(pos) % n) + n) % n;
       if (i === drawnIdx) return;
@@ -303,14 +377,46 @@ export default function ScrollSection() {
       if (!img) return;
       const iw = img.naturalWidth || PLATE.w;
       const ih = img.naturalHeight || PLATE.h;
-      if (canvas!.width !== iw || canvas!.height !== ih) {
-        canvas!.width = iw;
-        canvas!.height = ih;
+      if (canvas.width !== iw || canvas.height !== ih) {
+        canvas.width = iw;
+        canvas.height = ih;
       }
-      ctx!.clearRect(0, 0, iw, ih);
-      ctx!.drawImage(img, 0, 0, iw, ih);
+      ctx.clearRect(0, 0, iw, ih);
+      ctx.drawImage(img, 0, 0, iw, ih);
       hasFrame = true;
       drawnIdx = j === i ? i : -1;
+    }
+
+    function syncPanels() {
+      windowIndexRef.current.logical = logicalIndex;
+      windowIndexRef.current.slide = slideIndex;
+      panels!.forEach((p, i) => {
+        const visible = i === slideIndex || i === logicalIndex;
+        if (visible) p.root.removeAttribute("inert");
+        else p.root.setAttribute("inert", "");
+        const btn = p.root.querySelector("button");
+        if (btn) btn.tabIndex = i === logicalIndex && !sliding && i < WINDOWS.length ? 0 : -1;
+      });
+    }
+
+    function placeTrack(animate: boolean) {
+      syncPanels();
+      const x = `translate3d(${-slideIndex * W}px,0,0)`;
+      if (!animate || reduced) {
+        track!.style.transition = "none";
+        track!.style.transform = x;
+        return;
+      }
+      track!.style.transition = "none";
+      void track!.offsetWidth;
+      track!.style.transition = `transform ${SLIDE_MS}ms ${SLIDE_EASE}`;
+      track!.style.transform = x;
+    }
+
+    function setSliding(on: boolean) {
+      sliding = on;
+      flagsRef.current.sliding = on;
+      app!.classList.toggle(styles.sliding, on);
     }
 
     function layout() {
@@ -325,26 +431,35 @@ export default function ScrollSection() {
       const hw = (HOLE_SAFE.x1 - HOLE_SAFE.x0) * c;
       const hh = (HOLE_SAFE.y1 - HOLE_SAFE.y0) * c;
       Smax = 1.06 * Math.max(vw / hw, vh / hh);
-      for (const el of [stage!, roomLayer!, wall!]) {
-        el.style.width = W + "px";
-        el.style.height = H + "px";
-      }
+      stage!.style.width = W + "px";
+      stage!.style.height = H + "px";
+      track!.style.width = W * panels!.length + "px";
+      track!.style.height = H + "px";
+      panels!.forEach((p, i) => {
+        p.root.style.width = W + "px";
+        p.root.style.height = H + "px";
+        p.root.style.left = i * W + "px";
+      });
+      app!.style.setProperty("--next-top", `${Math.round(baseY + WINDOW_FRAME_BOTTOM * H + 16)}px`);
+      if (!sliding) placeTrack(false);
+      else track!.style.transform = `translate3d(${-slideIndex * W}px,0,0)`;
       dirty = true;
     }
 
-    function renderCamera() {
-      const g = cam.g;
-      const h = cam.hover;
+    function posePanel(panel: Panel, g: number, live: boolean) {
+      const h = live ? cam.hover : 0;
+      const px = live ? cam.px : 0;
+      const py = live ? cam.py : 0;
       const fall = 1 - g;
       const S = Math.exp(Math.log(Smax) * g) * (1 + 0.014 * h * fall);
 
       const cx0 = baseX + HOLE_C.x * c;
       const cy0 = baseY + HOLE_C.y * c;
-      const wx = lerp(cx0, vw / 2, g) - cam.px * 6 * fall;
-      const wy = lerp(cy0, vh / 2, g) - cam.py * 4 * fall;
+      const wx = lerp(cx0, vw / 2, g) - px * 6 * fall;
+      const wy = lerp(cy0, vh / 2, g) - py * 4 * fall;
       const wtx = wx - baseX - S * HOLE_C.x * c;
       const wty = wy - baseY - S * HOLE_C.y * c;
-      wall!.style.transform = `translate3d(${wtx}px,${wty}px,0) scale(${S})`;
+      panel.wall.style.transform = `translate3d(${wtx}px,${wty}px,0) scale(${S})`;
 
       const hx0 = baseX + wtx + S * HOLE.x0 * c;
       const hx1 = baseX + wtx + S * HOLE.x1 * c;
@@ -355,26 +470,41 @@ export default function ScrollSection() {
       const iy0 = Math.max(hy0, 0);
       const iy1 = Math.min(hy1, vh);
 
-      const rx = lerp(cx0, baseX + W / 2, g) + cam.px * 3 * fall;
-      const ry = lerp(cy0, baseY + H / 2, g) + cam.py * 2 * fall;
+      const rx = lerp(cx0, baseX + W / 2, g) + px * 3 * fall;
+      const ry = lerp(cy0, baseY + H / 2, g) + py * 2 * fall;
       const need = Math.max(
         Math.max(rx - ix0, ix1 - rx) / (W / 2),
         Math.max(ry - iy0, iy1 - ry) / (H / 2),
       );
       const kPref = lerp(0.8, 1, 1 - fall * fall);
       const k = g >= 1 ? 1 : Math.max(kPref, need * 1.012 + 0.002);
-      roomLayer!.style.transform = `translate3d(${rx - k * W / 2 - baseX}px,${ry - k * H / 2 - baseY}px,0) scale(${k})`;
+      panel.roomLayer.style.transform = `translate3d(${rx - k * W / 2 - baseX}px,${ry - k * H / 2 - baseY}px,0) scale(${k})`;
 
       const t = smooth(clamp(g / 0.85, 0, 1));
-      roomLayer!.style.filter = g >= 1 ? "" : `brightness(${lerp(0.5 + 0.22 * h, 1, t).toFixed(3)})`;
+      panel.roomLayer.style.filter = g >= 1 ? "" : `brightness(${lerp(0.5 + 0.22 * h, 1, t).toFixed(3)})`;
       const wallB = 1 - 0.55 * smooth(clamp(g / 0.9, 0, 1));
-      wall!.style.filter = `brightness(${wallB.toFixed(3)})` + (blur > 0.05 ? ` blur(${blur.toFixed(2)}px)` : "");
+      const b = live ? blur : 0;
+      panel.wall.style.filter = `brightness(${wallB.toFixed(3)})` + (b > 0.05 ? ` blur(${b.toFixed(2)}px)` : "");
 
-      canvas!.style.opacity = !hasFrame ? "0" : g >= 1 ? "1" : smooth(clamp((g - DISSOLVE[0]) / (DISSOLVE[1] - DISSOLVE[0]), 0, 1)).toFixed(3);
+      const showFrame = live && hasFrame;
+      panel.canvas.style.opacity = !showFrame ? "0" : g >= 1 ? "1" : smooth(clamp((g - DISSOLVE[0]) / (DISSOLVE[1] - DISSOLVE[0]), 0, 1)).toFixed(3);
+      return { wx, wy, S };
+    }
 
-      const br = Math.min(0.95 * (HOLE.y1 - HOLE.y0) * c * S, 2.4 * Math.max(vw, vh));
-      bloom!.style.setProperty("--bx", wx + "px");
-      bloom!.style.setProperty("--by", wy + "px");
+    function renderCamera() {
+      const zooming = sceneRef.current === "entering" || sceneRef.current === "exiting";
+      let bloomPose = { wx: 0, wy: 0, S: 1 };
+      for (let i = 0; i < panels!.length; i++) {
+        const live = !zooming || i === logicalIndex;
+        const pose = posePanel(panels![i], live ? cam.g : 0, live);
+        if (i === logicalIndex) bloomPose = pose;
+      }
+      const g = cam.g;
+      const h = cam.hover;
+      const fall = 1 - g;
+      const br = Math.min(0.95 * (HOLE.y1 - HOLE.y0) * c * bloomPose.S, 2.4 * Math.max(vw, vh));
+      bloom!.style.setProperty("--bx", bloomPose.wx + "px");
+      bloom!.style.setProperty("--by", bloomPose.wy + "px");
       bloom!.style.setProperty("--br", br + "px");
       bloom!.style.opacity = g >= 1 ? "0" : ((0.24 + 0.3 * h) * fall + 0.5 * Math.pow(Math.sin(Math.PI * g), 2)).toFixed(3);
     }
@@ -394,11 +524,15 @@ export default function ScrollSection() {
       blur = 0;
       setScene("character");
       flagsRef.current.wallHidden = true;
-      wall!.style.display = "none";
-      wall!.style.filter = "";
-      roomLayer!.style.transform = "";
-      roomLayer!.style.filter = "";
-      canvas!.style.opacity = "";
+      const active = panels![logicalIndex];
+      for (const p of panels!) {
+        p.wall.style.display = "none";
+        p.wall.style.filter = "";
+        p.roomLayer.style.filter = "";
+      }
+      active.roomLayer.style.transform = "";
+      active.roomLayer.style.filter = "";
+      active.canvas.style.opacity = "";
       bloom!.style.opacity = "0";
       layout();
       later(() => {
@@ -409,7 +543,7 @@ export default function ScrollSection() {
     }
 
     function enter() {
-      if (sceneRef.current !== "entry") return;
+      if (sceneRef.current !== "entry" || sliding) return;
       cam.hoverT = 0;
       setScene("entering");
       enterT0 = null;
@@ -420,11 +554,13 @@ export default function ScrollSection() {
       blur = 0;
       setScene("entry");
       flagsRef.current.wallHidden = false;
-      wall!.style.display = "";
-      wall!.style.filter = "";
-      roomLayer!.style.transform = "";
-      roomLayer!.style.filter = "";
-      canvas!.style.opacity = "0";
+      for (const p of panels!) {
+        p.wall.style.display = "";
+        p.wall.style.filter = "";
+        p.roomLayer.style.transform = "";
+        p.roomLayer.style.filter = "";
+        p.canvas.style.opacity = "0";
+      }
       bloom!.style.opacity = "0";
       layout();
     }
@@ -436,11 +572,38 @@ export default function ScrollSection() {
       flagsRef.current.wallHidden = false;
       flagsRef.current.uiIn = false;
       app!.classList.remove(styles.uiIn);
-      wall!.style.display = "";
+      for (const p of panels!) p.wall.style.display = "";
       exitT0 = null;
       spinT0 = null;
       vel = 0;
       hint!.classList.remove(styles.show);
+    }
+
+    function next() {
+      if (sceneRef.current !== "entry" || sliding || W < 2) return;
+      if (reduced) {
+        logicalIndex = (logicalIndex + 1) % WINDOWS.length;
+        slideIndex = logicalIndex;
+        drawnIdx = -1;
+        placeTrack(false);
+        return;
+      }
+      setSliding(true);
+      slideIndex = logicalIndex + 1;
+      placeTrack(true);
+    }
+
+    function onTrackEnd(e: TransitionEvent) {
+      if (e.target !== track || e.propertyName !== "transform" || !sliding) return;
+      if (slideIndex >= WINDOWS.length) {
+        slideIndex = 0;
+        logicalIndex = 0;
+      } else {
+        logicalIndex = slideIndex;
+      }
+      drawnIdx = -1;
+      setSliding(false);
+      placeTrack(false);
     }
 
     let swapTimer = 0;
@@ -457,20 +620,22 @@ export default function ScrollSection() {
       veil!.classList.remove(styles.pulse);
       void veil!.offsetWidth;
       veil!.classList.add(styles.pulse);
-      roomInner!.classList.remove(styles.punch);
-      void roomInner!.offsetWidth;
-      roomInner!.classList.add(styles.punch);
+      const roomInner = panels![logicalIndex].roomInner;
+      roomInner.classList.remove(styles.punch);
+      void roomInner.offsetWidth;
+      roomInner.classList.add(styles.punch);
       later(() => {
         setPos(CHARACTERS[i].start * frames.n);
         vel = autoV;
         for (let k = 0; k < 30; k++) load((Math.floor(pos) + k) % frames.n);
       }, 260);
-      later(() => roomInner!.classList.remove(styles.punch), 900);
+      later(() => roomInner.classList.remove(styles.punch), 900);
     }
 
     api.enter = enter;
     api.exit = exit;
     api.select = selectCharacter;
+    api.next = next;
     api.hover = (on) => {
       if (on) {
         if (sceneRef.current === "entry") cam.hoverT = 1;
@@ -483,7 +648,7 @@ export default function ScrollSection() {
 
     const onPointerDown = (e: PointerEvent) => {
       if (sceneRef.current !== "character") return;
-      if ((e.target as Element | null)?.closest?.(`.${styles.cast}, .${styles.changeRoomBtn}, button`)) return;
+      if ((e.target as Element | null)?.closest?.(`.${styles.cast}, .${styles.changeRoomBtn}, .${styles.nextBtn}, button`)) return;
       dragging = true;
       vel = 0;
       drag = { id: e.pointerId, x: e.clientX, p0: pos, lt: performance.now(), v: 0 };
@@ -582,10 +747,10 @@ export default function ScrollSection() {
     layout();
     apply();
     preloadAll();
-    Promise.all([
-      wallImg.decode().catch(() => { }),
-      roomImg.decode().catch(() => { }),
-    ]).then(() => {
+    Promise.all(panels.flatMap((p) => [
+      p.wallImg.decode().catch(() => { }),
+      p.roomImg.decode().catch(() => { }),
+    ])).then(() => {
       if (dead) return;
       layout();
       apply();
@@ -599,6 +764,7 @@ export default function ScrollSection() {
     });
 
     raf = requestAnimationFrame(frame);
+    track.addEventListener("transitionend", onTrackEnd);
     app.addEventListener("pointerdown", onPointerDown);
     app.addEventListener("pointermove", onPointerMove);
     app.addEventListener("pointerup", endDrag);
@@ -613,8 +779,11 @@ export default function ScrollSection() {
       cancelAnimationFrame(raf);
       timers.forEach((id) => window.clearTimeout(id));
       api.enter = () => { };
+      api.exit = () => { };
       api.select = () => { };
       api.hover = () => { };
+      api.next = () => { };
+      track.removeEventListener("transitionend", onTrackEnd);
       app.removeEventListener("pointerdown", onPointerDown);
       app.removeEventListener("pointermove", onPointerMove);
       app.removeEventListener("pointerup", endDrag);
@@ -630,47 +799,59 @@ export default function ScrollSection() {
       <div ref={appRef} className={styles.root} data-scene="entry">
         <div className={styles.world}>
           <div ref={stageRef} className={styles.stage}>
-            <div ref={roomLayerRef} className={`${styles.layer} ${styles.roomLayer}`}>
-              <div ref={roomInnerRef} className={styles.roomInner}>
-                {/* Native img: the camera sizes this bitmap in pixels and the wall alpha must stay intact. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  ref={roomImgRef}
-                  src="/room/room.webp"
-                  alt="Panelled walnut room with an open armoire of folded fabrics and a rack of fabric rolls"
-                  draggable={false}
-                />
-                <canvas
-                  ref={canvasRef}
-                  className={styles.frameCanvas}
-                  width={PLATE.w}
-                  height={PLATE.h}
-                  role="img"
-                  aria-label="Character on a turntable in the room. Drag left or right to rotate."
-                />
-              </div>
-            </div>
+            <div ref={trackRef} className={styles.windowTrack}>
+              {WINDOW_PANELS.map((panel, i) => (
+                <div
+                  key={panel.key}
+                  className={styles.windowPanel}
+                  data-window-panel={i}
+                  aria-hidden={panel.clone ? true : undefined}
+                >
+                  <div className={`${styles.layer} ${styles.roomLayer}`} data-room-layer>
+                    <div className={styles.roomInner} data-room-inner>
+                      {/* Native img: the camera sizes this bitmap in pixels and the wall alpha must stay intact. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        data-room-img
+                        src={panel.room}
+                        alt={panel.roomAlt}
+                        draggable={false}
+                      />
+                      <canvas
+                        data-frame
+                        className={styles.frameCanvas}
+                        width={PLATE.w}
+                        height={PLATE.h}
+                        role="img"
+                        aria-label="Character on a turntable in the room. Drag left or right to rotate."
+                      />
+                    </div>
+                  </div>
 
-            <div ref={wallRef} className={`${styles.layer} ${styles.wall}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={wallImgRef}
-                src="/room/wall.webp"
-                alt="Panelled walnut wall with an open shuttered window"
-                draggable={false}
-              />
-              <button
-                type="button"
-                className={styles.hotspot}
-                aria-label="Enter the room through the window"
-                onClick={() => apiRef.current.enter()}
-                onPointerEnter={() => apiRef.current.hover(true)}
-                onPointerLeave={() => apiRef.current.hover(false)}
-                onFocus={() => apiRef.current.hover(true)}
-                onBlur={() => apiRef.current.hover(false)}
-              >
-                <span className={styles.cta}>Enter</span>
-              </button>
+                  <div className={`${styles.layer} ${styles.wall}`} data-wall>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      data-wall-img
+                      src={panel.wall}
+                      alt={panel.wallAlt}
+                      draggable={false}
+                    />
+                    <button
+                      type="button"
+                      className={styles.hotspot}
+                      tabIndex={panel.clone ? -1 : 0}
+                      aria-label="Enter the room through the window"
+                      onClick={() => apiRef.current.enter()}
+                      onPointerEnter={() => apiRef.current.hover(true)}
+                      onPointerLeave={() => apiRef.current.hover(false)}
+                      onFocus={() => apiRef.current.hover(true)}
+                      onBlur={() => apiRef.current.hover(false)}
+                    >
+                      <span className={styles.cta}>Enter</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -715,6 +896,34 @@ export default function ScrollSection() {
           </svg>
 
           <span>Change Room</span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.nextBtn}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            apiRef.current.next();
+          }}
+          aria-label="Next window"
+        >
+          <span>Next</span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
 
         <div ref={hintRef} className={styles.hint}>
