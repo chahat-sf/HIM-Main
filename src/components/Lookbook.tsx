@@ -4,21 +4,21 @@ import Image from "next/image";
 
 const lookbooks = [
   {
-    image: "/lookbook/where-the-sun-settles.webp",
+    image: "/lookbook/Where-The-Sun-Settles.webp",
     date: "29.05.26",
     title: "WHERE THE SUN SETTLES",
     description:
       "Shot in Lisbon, our second drop of summer is built for long days in the sun. Inspired by coastal living and vintage travel culture, the collection combines lightweight fabrics, washed textures and summer-ready colourways designed for the season ahead...",
   },
   {
-    image: "/lookbook/on-set-lane-splitters.webp",
+    image: "/lookbook/On-Set-Lane-Splitters.webp",
     date: "24.04.26",
     title: "ON SET: LANE SPLITTERS",
     description:
       "Join us on set as we shoot our first instalment of summer — a meeting of studio and the open road, inspired by the golden era of film. Mid-century silhouettes, elevated bowling shirts, and nostalgic detailing come together in motion, capturing the spirit of the season as it unfolds...",
   },
   {
-    image: "/lookbook/archives-from-brooklyn.webp",
+    image: "/lookbook/Archives-from-Brooklyn.webp",
     date: "27.03.26",
     title: "ARCHIVES FROM BROOKLYN",
     description:

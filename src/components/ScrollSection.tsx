@@ -9,7 +9,7 @@ import styles from "./ScrollSection.module.css";
  * that writes the DOM directly. React state is only used for the wheel.
  */
 
-type Scene = "entry" | "entering" | "character";
+type Scene = "entry" | "entering" | "character" | "exiting";
 
 const CHARACTERS = [
   { id: "character-1", name: "Character 01", start: 0 },
@@ -171,21 +171,23 @@ export default function ScrollSection() {
   const bloomRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const veilRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<Scene>("entry");
+  const sceneRef = useRef<Scene>("character");
   const flagsRef = useRef({
     booted: false,
-    uiIn: false,
+    uiIn: true,
     dragging: false,
     veilOut: false,
-    wallHidden: false,
+    wallHidden: true,
   });
 
   const apiRef = useRef<{
     enter: () => void;
+    exit: () => void;
     select: (i: number) => void;
     hover: (on: boolean) => void;
   }>({
     enter: () => { },
+    exit: () => { },
     select: () => { },
     hover: () => { },
   });
@@ -232,14 +234,15 @@ export default function ScrollSection() {
       ok: new Array<boolean>(FRAME_COUNT).fill(false),
     };
 
-    const cam = { g: 0, hover: 0, hoverT: 0, px: 0, py: 0, tx: 0, ty: 0 };
+    const cam = { g: sceneRef.current === "character" ? 1 : 0, hover: 0, hoverT: 0, px: 0, py: 0, tx: 0, ty: 0 };
     let vw = 0, vh = 0, W = 0, H = 0, c = 1, baseX = 0, baseY = 0, Smax = 1;
     let dirty = true;
     let blur = 0;
     let enterT0: number | null = null;
+    let exitT0: number | null = null;
     let pos = 0;
     let vel = 0;
-    let spinT0: number | null = null;
+    let spinT0: number | null = sceneRef.current === "character" ? performance.now() : null;
     let dragging = false;
     let drawnIdx = -1;
     let hasFrame = false;
@@ -378,7 +381,7 @@ export default function ScrollSection() {
 
     function apply() {
       stage!.style.transform = `translate3d(${baseX}px,${baseY}px,0)`;
-      if (sceneRef.current === "entry" || sceneRef.current === "entering") renderCamera();
+      if (sceneRef.current === "entry" || sceneRef.current === "entering" || sceneRef.current === "exiting") renderCamera();
     }
 
     function setScene(next: Scene) {
@@ -412,6 +415,34 @@ export default function ScrollSection() {
       enterT0 = null;
     }
 
+    function finishExit() {
+      cam.g = 0;
+      blur = 0;
+      setScene("entry");
+      flagsRef.current.wallHidden = false;
+      wall!.style.display = "";
+      wall!.style.filter = "";
+      roomLayer!.style.transform = "";
+      roomLayer!.style.filter = "";
+      canvas!.style.opacity = "0";
+      bloom!.style.opacity = "0";
+      layout();
+    }
+
+    function exit() {
+      if (sceneRef.current !== "character") return;
+      cam.hoverT = 0;
+      setScene("exiting");
+      flagsRef.current.wallHidden = false;
+      flagsRef.current.uiIn = false;
+      app!.classList.remove(styles.uiIn);
+      wall!.style.display = "";
+      exitT0 = null;
+      spinT0 = null;
+      vel = 0;
+      hint!.classList.remove(styles.show);
+    }
+
     let swapTimer = 0;
     function selectCharacter(i: number) {
       if (sceneRef.current !== "character" || !CHARACTERS[i]) return;
@@ -438,6 +469,7 @@ export default function ScrollSection() {
     }
 
     api.enter = enter;
+    api.exit = exit;
     api.select = selectCharacter;
     api.hover = (on) => {
       if (on) {
@@ -451,7 +483,7 @@ export default function ScrollSection() {
 
     const onPointerDown = (e: PointerEvent) => {
       if (sceneRef.current !== "character") return;
-      if ((e.target as Element | null)?.closest?.(`.${styles.cast}`)) return;
+      if ((e.target as Element | null)?.closest?.(`.${styles.cast}, .${styles.changeRoomBtn}, button`)) return;
       dragging = true;
       vel = 0;
       drag = { id: e.pointerId, x: e.clientX, p0: pos, lt: performance.now(), v: 0 };
@@ -512,6 +544,14 @@ export default function ScrollSection() {
         dirty = true;
         if (g >= SPIN_START && spinT0 === null) spinT0 = now;
         if (u >= 1) finishEnter();
+      } else if (sceneRef.current === "exiting") {
+        if (exitT0 === null) exitT0 = now;
+        const u = clamp((now - exitT0) / (reduced ? 800 : ENTER_MS), 0, 1);
+        const g = 1 - smooth(clamp(u / CAM_DONE, 0, 1));
+        blur = reduced ? 0 : clamp(Math.abs(g - cam.g) / dt * 1.3, 0, 2.6);
+        cam.g = g;
+        dirty = true;
+        if (u >= 1) finishExit();
       }
 
       const tx = sceneRef.current === "entry" ? cam.tx : 0;
@@ -639,13 +679,43 @@ export default function ScrollSection() {
         <div className={`${styles.fx} ${styles.vignette}`} />
         <div className={`${styles.fx} ${styles.grain}`} />
 
-        <div className={styles.castScrim} />
+        {/* Character wheel selector - commented out for future use */}
+        {/* <div className={styles.castScrim} />
         <div className={styles.cast}>
           <CharacterWheel selected={selected} onSelect={(i) => apiRef.current.select(i)} />
           <div className={`${styles.wheelName} ${nameSwap ? styles.swap : ""}`} aria-live="polite">
             {wheelName}
           </div>
-        </div>
+        </div> */}
+
+        <button
+          type="button"
+          className={styles.changeRoomBtn}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            apiRef.current.exit();
+          }}
+          aria-label="Change room"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 14L4 9l5-5" />
+            <path d="M4 9h12.5M20 20v-7a4 4 0 0 0-4-4H4" />
+          </svg>
+
+          <span>Change Room</span>
+        </button>
 
         <div ref={hintRef} className={styles.hint}>
           <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>

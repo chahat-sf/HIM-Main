@@ -145,7 +145,7 @@
 
 .cta {
   position: absolute;
-  left: 49.1%;
+  left: 42.0%;
   top: 48.3%;
   translate: -50% -50%;
   width: clamp(74px, 6.4vw, 104px);
@@ -166,9 +166,10 @@
     inset 0 0 24px rgba(255, 190, 110, 0.28);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
-  opacity: 0;
-  animation: ctaIn 1600ms var(--ease) 2200ms forwards;
+  opacity: 1;
+  transform: scale(1);
   transition:
+    opacity 0.6s var(--ease),
     transform 0.6s var(--ease),
     box-shadow 0.5s ease,
     border-color 0.5s ease;
@@ -202,10 +203,12 @@
   outline-offset: 8px;
 }
 
-.root:not([data-scene="entry"]) .cta {
+.root[data-scene="character"] .cta,
+.root[data-scene="entering"] .cta {
   animation: none;
   opacity: 0;
   transform: scale(1.35);
+  pointer-events: none;
   transition:
     opacity 0.35s ease,
     transform 0.5s ease;
@@ -580,4 +583,64 @@
     transition: none;
     transform: none;
   }
+}
+
+.changeRoomBtn {
+  position: absolute;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 45px);
+  /* clears .hint's bottom: 34px + its own line height */
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 40px;
+  font: 500 13px / 1 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  background: rgba(14, 8, 5, 0.72);
+  border: 1px solid rgba(214, 172, 106, 0.45);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    inset 0 0 14px rgba(255, 190, 110, 0.15);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -10px);
+  /* was: translateY(-10px) */
+  transition:
+    opacity 0.4s var(--ease),
+    transform 0.4s var(--ease),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.root[data-scene="character"] .changeRoomBtn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  /* was: translateY(0) */
+}
+
+.changeRoomBtn:hover {
+  background: rgba(28, 16, 10, 0.9);
+  border-color: rgba(255, 226, 172, 0.85);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.75),
+    0 0 24px rgba(var(--ember), 0.4),
+    inset 0 0 18px rgba(255, 200, 120, 0.25);
+  transform: translate(-50%, -2px);
+  /* was: translateY(-2px) */
+}
+
+.changeRoomBtn:active {
+  transform: translate(-50%, 0);
+  /* was: translateY(0) */
 }
