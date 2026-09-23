@@ -1,30 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import "./globals.css";
-
-// Fonts must be loaded in a Server Component (layout.tsx)
-// They are exposed as CSS variables and consumed in any component
-const spaceMono = Space_Mono({
-  variable: "--font-nav",   // ← change this name here to remap everywhere
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-room-serif",
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const jost = Jost({
-  variable: "--font-room-sans",
-  subsets: ["latin"],
-  weight: ["300", "400"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "HIM",
@@ -37,7 +12,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${spaceMono.variable} ${cormorant.variable} ${jost.variable}`}>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{__html: `
+          :root {
+            --font-nav: 'Space Mono', monospace;
+            --font-room-serif: 'Cormorant Garamond', serif;
+            --font-room-sans: 'Jost', sans-serif;
+          }
+        `}} />
+      </head>
       <body>{children}</body>
     </html>
   );
