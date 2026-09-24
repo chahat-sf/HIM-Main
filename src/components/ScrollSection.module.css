@@ -653,9 +653,11 @@
 }
 
 .nextBtn {
-  left: 50%;
-  top: max(12px, min(var(--next-top, 78vh), calc(100% - env(safe-area-inset-bottom, 0px) - 72px)));
-  transform: translate(-50%, 8px);
+  left: auto;
+  right: clamp(24px, 5vw, 80px);
+
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
 }
 
 .root[data-scene="character"] .changeRoomBtn {
