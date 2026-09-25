@@ -27,6 +27,7 @@ const leftLinks = [
   { label: "SHIRTS", href: "/shirts" },
   { label: "TSHIRTS", href: "/tshirts" },
   { label: "LOOKBOOK", href: "/lookbook" },
+  { label: "HOUSE", href: "/house" },
 ];
 
 const rightLinks = [
