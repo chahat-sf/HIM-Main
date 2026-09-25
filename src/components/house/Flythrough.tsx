@@ -18,13 +18,33 @@ const sans = "var(--font-room-sans), sans-serif";
 const OUTSIDE_LEVEL = 0.5;
 const OUTSIDE_FADE = 2.8;
 
-function startSound(ctx: AudioContext | null, buffer: AudioBuffer | null, offset = 0) {
+type Cue = { offset: number; duration: number; gain?: number };
+
+const CLICK: Cue = { offset: 57.6191, duration: 0.4667, gain: 0.5 };
+const ENTER: Cue[] = [
+  { offset: 51.3534, duration: 1.5667 },
+  { offset: 52.97, duration: 1.5667 },
+];
+const SWIPE: Cue[] = [
+  { offset: 63.4254, duration: 0.6851 },
+  { offset: 64.1605, duration: 0.6851 },
+  { offset: 64.8956, duration: 0.6851 },
+];
+
+function pick(cues: Cue[]) {
+  return cues[Math.floor(Math.random() * cues.length)];
+}
+
+function startSound(ctx: AudioContext | null, buffer: AudioBuffer | null, cue: Cue) {
   if (!ctx || !buffer) return;
   void ctx.resume();
   const source = ctx.createBufferSource();
   source.buffer = buffer;
-  source.connect(ctx.destination);
-  source.start(0, offset);
+  const gain = ctx.createGain();
+  gain.gain.value = cue.gain ?? 1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(0, cue.offset, cue.duration);
 }
 
 function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number) {
@@ -49,8 +69,7 @@ export default function Flythrough() {
   const indexRef = useRef(index);
   const commandRef = useRef(command);
   const dragRef = useRef<{ id: number; x: number; p0: number; lt: number; v: number } | null>(null);
-  const whoosh = useRef<AudioBuffer | null>(null);
-  const click = useRef<AudioBuffer | null>(null);
+  const sprite = useRef<AudioBuffer | null>(null);
   const audioCtx = useRef<AudioContext | null>(null);
   const outsideGain = useRef<GainNode | null>(null);
   const outsideSource = useRef<AudioBufferSourceNode | null>(null);
@@ -76,8 +95,7 @@ export default function Flythrough() {
         })
         .catch(() => undefined);
     }
-    load("/house/whoosh.mp3", whoosh);
-    load("/house/click.mp3", click);
+    load("/house/sounds.mp4", sprite);
     fetch("/house/outside.mp3")
       .then((response) => response.arrayBuffer())
       .then((data) => ctx.decodeAudioData(data))
@@ -98,8 +116,7 @@ export default function Flythrough() {
       .catch(() => undefined);
     return () => {
       cancel = true;
-      whoosh.current = null;
-      click.current = null;
+      sprite.current = null;
       outsideSource.current?.stop();
       outsideSource.current = null;
       outsideGain.current = null;
@@ -115,6 +132,7 @@ export default function Flythrough() {
     token.current += 1;
     setMode("entering");
     setCommand({ token: token.current, kind: "enter", index: roomIndex });
+    startSound(audioCtx.current, sprite.current, pick(ENTER));
     fadeGain(audioCtx.current, outsideGain.current, 0);
   }
 
@@ -132,7 +150,7 @@ export default function Flythrough() {
     modeRef.current = "moving";
     token.current += 1;
     const from = indexRef.current;
-    startSound(audioCtx.current, whoosh.current, 0.12);
+    startSound(audioCtx.current, sprite.current, pick(SWIPE));
     setMode("moving");
     setCommand({ token: token.current, kind: "next", from, to });
   }
@@ -230,7 +248,7 @@ export default function Flythrough() {
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
-        startSound(audioCtx.current, click.current, 0.02);
+        startSound(audioCtx.current, sprite.current, CLICK);
       }}
     >
       <Canvas
