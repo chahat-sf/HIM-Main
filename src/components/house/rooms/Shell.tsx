@@ -1,25 +1,80 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
 import { useLoader, useThree } from "@react-three/fiber";
 import { ROOMS } from "./poses";
-import { useEffect, useMemo, type ReactNode } from "react";
-import { DoubleSide, Mesh, MeshStandardMaterial, PlaneGeometry, RepeatWrapping, SRGBColorSpace } from "three";
+import { Suspense, useEffect, useMemo, type ReactNode } from "react";
+import {
+  CanvasTexture,
+  DoubleSide,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  RepeatWrapping,
+  SRGBColorSpace,
+  TextureLoader,
+} from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 
-const TILE_W = 3.5;
+const TILE_W = 5;
 const TILE_H = TILE_W;
 const FACADE_BOTTOM = -3.5;
 const FACADE_TOP = 7;
 const FACADE_LEFT = -12;
 const FACADE_RIGHT = ROOMS[ROOMS.length - 1].x + 12;
 
-const WINDOW_URL = "/house/window.glb";
-const WINDOW_SCALE = 2.5 / 1.689;
-const OPENING_WIDTH = 2.8;
+const WINDOW_URL = "/second-window.avif";
+const MASK_URL = encodeURI("/window mask.webp");
+const OPENING_FRAC_W = 0.4018445322793149;
+const OPENING_FRAC_H = 0.5991808074897601;
 const OPENING_HEIGHT = 2.5;
+const PLANE_HEIGHT = OPENING_HEIGHT / OPENING_FRAC_H;
+const PLANE_WIDTH = PLANE_HEIGHT * (1518 / 1709);
+const OPENING_WIDTH = PLANE_WIDTH * OPENING_FRAC_W;
+const WINDOW_Z = 0.12;
 
-useGLTF.preload(WINDOW_URL);
+function openingPixel(r: number, g: number, b: number) {
+  return r > 160 && r > g + 80 && r > b + 80;
+}
+
+let windowMaterial: MeshBasicMaterial | null = null;
+
+function useWindowMaterial() {
+  const [color, mask] = useLoader(TextureLoader, [WINDOW_URL, MASK_URL]);
+  return useMemo(() => {
+    if (windowMaterial?.map) return windowMaterial;
+    const photo = color.image as HTMLImageElement;
+    const key = mask.image as HTMLImageElement;
+    const width = photo.naturalWidth || photo.width;
+    const height = photo.naturalHeight || photo.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = width;
+    maskCanvas.height = height;
+    const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx || !maskCtx) return new MeshBasicMaterial();
+    ctx.drawImage(photo, 0, 0, width, height);
+    maskCtx.drawImage(key, 0, 0, width, height);
+    const image = ctx.getImageData(0, 0, width, height);
+    const keyed = maskCtx.getImageData(0, 0, width, height);
+    for (let i = 0; i < image.data.length; i += 4) {
+      if (openingPixel(keyed.data[i], keyed.data[i + 1], keyed.data[i + 2])) image.data[i + 3] = 0;
+    }
+    ctx.putImageData(image, 0, 0);
+    const map = new CanvasTexture(canvas);
+    map.colorSpace = SRGBColorSpace;
+    map.needsUpdate = true;
+    windowMaterial = new MeshBasicMaterial({
+      map,
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    return windowMaterial;
+  }, [color, mask]);
+}
 
 export function Block({
   position,
@@ -109,14 +164,7 @@ function BrickFace({
 }
 
 function Window({ interactive, onEnter }: { interactive: boolean; onEnter: () => void }) {
-  const { scene } = useGLTF(WINDOW_URL);
-  const model = useMemo(() => {
-    const clone = scene.clone(true);
-    clone.traverse((child) => {
-      if (child instanceof Mesh) child.raycast = () => null;
-    });
-    return clone;
-  }, [scene]);
+  const material = useWindowMaterial();
 
   useEffect(() => {
     if (!interactive) document.body.style.cursor = "";
@@ -124,9 +172,11 @@ function Window({ interactive, onEnter }: { interactive: boolean; onEnter: () =>
 
   return (
     <group>
-      <primitive object={model} position={[0, 1.9, 0]} scale={WINDOW_SCALE} />
+      <mesh position={[0, 1.9, WINDOW_Z]} material={material} raycast={() => null}>
+        <planeGeometry args={[PLANE_WIDTH, PLANE_HEIGHT]} />
+      </mesh>
       <mesh
-        position={[0, 1.9, 0.55]}
+        position={[0, 1.9, WINDOW_Z + 0.08]}
         onClick={(event) => {
           event.stopPropagation();
           if (interactive) onEnter();
@@ -159,7 +209,9 @@ export function RoomShell({
 }) {
   return (
     <group position={[x, 0, 0]} name="room">
-      <Window interactive={interactive} onEnter={onEnter} />
+      <Suspense fallback={null}>
+        <Window interactive={interactive} onEnter={onEnter} />
+      </Suspense>
       {children}
     </group>
   );
