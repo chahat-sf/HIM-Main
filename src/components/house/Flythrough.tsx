@@ -1,11 +1,13 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { ACESFilmicToneMapping } from "three";
+import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { CHARACTERS, CharacterWheel } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
+import SpeedBlur from "./camera/SpeedBlur";
+import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { beginDrag, FRAME_COUNT, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
@@ -221,7 +223,6 @@ export default function Flythrough() {
     setDragging(false);
   }
 
-  const busy = mode === "entering" || mode === "exiting" || mode === "moving";
   const scene = mode === "interior" ? "character" : mode === "exterior" ? "entry" : undefined;
 
   return (
@@ -236,13 +237,23 @@ export default function Flythrough() {
         shadows
         camera={{ position: [0, 1.9, 3.58], fov: 72, near: 0.1, far: 80 }}
         dpr={[1, 1.75]}
-        gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.12 }}
+        gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
         <color attach="background" args={["#c5d0dc"]} />
         <fog attach="fog" args={["#c5d0dc", 22, 48]} />
         <CameraController command={command} onComplete={onComplete} />
+        <SpeedBlur />
         <Building interactive={mode === "exterior"} onEnter={enter} />
+        <WindowNav
+          x={ROOMS[index].x}
+          visible={mode === "exterior"}
+          canPrev={index > 0}
+          canNext={index < ROOMS.length - 1}
+          onPrev={() => slide(index - 1)}
+          onNext={() => slide(index + 1)}
+          onEnter={() => enter(index)}
+        />
       </Canvas>
 
       <div
@@ -302,60 +313,6 @@ export default function Flythrough() {
           </svg>
           <span>Change Room</span>
         </button>
-
-        <div
-          className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 gap-3"
-          style={{ top: "max(12px, min(78vh, calc(100% - env(safe-area-inset-bottom, 0px) - 72px)))" }}
-        >
-          <button
-            type="button"
-            className={styles.nextBtn}
-            disabled={busy || index <= 0}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              slide(index - 1);
-            }}
-            aria-label="Previous window"
-            style={{
-              position: "relative",
-              left: "auto",
-              top: "auto",
-              transform: "none",
-              opacity: mode === "exterior" && index > 0 ? 1 : 0,
-              pointerEvents: mode === "exterior" && !busy && index > 0 ? "auto" : "none",
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-            <span>Previous</span>
-          </button>
-          <button
-            type="button"
-            className={styles.nextBtn}
-            disabled={busy || index >= ROOMS.length - 1}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              slide(index + 1);
-            }}
-            aria-label="Next window"
-            style={{
-              position: "relative",
-              left: "auto",
-              top: "auto",
-              transform: "none",
-              opacity: mode === "exterior" && index < ROOMS.length - 1 ? 1 : 0,
-              pointerEvents: mode === "exterior" && !busy && index < ROOMS.length - 1 ? "auto" : "none",
-            }}
-          >
-            <span>Next</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </button>
-        </div>
 
         <div className={`${styles.hint} ${hint ? styles.show : ""}`}>
           <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
