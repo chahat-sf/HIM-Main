@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
-import { BAY, ROOMS } from "./poses";
+import { ROOMS } from "./poses";
 import { Suspense, useEffect, useMemo, type ReactNode } from "react";
 import {
   CanvasTexture,
@@ -37,13 +37,13 @@ export const PLANE_WIDTH = PLANE_HEIGHT * (1518 / 1709);
 const OPENING_WIDTH = PLANE_WIDTH * OPENING_FRAC_W;
 const WINDOW_Z = 0.12;
 export const WINDOW_CENTER_Y = 1.9;
-const GOBO_URL = "/gobo.png";
+const GOBO_URL = "/gobo.png?canopy=1";
 
 const goboUniforms = {
   uGoboMap: { value: null as Texture | null },
   uNoiseMap: { value: null as Texture | null },
   uGoboTime: { value: 0 },
-  uGoboScale: { value: new Vector2(BAY, BAY * 0.5) },
+  uGoboScale: { value: new Vector2(10.2, 6.5) },
   uGoboStrength: { value: 1 },
 };
 
@@ -70,7 +70,7 @@ uniform float uGoboStrength;
 vec3 applyGobo(vec3 color) {
   vec2 broad = texture2D(uNoiseMap, vGoboWorld.xy * 0.035 + vec2(uGoboTime * 0.012, uGoboTime * 0.004)).rg;
   vec2 fine = texture2D(uNoiseMap, vGoboWorld.xy * 0.16 + vec2(uGoboTime * 0.02, -uGoboTime * 0.03)).rg;
-  vec2 goboUv = vGoboWorld.xy / uGoboScale;
+  vec2 goboUv = vGoboWorld.xy / uGoboScale + vec2(0.5, 0.21);
   goboUv += (broad - 0.5) * 0.04 + (fine - 0.5) * 0.012;
   float raw = clamp(texture2D(uGoboMap, goboUv).r, 0.0, 1.0);
   vec3 sunlit = color * vec3(1.16, 1.08, 0.96);
@@ -143,7 +143,7 @@ function getNoiseMap() {
 }
 
 function applyFacadeGobo(material: MeshBasicMaterial | MeshStandardMaterial, disabled: boolean) {
-  material.customProgramCacheKey = () => (disabled ? "facade-gobo-off" : "facade-gobo-sunlit");
+  material.customProgramCacheKey = () => (disabled ? "facade-gobo-off" : "facade-gobo-canopy");
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, goboUniforms);
     const define = disabled ? "#define DISABLE_GOBO\n" : "";
