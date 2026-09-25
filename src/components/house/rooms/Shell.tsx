@@ -45,8 +45,6 @@ const goboUniforms = {
   uGoboTime: { value: 0 },
   uGoboScale: { value: new Vector2(BAY, BAY * 0.5) },
   uGoboStrength: { value: 1 },
-  uFacadeBottom: { value: FACADE_BOTTOM },
-  uFacadeTop: { value: FACADE_TOP },
 };
 
 const GOBO_VARYING = /* glsl */ `
@@ -68,8 +66,6 @@ uniform sampler2D uNoiseMap;
 uniform float uGoboTime;
 uniform vec2 uGoboScale;
 uniform float uGoboStrength;
-uniform float uFacadeBottom;
-uniform float uFacadeTop;
 
 vec3 applyGobo(vec3 color) {
   vec2 broad = texture2D(uNoiseMap, vGoboWorld.xy * 0.035 + vec2(uGoboTime * 0.012, uGoboTime * 0.004)).rg;
@@ -77,10 +73,8 @@ vec3 applyGobo(vec3 color) {
   vec2 goboUv = vGoboWorld.xy / uGoboScale;
   goboUv += (broad - 0.5) * 0.04 + (fine - 0.5) * 0.012;
   float raw = clamp(texture2D(uGoboMap, goboUv).r, 0.0, 1.0);
-  float yNorm = clamp((vGoboWorld.y - uFacadeBottom) / (uFacadeTop - uFacadeBottom), 0.0, 1.0);
-  float band = smoothstep(0.0, 0.08, yNorm) * smoothstep(1.0, 0.92, yNorm);
-  vec3 warmed = mix(color * vec3(1.04, 0.97, 0.92), color, band);
-  return warmed * mix(1.0, raw, uGoboStrength);
+  vec3 sunlit = color * vec3(1.16, 1.08, 0.96);
+  return sunlit * mix(1.0, raw, uGoboStrength);
 }
 #endif
 `;
@@ -149,7 +143,7 @@ function getNoiseMap() {
 }
 
 function applyFacadeGobo(material: MeshBasicMaterial | MeshStandardMaterial, disabled: boolean) {
-  material.customProgramCacheKey = () => (disabled ? "facade-gobo-off" : "facade-gobo-png");
+  material.customProgramCacheKey = () => (disabled ? "facade-gobo-off" : "facade-gobo-sunlit");
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, goboUniforms);
     const define = disabled ? "#define DISABLE_GOBO\n" : "";
