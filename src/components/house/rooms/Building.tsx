@@ -17,13 +17,13 @@ export default function Building({
   return (
     <group>
       <Suspense fallback={null}>
-        <RoomShell x={ROOMS[0].x} interactive={interactive} onEnter={() => onEnter(0)}>
+        <RoomShell x={ROOMS[0].x} door={0} interactive={interactive} onEnter={() => onEnter(0)}>
           <FramePlane room={0} start={FRAME_STARTS[0]} onFirstFrame={onFirstFrame} />
         </RoomShell>
-        <RoomShell x={ROOMS[1].x} interactive={interactive} onEnter={() => onEnter(1)}>
+        <RoomShell x={ROOMS[1].x} door={1} interactive={interactive} onEnter={() => onEnter(1)}>
           <FramePlane room={1} start={FRAME_STARTS[1]} />
         </RoomShell>
-        <RoomShell x={ROOMS[2].x} interactive={interactive} onEnter={() => onEnter(2)}>
+        <RoomShell x={ROOMS[2].x} door={2} interactive={interactive} onEnter={() => onEnter(2)}>
           <FramePlane room={2} start={FRAME_STARTS[2]} />
         </RoomShell>
         <Facade />

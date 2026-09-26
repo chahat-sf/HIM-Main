@@ -72,10 +72,10 @@ function sway(time: number) {
   };
 }
 
-const PARALLAX_X = 0.38;
-const PARALLAX_Y = 0.16;
-const PARALLAX_AIM_X = 0.11;
-const PARALLAX_AIM_Y = 0.05;
+const PARALLAX_X = 0.28;
+const PARALLAX_Y = 0.12;
+const PARALLAX_AIM_X = 0.08;
+const PARALLAX_AIM_Y = 0.035;
 
 export default function CameraController({
   command,

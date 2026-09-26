@@ -178,14 +178,31 @@ function openingPixel(r: number, g: number, b: number) {
   return r > 160 && r > g + 80 && r > b + 80;
 }
 
-let windowMaterial: MeshBasicMaterial | null = null;
+const DOOR_COLORS: [number, number, number][] = [
+  [0x3a, 0x77, 0xe7],
+  [0x27, 0x9b, 0x2b],
+  [0xff, 0x08, 0x00],
+];
 
-function useWindowMaterial() {
+function softLight(base: number, blend: number) {
+  const b = base / 255;
+  const s = blend / 255;
+  const out =
+    s <= 0.5
+      ? b - (1 - 2 * s) * b * (1 - b)
+      : b + (2 * s - 1) * ((b <= 0.25 ? ((16 * b - 12) * b + 4) * b : Math.sqrt(b)) - b);
+  return Math.round(Math.min(1, Math.max(0, out)) * 255);
+}
+
+const windowMaterials = new Map<number, MeshBasicMaterial>();
+
+function useWindowMaterial(door: number) {
   const [color, mask] = useLoader(TextureLoader, [WINDOW_URL, MASK_URL]);
   const gobo = useGoboTexture();
   const mobile = useMemo(isMobileWall, []);
   return useMemo(() => {
-    if (windowMaterial?.map) return windowMaterial;
+    const cached = windowMaterials.get(door);
+    if (cached?.map) return cached;
     const photo = color.image as HTMLImageElement;
     const key = mask.image as HTMLImageElement;
     const width = photo.naturalWidth || photo.width;
@@ -203,22 +220,34 @@ function useWindowMaterial() {
     maskCtx.drawImage(key, 0, 0, width, height);
     const image = ctx.getImageData(0, 0, width, height);
     const keyed = maskCtx.getImageData(0, 0, width, height);
-    for (let i = 0; i < image.data.length; i += 4) {
-      if (openingPixel(keyed.data[i], keyed.data[i + 1], keyed.data[i + 2])) image.data[i + 3] = 0;
+    const [tr, tg, tb] = DOOR_COLORS[door] ?? DOOR_COLORS[0];
+    const pixels = image.data;
+    const keys = keyed.data;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (openingPixel(keys[i], keys[i + 1], keys[i + 2])) {
+        pixels[i + 3] = 0;
+        continue;
+      }
+      const amount = keys[i + 2] / 255;
+      if (amount <= 0) continue;
+      pixels[i] += (softLight(pixels[i], tr) - pixels[i]) * amount;
+      pixels[i + 1] += (softLight(pixels[i + 1], tg) - pixels[i + 1]) * amount;
+      pixels[i + 2] += (softLight(pixels[i + 2], tb) - pixels[i + 2]) * amount;
     }
     ctx.putImageData(image, 0, 0);
     const map = new CanvasTexture(canvas);
     map.colorSpace = SRGBColorSpace;
     map.needsUpdate = true;
-    windowMaterial = new MeshBasicMaterial({
+    const material = new MeshBasicMaterial({
       map,
       transparent: true,
       depthWrite: false,
       toneMapped: false,
     });
-    applyFacadeGobo(windowMaterial, mobile);
-    return windowMaterial;
-  }, [color, mask, gobo, mobile]);
+    applyFacadeGobo(material, mobile);
+    windowMaterials.set(door, material);
+    return material;
+  }, [color, mask, gobo, mobile, door]);
 }
 
 export function Block({
@@ -313,8 +342,16 @@ function BrickFace({
   );
 }
 
-function Window({ interactive, onEnter }: { interactive: boolean; onEnter: () => void }) {
-  const material = useWindowMaterial();
+function Window({
+  door,
+  interactive,
+  onEnter,
+}: {
+  door: number;
+  interactive: boolean;
+  onEnter: () => void;
+}) {
+  const material = useWindowMaterial(door);
 
   useEffect(() => {
     if (!interactive) document.body.style.cursor = "";
@@ -348,18 +385,20 @@ function Window({ interactive, onEnter }: { interactive: boolean; onEnter: () =>
 
 export function RoomShell({
   x,
+  door,
   interactive,
   onEnter,
   children,
 }: {
   x: number;
+  door: number;
   interactive: boolean;
   onEnter: () => void;
   children: ReactNode;
 }) {
   return (
     <group position={[x, 0, 0]} name="room">
-      <Window interactive={interactive} onEnter={onEnter} />
+      <Window door={door} interactive={interactive} onEnter={onEnter} />
       {children}
     </group>
   );
