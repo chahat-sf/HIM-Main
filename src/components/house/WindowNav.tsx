@@ -3,7 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { Group, Matrix4, type PerspectiveCamera } from "three";
+import { Group, Matrix4, Vector3, type PerspectiveCamera } from "three";
 import { PLANE_HEIGHT, WINDOW_CENTER_Y } from "./rooms/Shell";
 import styles from "./WindowNav.module.css";
 
@@ -21,6 +21,9 @@ function popped(x: number, y: number): [number, number, number] {
 
 const ENTER_POS = popped(0, frameBottom + 0.25);
 const EDGE_PAD = 20;
+const _forward = new Vector3();
+const _right = new Vector3();
+const _point = new Vector3();
 
 function epsilon(value: number) {
   return Math.abs(value) < 1e-10 ? 0 : value;
@@ -104,8 +107,11 @@ function SceneHtml({
       const button = innerEl.querySelector("button");
       const halfPx = button ? button.offsetWidth / 2 : 56;
       const inset = (EDGE_PAD + halfPx) / (size.height / 2 / halfHeight);
-      const originX = object.parent?.position.x ?? 0;
-      object.position.set(camera.position.x - originX + edge * (halfWidth - inset), camera.position.y, POP_Z);
+      _forward.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      _right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+      _point.copy(camera.position).addScaledVector(_forward, distance).addScaledVector(_right, edge * (halfWidth - inset));
+      object.parent?.worldToLocal(_point);
+      object.position.copy(_point);
     }
     object.updateWorldMatrix(true, false);
     const widthHalf = size.width / 2;
@@ -137,6 +143,7 @@ function Chevron({ direction }: { direction: "left" | "right" }) {
 function Plaque({
   position,
   edge = 0,
+  hidden = false,
   label,
   ariaLabel,
   onClick,
@@ -145,6 +152,7 @@ function Plaque({
 }: {
   position: [number, number, number];
   edge?: -1 | 0 | 1;
+  hidden?: boolean;
   label: string;
   ariaLabel: string;
   onClick: () => void;
@@ -157,10 +165,12 @@ function Plaque({
         type="button"
         className={edge !== 0 ? `${styles.pill} ${styles.edge}` : styles.pill}
         aria-label={ariaLabel}
+        aria-hidden={hidden || undefined}
+        style={hidden ? { visibility: "hidden", pointerEvents: "none" } : undefined}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.stopPropagation();
-          onClick();
+          if (!hidden) onClick();
         }}
       >
         {leading}
@@ -192,27 +202,27 @@ export default function WindowNav({
 
   return (
     <group position={[x, 0, 0]}>
-      {canPrev && (
-        <Plaque
-          position={[0, WINDOW_CENTER_Y, POP_Z]}
-          edge={-1}
-          label="Previous"
-          ariaLabel="Previous window"
-          onClick={onPrev}
-          leading={<Chevron direction="left" />}
-        />
-      )}
-      {canNext && (
-        <Plaque
-          position={[0, WINDOW_CENTER_Y, POP_Z]}
-          edge={1}
-          label="Next"
-          ariaLabel="Next window"
-          onClick={onNext}
-          trailing={<Chevron direction="right" />}
-        />
-      )}
-      <Plaque position={ENTER_POS} label="Enter the room" ariaLabel="Enter the room" onClick={onEnter} />
+      <Plaque
+        key="prev"
+        position={[0, WINDOW_CENTER_Y, POP_Z]}
+        edge={-1}
+        hidden={!canPrev}
+        label="Previous"
+        ariaLabel="Previous window"
+        onClick={onPrev}
+        leading={<Chevron direction="left" />}
+      />
+      <Plaque
+        key="next"
+        position={[0, WINDOW_CENTER_Y, POP_Z]}
+        edge={1}
+        hidden={!canNext}
+        label="Next"
+        ariaLabel="Next window"
+        onClick={onNext}
+        trailing={<Chevron direction="right" />}
+      />
+      <Plaque key="enter" position={ENTER_POS} label="Enter the room" ariaLabel="Enter the room" onClick={onEnter} />
     </group>
   );
 }

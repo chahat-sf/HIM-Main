@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { PerspectiveCamera } from "three";
+import { PLANE_WIDTH } from "../rooms/Shell";
 import { INITIAL_POSE, ROOMS, roomPoses, type Pose } from "../rooms/poses";
 
 gsap.registerPlugin(useGSAP);
@@ -77,16 +78,34 @@ const PARALLAX_Y = 0.12;
 const PARALLAX_AIM_X = 0.08;
 const PARALLAX_AIM_Y = 0.035;
 const HANG_STIFFNESS = 70;
-const HANG_DAMPING = 10;
+const HANG_DAMPING = 16.5;
 const HANG_AIM = 0.22;
+const WINDOW_Z = 0.12;
+const EXTERIOR_Z = INITIAL_POSE.pz;
+const WINDOW_FIT = 1.06;
+
+function fittedExteriorZ(aspect: number) {
+  const tanHalf = Math.tan((INITIAL_POSE.fov * Math.PI) / 360);
+  const tanHalfH = tanHalf * Math.max(aspect, 0.01);
+  const distance = (PLANE_WIDTH * WINDOW_FIT) / 2 / tanHalfH;
+  return Math.max(EXTERIOR_Z, WINDOW_Z + distance);
+}
+
+function exteriorPose(x: number, z: number) {
+  const pose = roomPoses(x).exterior;
+  pose.pz = z;
+  return pose;
+}
 
 export default function CameraController({
   command,
   onComplete,
+  onSettled,
   parallax = false,
 }: {
   command: CameraCommand | null;
   onComplete: () => void;
+  onSettled?: () => void;
   parallax?: boolean;
 }) {
   const pose = useRef<Pose>({ ...INITIAL_POSE });
@@ -96,7 +115,9 @@ export default function CameraController({
   const rollVel = useRef(0);
   const hanging = useRef(false);
   const droneArrived = useRef(false);
+  const glide = useRef<{ from: Pose; to: Pose; t: number } | null>(null);
   const onCompleteRef = useRef(onComplete);
+  const onSettledRef = useRef(onSettled);
   const moving = useRef(false);
   const hover = useRef(1);
   const reduceMotion = useRef(false);
@@ -104,11 +125,14 @@ export default function CameraController({
   const pointer = useRef({ x: 0, y: 0 });
   const eased = useRef({ x: 0, y: 0 });
   const parallaxOn = useRef(parallax);
+  const exteriorDistance = useRef(EXTERIOR_Z);
+  const outside = useRef(true);
   parallaxOn.current = parallax;
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
-  }, [onComplete]);
+    onSettledRef.current = onSettled;
+  }, [onComplete, onSettled]);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -137,15 +161,23 @@ export default function CameraController({
         defaults: { ease: "power2.inOut", duration, immediateRender: false },
         onComplete: () => {
           moving.current = false;
-          if (hanging.current) return;
+          if (command.kind === "exit") outside.current = true;
+          if (command.kind === "next") return;
           onCompleteRef.current();
         },
       });
 
       if (command.kind === "enter" || command.kind === "exit") {
         const poses = roomPoses(ROOMS[command.index].x);
-        const start = command.kind === "enter" ? poses.exterior : poses.interior;
-        const end = command.kind === "enter" ? poses.interior : poses.exterior;
+        const resting = command.kind === "enter" ? poses.exterior : poses.interior;
+        const start = { ...resting };
+        if (command.kind === "enter" && hanging.current) applyPose(start, body.current);
+        else if (command.kind === "enter") start.pz = exteriorDistance.current;
+        if (command.kind === "enter") outside.current = false;
+        glide.current = null;
+        hanging.current = false;
+        droneArrived.current = false;
+        const end = command.kind === "enter" ? poses.interior : exteriorPose(ROOMS[command.index].x, exteriorDistance.current);
         const progress = { t: 0 };
         applyPose(pose.current, start);
         timeline.to(progress, {
@@ -159,70 +191,77 @@ export default function CameraController({
         return;
       }
 
-      const from = roomPoses(ROOMS[command.from].x).exterior;
-      const to = roomPoses(ROOMS[command.to].x).exterior;
-      const progress = { t: 0 };
-      applyPose(pose.current, from);
-      applyPose(body.current, from);
-      vel.current.x = 0;
-      vel.current.y = 0;
-      vel.current.z = 0;
-      roll.current = 0;
-      rollVel.current = 0;
+      const from = { ...INITIAL_POSE };
+      if (hanging.current) applyPose(from, body.current);
+      else applyPose(from, exteriorPose(ROOMS[command.from].x, exteriorDistance.current));
+      const to = exteriorPose(ROOMS[command.to].x, exteriorDistance.current);
+      const flight = { from, to, t: 0 };
+      glide.current = flight;
+      if (!hanging.current || reduce) {
+        applyPose(pose.current, from);
+        applyPose(body.current, from);
+        vel.current.x = 0;
+        vel.current.y = 0;
+        vel.current.z = 0;
+        roll.current = 0;
+        rollVel.current = 0;
+      }
       hanging.current = !reduce;
       droneArrived.current = false;
-      timeline.to(progress, {
+      timeline.to(flight, {
         t: 1,
         duration: reduce ? 0.01 : 1.1,
         ease: "power2.inOut",
-        onUpdate: () => {
-          lerpPose(pose.current, from, to, progress.t);
-        },
         onComplete: () => {
+          if (glide.current !== flight) return;
           droneArrived.current = true;
+          if (!hanging.current) onSettledRef.current?.();
         },
       });
     },
     { dependencies: [command?.token], revertOnUpdate: true },
   );
 
-  useFrame(({ camera }, delta) => {
+  useFrame(({ camera, size }, delta) => {
     const dt = Math.min(delta, 0.05);
+    if (size.width > 0 && size.height > 0) {
+      exteriorDistance.current = fittedExteriorZ(size.width / size.height);
+      if (!moving.current && !hanging.current && outside.current) pose.current.pz = exteriorDistance.current;
+    }
+    const flight = glide.current;
+    if (flight && hanging.current) lerpPose(pose.current, flight.from, flight.to, flight.t);
     if (hanging.current) {
       const drone = pose.current;
       const cam = body.current;
       const pull = (from: number, to: number, speed: number) => (to - from) * HANG_STIFFNESS - speed * HANG_DAMPING;
       vel.current.x += pull(cam.px, drone.px, vel.current.x) * dt;
       cam.px += vel.current.x * dt;
-      const bob = -Math.min(0.12, vel.current.x * vel.current.x * 0.0018);
+      const lagX = cam.px - drone.px;
+      const bob = -Math.min(0.12, lagX * lagX * 0.025);
       vel.current.y += pull(cam.py, drone.py + bob, vel.current.y) * dt;
       cam.py += vel.current.y * dt;
       vel.current.z += pull(cam.pz, drone.pz, vel.current.z) * dt;
       cam.pz += vel.current.z * dt;
-      const lagX = cam.px - drone.px;
       const lagY = cam.py - drone.py;
       cam.tx = drone.tx + lagX * HANG_AIM;
       cam.ty = drone.ty + lagY * HANG_AIM;
       cam.tz = drone.tz;
       cam.fov = drone.fov;
-      const rollTarget = Math.max(-0.06, Math.min(0.06, -vel.current.x * 0.004));
-      rollVel.current += ((rollTarget - roll.current) * 8 - rollVel.current * 3.2) * dt;
-      roll.current += rollVel.current * dt;
+      roll.current = Math.max(-0.06, Math.min(0.06, -lagX * 0.02));
+      rollVel.current = 0;
       const settled =
         droneArrived.current &&
-        Math.hypot(drone.px - cam.px, drone.py - cam.py) < 0.025 &&
-        Math.abs(vel.current.x) < 0.08 &&
-        Math.abs(roll.current) < 0.008;
+        Math.hypot(drone.px - cam.px, drone.py - cam.py, drone.pz - cam.pz) < 0.001 &&
+        Math.abs(vel.current.x) < 0.01 &&
+        Math.abs(vel.current.y) < 0.01 &&
+        Math.abs(vel.current.z) < 0.01 &&
+        Math.abs(roll.current) < 0.0005 &&
+        Math.abs(rollVel.current) < 0.0005;
       if (settled) {
-        applyPose(cam, drone);
-        vel.current.x = 0;
-        vel.current.y = 0;
-        vel.current.z = 0;
-        roll.current = 0;
-        rollVel.current = 0;
         hanging.current = false;
         droneArrived.current = false;
-        onCompleteRef.current();
+        glide.current = null;
+        onSettledRef.current?.();
       }
     } else {
       applyPose(body.current, pose.current);
@@ -249,7 +288,7 @@ export default function CameraController({
       current.ty + hand.aimY * weight + shiftY * PARALLAX_AIM_Y,
       current.tz,
     );
-    camera.rotateZ(hand.roll * weight + roll.current);
+    camera.rotateZ(hand.roll * weight + (hanging.current ? roll.current : 0));
     if (camera instanceof PerspectiveCamera && camera.fov !== current.fov) {
       camera.fov = current.fov;
       camera.updateProjectionMatrix();

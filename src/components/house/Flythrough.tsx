@@ -60,6 +60,7 @@ function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number
 
 export default function Flythrough() {
   const [index, setIndex] = useState(0);
+  const [navIndex, setNavIndex] = useState(0);
   const [mode, setMode] = useState<Mode>("exterior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState([0, 1, 2]);
@@ -136,6 +137,7 @@ export default function Flythrough() {
     if (modeRef.current !== "exterior" || roomIndex !== indexRef.current) return;
     modeRef.current = "entering";
     token.current += 1;
+    setNavIndex(roomIndex);
     setMode("entering");
     setCommand({ token: token.current, kind: "enter", index: roomIndex });
     startSound(audioCtx.current, sprite.current, pick(ENTER));
@@ -152,13 +154,17 @@ export default function Flythrough() {
   }
 
   function slide(to: number) {
-    if (modeRef.current !== "exterior" || to < 0 || to >= ROOMS.length) return;
-    modeRef.current = "moving";
+    if (modeRef.current !== "exterior" || to < 0 || to >= ROOMS.length || to === indexRef.current) return;
     token.current += 1;
     const from = indexRef.current;
+    indexRef.current = to;
+    setIndex(to);
     startSound(audioCtx.current, sprite.current, pick(SWIPE));
-    setMode("moving");
     setCommand({ token: token.current, kind: "next", from, to });
+  }
+
+  function onSettled() {
+    setNavIndex(indexRef.current);
   }
 
   function onComplete() {
@@ -302,6 +308,7 @@ export default function Flythrough() {
         <CameraController
           command={command}
           onComplete={onComplete}
+          onSettled={onSettled}
           parallax={mode === "exterior" || mode === "moving"}
         />
         <SpeedBlur />
@@ -309,8 +316,8 @@ export default function Flythrough() {
         <WindowNav
           x={ROOMS[index].x}
           visible={mode === "exterior"}
-          canPrev={index > 0}
-          canNext={index < ROOMS.length - 1}
+          canPrev={index > 0 || navIndex > 0}
+          canNext={index < ROOMS.length - 1 || navIndex < ROOMS.length - 1}
           onPrev={() => slide(index - 1)}
           onNext={() => slide(index + 1)}
           onEnter={() => enter(index)}
