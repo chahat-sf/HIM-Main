@@ -61,6 +61,7 @@ function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number
 export default function Flythrough() {
   const [index, setIndex] = useState(0);
   const [navIndex, setNavIndex] = useState(0);
+  const [sliding, setSliding] = useState(false);
   const [mode, setMode] = useState<Mode>("exterior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState([0, 1, 2]);
@@ -138,6 +139,7 @@ export default function Flythrough() {
     modeRef.current = "entering";
     token.current += 1;
     setNavIndex(roomIndex);
+    setSliding(false);
     setMode("entering");
     setCommand({ token: token.current, kind: "enter", index: roomIndex });
     startSound(audioCtx.current, sprite.current, pick(ENTER));
@@ -159,12 +161,14 @@ export default function Flythrough() {
     const from = indexRef.current;
     indexRef.current = to;
     setIndex(to);
+    setSliding(true);
     startSound(audioCtx.current, sprite.current, pick(SWIPE));
     setCommand({ token: token.current, kind: "next", from, to });
   }
 
   function onSettled() {
     setNavIndex(indexRef.current);
+    setSliding(false);
   }
 
   function onComplete() {
@@ -234,6 +238,7 @@ export default function Flythrough() {
     if (!swipe || swipe.id !== event.pointerId) return;
     const dx = event.clientX - swipe.x;
     const dy = event.clientY - swipe.y;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= 10) event.currentTarget.setPointerCapture(event.pointerId);
     if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
     swipeRef.current = null;
     if (Math.abs(dx) <= Math.abs(dy)) return;
@@ -287,14 +292,15 @@ export default function Flythrough() {
     <main
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
       aria-busy={!ready}
+      style={{ touchAction: "none" }}
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
         startSound(audioCtx.current, sprite.current, CLICK);
+        onWindowPointerDown(event);
       }}
-      onPointerDown={onWindowPointerDown}
-      onPointerMove={onWindowPointerMove}
-      onPointerUp={onWindowPointerUp}
-      onPointerCancel={onWindowPointerUp}
+      onPointerMoveCapture={onWindowPointerMove}
+      onPointerUpCapture={onWindowPointerUp}
+      onPointerCancelCapture={onWindowPointerUp}
     >
       <Canvas
         shadows
@@ -318,6 +324,7 @@ export default function Flythrough() {
           visible={mode === "exterior"}
           canPrev={index > 0 || navIndex > 0}
           canNext={index < ROOMS.length - 1 || navIndex < ROOMS.length - 1}
+          sliding={sliding}
           onPrev={() => slide(index - 1)}
           onNext={() => slide(index + 1)}
           onEnter={() => enter(index)}

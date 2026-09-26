@@ -186,6 +186,7 @@ export default function WindowNav({
   visible,
   canPrev,
   canNext,
+  sliding = false,
   onPrev,
   onNext,
   onEnter,
@@ -194,6 +195,7 @@ export default function WindowNav({
   visible: boolean;
   canPrev: boolean;
   canNext: boolean;
+  sliding?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onEnter: () => void;
@@ -206,7 +208,7 @@ export default function WindowNav({
         key="prev"
         position={[0, WINDOW_CENTER_Y, POP_Z]}
         edge={-1}
-        hidden={!canPrev}
+        hidden={sliding || !canPrev}
         label="Previous"
         ariaLabel="Previous window"
         onClick={onPrev}
@@ -216,7 +218,7 @@ export default function WindowNav({
         key="next"
         position={[0, WINDOW_CENTER_Y, POP_Z]}
         edge={1}
-        hidden={!canNext}
+        hidden={sliding || !canNext}
         label="Next"
         ariaLabel="Next window"
         onClick={onNext}
