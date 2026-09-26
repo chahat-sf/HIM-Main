@@ -2,7 +2,7 @@
 
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { ROOMS } from "./poses";
-import { Suspense, useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import {
   CanvasTexture,
   DataTexture,
@@ -357,9 +357,7 @@ export function RoomShell({
 }) {
   return (
     <group position={[x, 0, 0]} name="room">
-      <Suspense fallback={null}>
-        <Window interactive={interactive} onEnter={onEnter} />
-      </Suspense>
+      <Window interactive={interactive} onEnter={onEnter} />
       {children}
     </group>
   );

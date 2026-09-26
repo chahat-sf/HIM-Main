@@ -168,13 +168,22 @@ function nearestReady(index: number) {
 	return -1;
 }
 
-export function FramePlane({ start, room }: { start: number; room: number }) {
+export function FramePlane({
+	start,
+	room,
+	onFirstFrame,
+}: {
+	start: number;
+	room: number;
+	onFirstFrame?: () => void;
+}) {
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
 	const mapRef = useRef<Texture | null>(null);
 	const geometry = useMemo(() => plateGeometry(), []);
 	const shown = useRef(-1);
 	const uploadedAt = useRef(0);
+	const announced = useRef(false);
 
 	useEffect(() => {
 		const map = new Texture();
@@ -224,6 +233,10 @@ export function FramePlane({ start, room }: { start: number; room: number }) {
 		map.needsUpdate = true;
 		shown.current = frame;
 		uploadedAt.current = state.clock.elapsedTime;
+		if (!announced.current && onFirstFrame) {
+			announced.current = true;
+			onFirstFrame();
+		}
 	});
 
 	return (

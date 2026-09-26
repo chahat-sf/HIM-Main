@@ -155,7 +155,7 @@ function Plaque({
     <SceneHtml position={position} edge={edge}>
       <button
         type="button"
-        className={styles.pill}
+        className={edge !== 0 ? `${styles.pill} ${styles.edge}` : styles.pill}
         aria-label={ariaLabel}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {

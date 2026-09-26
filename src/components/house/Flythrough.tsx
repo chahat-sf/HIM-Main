@@ -17,6 +17,8 @@ type Mode = "exterior" | "entering" | "interior" | "exiting" | "moving";
 const sans = "var(--font-room-sans), sans-serif";
 const OUTSIDE_LEVEL = 0.5;
 const OUTSIDE_FADE = 2.8;
+const MOBILE_WINDOW = "(max-width: 768px)";
+const SWIPE_THRESHOLD = 48;
 
 type Cue = { offset: number; duration: number; gain?: number };
 
@@ -64,11 +66,14 @@ export default function Flythrough() {
   const [nameSwap, setNameSwap] = useState(false);
   const [hint, setHint] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [ready, setReady] = useState(false);
   const token = useRef(0);
   const modeRef = useRef(mode);
   const indexRef = useRef(index);
   const commandRef = useRef(command);
   const dragRef = useRef<{ id: number; x: number; p0: number; lt: number; v: number } | null>(null);
+  const swipeRef = useRef<{ id: number; x: number; y: number } | null>(null);
+  const swipedRef = useRef(false);
   const sprite = useRef<AudioBuffer | null>(null);
   const audioCtx = useRef<AudioContext | null>(null);
   const outsideGain = useRef<GainNode | null>(null);
@@ -127,6 +132,7 @@ export default function Flythrough() {
   }, []);
 
   function enter(roomIndex: number) {
+    if (swipedRef.current) return;
     if (modeRef.current !== "exterior" || roomIndex !== indexRef.current) return;
     modeRef.current = "entering";
     token.current += 1;
@@ -209,6 +215,34 @@ export default function Flythrough() {
     }, 260);
   }
 
+  function onWindowPointerDown(event: PointerEvent<HTMLElement>) {
+    if (event.button !== 0 || modeRef.current !== "exterior") return;
+    if (!window.matchMedia(MOBILE_WINDOW).matches) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest("button")) return;
+    swipeRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  }
+
+  function onWindowPointerMove(event: PointerEvent<HTMLElement>) {
+    const swipe = swipeRef.current;
+    if (!swipe || swipe.id !== event.pointerId) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+    swipeRef.current = null;
+    if (Math.abs(dx) <= Math.abs(dy)) return;
+    swipedRef.current = true;
+    slide(indexRef.current + (dx < 0 ? 1 : -1));
+  }
+
+  function onWindowPointerUp() {
+    swipeRef.current = null;
+    if (!swipedRef.current) return;
+    window.setTimeout(() => {
+      swipedRef.current = false;
+    }, 0);
+  }
+
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (modeRef.current !== "interior") return;
     if ((event.target as Element).closest("button, [data-cast]")) return;
@@ -246,10 +280,15 @@ export default function Flythrough() {
   return (
     <main
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
+      aria-busy={!ready}
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
         startSound(audioCtx.current, sprite.current, CLICK);
       }}
+      onPointerDown={onWindowPointerDown}
+      onPointerMove={onWindowPointerMove}
+      onPointerUp={onWindowPointerUp}
+      onPointerCancel={onWindowPointerUp}
     >
       <Canvas
         shadows
@@ -262,7 +301,7 @@ export default function Flythrough() {
         <fog attach="fog" args={["#c5d0dc", 22, 48]} />
         <CameraController command={command} onComplete={onComplete} />
         <SpeedBlur />
-        <Building interactive={mode === "exterior"} onEnter={enter} />
+        <Building interactive={mode === "exterior"} onEnter={enter} onFirstFrame={() => setReady(true)} />
         <WindowNav
           x={ROOMS[index].x}
           visible={mode === "exterior"}
@@ -337,6 +376,28 @@ export default function Flythrough() {
           Drag to rotate
           <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>
         </div>
+      </div>
+
+      <div
+        aria-hidden={ready}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 40,
+          display: "grid",
+          placeItems: "center",
+          background: "#c5d0dc",
+          opacity: ready ? 0 : 1,
+          pointerEvents: ready ? "none" : "auto",
+          transition: "opacity 0.45s ease",
+        }}
+      >
+        <p
+          className="m-0 text-[12px] tracking-[0.22em] uppercase"
+          style={{ fontFamily: sans, color: "#1a120c" }}
+        >
+          Loading
+        </p>
       </div>
     </main>
   );
