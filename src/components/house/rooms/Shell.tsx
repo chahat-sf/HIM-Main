@@ -266,6 +266,8 @@ function useWallMaterial() {
       metalness: 0,
       side: DoubleSide,
     });
+    // The window photo is unlit. Lift the lit wall so the stone matches that frame.
+    material.color.setRGB(1.45, 1.38, 1.28);
     applyFacadeGobo(material, mobile);
     return material;
   }, [map, gl, gobo, mobile]);
