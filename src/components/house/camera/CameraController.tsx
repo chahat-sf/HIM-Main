@@ -72,18 +72,30 @@ function sway(time: number) {
   };
 }
 
+const PARALLAX_X = 0.38;
+const PARALLAX_Y = 0.16;
+const PARALLAX_AIM_X = 0.11;
+const PARALLAX_AIM_Y = 0.05;
+
 export default function CameraController({
   command,
   onComplete,
+  parallax = false,
 }: {
   command: CameraCommand | null;
   onComplete: () => void;
+  parallax?: boolean;
 }) {
   const pose = useRef<Pose>({ ...INITIAL_POSE });
   const onCompleteRef = useRef(onComplete);
   const moving = useRef(false);
   const hover = useRef(1);
   const reduceMotion = useRef(false);
+  const finePointer = useRef(false);
+  const pointer = useRef({ x: 0, y: 0 });
+  const eased = useRef({ x: 0, y: 0 });
+  const parallaxOn = useRef(parallax);
+  parallaxOn.current = parallax;
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -93,6 +105,16 @@ export default function CameraController({
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     reduceMotion.current = reduce;
     if (reduce) hover.current = 0;
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    finePointer.current = fine && !reduce;
+    if (!finePointer.current) return;
+    function onMove(event: PointerEvent) {
+      if (event.pointerType === "touch") return;
+      pointer.current.x = Math.min(1, Math.max(-1, (event.clientX / window.innerWidth) * 2 - 1));
+      pointer.current.y = Math.min(1, Math.max(-1, (event.clientY / window.innerHeight) * 2 - 1));
+    }
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
   useGSAP(
@@ -149,12 +171,22 @@ export default function CameraController({
     hover.current += (goal - hover.current) * Math.min(1, delta * 3);
     const weight = hover.current;
     const hand = sway(performance.now() / 1000);
+    const allow = parallaxOn.current && finePointer.current && !reduceMotion.current;
+    const lead = Math.min(1, delta * 2.2);
+    eased.current.x += ((allow ? pointer.current.x : 0) - eased.current.x) * lead;
+    eased.current.y += ((allow ? -pointer.current.y : 0) - eased.current.y) * lead;
+    const shiftX = eased.current.x;
+    const shiftY = eased.current.y;
     camera.position.set(
-      current.px + hand.x * weight,
-      current.py + hand.y * weight,
+      current.px + hand.x * weight + shiftX * PARALLAX_X,
+      current.py + hand.y * weight + shiftY * PARALLAX_Y,
       current.pz + hand.z * weight,
     );
-    camera.lookAt(current.tx + hand.aimX * weight, current.ty + hand.aimY * weight, current.tz);
+    camera.lookAt(
+      current.tx + hand.aimX * weight + shiftX * PARALLAX_AIM_X,
+      current.ty + hand.aimY * weight + shiftY * PARALLAX_AIM_Y,
+      current.tz,
+    );
     camera.rotateZ(hand.roll * weight);
     if (camera instanceof PerspectiveCamera && camera.fov !== current.fov) {
       camera.fov = current.fov;

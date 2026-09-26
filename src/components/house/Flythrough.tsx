@@ -299,7 +299,11 @@ export default function Flythrough() {
       >
         <color attach="background" args={["#c5d0dc"]} />
         <fog attach="fog" args={["#c5d0dc", 22, 48]} />
-        <CameraController command={command} onComplete={onComplete} />
+        <CameraController
+          command={command}
+          onComplete={onComplete}
+          parallax={mode === "exterior" || mode === "moving"}
+        />
         <SpeedBlur />
         <Building interactive={mode === "exterior"} onEnter={enter} onFirstFrame={() => setReady(true)} />
         <WindowNav
