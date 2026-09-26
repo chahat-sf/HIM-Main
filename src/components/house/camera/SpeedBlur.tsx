@@ -12,9 +12,9 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 // Enter and exit cover about 4 units in 2.6s with power2.inOut, peaking near 3.1 units/s.
 const WINDOW_PEAK_SPEED = 74;
 const ENTER_PEAK_SPEED = 3.1;
-const STREAK_GAIN = 0.02 / WINDOW_PEAK_SPEED;
+const STREAK_GAIN = 0.007 / WINDOW_PEAK_SPEED;
 const ZOOM_GAIN = 0.08 / ENTER_PEAK_SPEED;
-const MAX_STREAK = 0.024;
+const MAX_STREAK = 0.008;
 const MAX_ZOOM = 0.09;
 const SMOOTH = 18;
 
