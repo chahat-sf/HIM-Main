@@ -172,7 +172,7 @@ export default function CameraController({
     const weight = hover.current;
     const hand = sway(performance.now() / 1000);
     const allow = parallaxOn.current && finePointer.current && !reduceMotion.current;
-    const lead = Math.min(1, delta * 2.2);
+    const lead = Math.min(1, delta * 6);
     eased.current.x += ((allow ? pointer.current.x : 0) - eased.current.x) * lead;
     eased.current.y += ((allow ? -pointer.current.y : 0) - eased.current.y) * lead;
     const shiftX = eased.current.x;
