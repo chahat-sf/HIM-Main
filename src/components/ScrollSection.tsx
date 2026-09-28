@@ -11,7 +11,7 @@ import styles from "./ScrollSection.module.css";
 
 type Scene = "entry" | "entering" | "character" | "exiting";
 
-const CHARACTERS = [
+export const CHARACTERS = [
   { id: "character-1", name: "Character 01", start: 0 },
   { id: "character-2", name: "Character 02", start: 209 / 241 },
   { id: "character-3", name: "Character 03", start: 181 / 241 },
@@ -125,7 +125,7 @@ function readPanels(track: HTMLElement): Panel[] | null {
   return panels;
 }
 
-function CharacterWheel({
+export function CharacterWheel({
   selected,
   onSelect,
 }: {
