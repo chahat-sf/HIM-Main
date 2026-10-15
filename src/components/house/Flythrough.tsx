@@ -9,7 +9,7 @@ import CameraController, { type CameraCommand } from "./camera/CameraController"
 import SpeedBlur from "./camera/SpeedBlur";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
-import { beginDrag, FRAME_COUNT, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
+import { beginDrag, frameCount, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
 type Mode = "exterior" | "entering" | "interior" | "exiting" | "moving";
@@ -221,7 +221,7 @@ export default function Flythrough() {
     window.setTimeout(() => setNameSwap(false), 220);
     setHint(false);
     window.setTimeout(() => {
-      showCharacter(room, Math.round(CHARACTERS[character].start * FRAME_COUNT));
+      showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
     }, 260);
   }
 
@@ -270,7 +270,7 @@ export default function Flythrough() {
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
     const span = Math.min(900, Math.max(320, window.innerWidth * 0.8));
-    const target = drag.p0 + (drag.x - event.clientX) * (FRAME_COUNT / span);
+    const target = drag.p0 + (drag.x - event.clientX) * (frameCount(indexRef.current) / span);
     const now = performance.now();
     const dt = Math.max(1, now - drag.lt) / 1000;
     drag.v += ((target - roomPlay(indexRef.current).pos) / dt - drag.v) * 0.4;

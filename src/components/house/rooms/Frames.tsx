@@ -1,13 +1,26 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
-import { ClampToEdgeWrapping, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, Texture } from "three";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	ClampToEdgeWrapping,
+	LinearFilter,
+	Mesh,
+	MeshBasicMaterial,
+	PlaneGeometry,
+	SRGBColorSpace,
+	VideoTexture,
+} from "three";
 import { ROOMS } from "./poses";
 
-export const FRAME_COUNT = 337;
 const FPS = 24;
-const PLATE_ASPECT = 2212 / 936;
+const DEFAULT_ASPECT = 2212 / 936;
+
+const ROOM_VIDEOS = [
+	"/house/window-1.mp4",
+	"/house/window-2.mp4",
+	"/house/window-3.mp4",
+] as const;
 
 /**
  * The picture stays the size that fits the interior view. The mesh is
@@ -19,10 +32,10 @@ const IMAGE_HEIGHT = 5.38 * 1.11;
 const OPENING_HEIGHT = 2.5;
 const WINDOW_Z = 0.35;
 const PLANE_HEIGHT = (OPENING_HEIGHT * (WINDOW_Z - PLANE_Z) / WINDOW_Z) * 1.08;
-const PLANE_WIDTH = PLANE_HEIGHT * PLATE_ASPECT;
 
-function plateGeometry() {
-	const geo = new PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT);
+function plateGeometry(aspect: number) {
+	const planeWidth = PLANE_HEIGHT * aspect;
+	const geo = new PlaneGeometry(planeWidth, PLANE_HEIGHT);
 	const uv = geo.getAttribute("uv");
 	const scale = PLANE_HEIGHT / IMAGE_HEIGHT;
 	for (let i = 0; i < uv.count; i += 1) {
@@ -31,27 +44,41 @@ function plateGeometry() {
 	return geo;
 }
 
+type PlayState = {
+	pos: number;
+	vel: number;
+	dragging: boolean;
+	duration: number;
+	video: HTMLVideoElement | null;
+};
 
-const images = new Array<HTMLImageElement | undefined>(FRAME_COUNT);
-const ready = new Array<boolean>(FRAME_COUNT).fill(false);
-const pending = new Set<number>();
-const queue: number[] = [];
-let decoding = 0;
-let preloadStarted = false;
-let uploadTick = -1;
-let uploadBudget = 0;
-
-const OLD_COUNT = 241;
-export const FRAME_STARTS = [0, 209, 181].map((frame) => Math.round((frame / OLD_COUNT) * FRAME_COUNT));
-
-const play: { pos: number; vel: number; dragging: boolean }[] = FRAME_STARTS.map((start) => ({
-	pos: start,
+const play: PlayState[] = ROOM_VIDEOS.map(() => ({
+	pos: 0,
 	vel: FPS,
 	dragging: false,
+	duration: 0,
+	video: null,
 }));
+
+export function frameCount(room: number) {
+	const duration = play[room]?.duration ?? 0;
+	return Math.max(1, Math.round(duration * FPS));
+}
 
 export function roomPlay(room: number) {
 	return play[room];
+}
+
+function wrapTime(seconds: number, duration: number) {
+	if (duration <= 0) return 0;
+	return ((seconds % duration) + duration) % duration;
+}
+
+function seekVideo(item: PlayState, pos: number) {
+	const video = item.video;
+	if (!video || item.duration <= 0) return;
+	const t = wrapTime(pos / FPS, item.duration);
+	if (Math.abs(video.currentTime - t) > 1 / 60) video.currentTime = t;
 }
 
 export function beginDrag(room: number) {
@@ -59,12 +86,14 @@ export function beginDrag(room: number) {
 	if (!item) return;
 	item.dragging = true;
 	item.vel = 0;
+	item.video?.pause();
 }
 
 export function scrub(room: number, pos: number) {
 	const item = play[room];
 	if (!item) return;
 	item.pos = pos;
+	seekVideo(item, pos);
 }
 
 export function releaseDrag(room: number, velocity: number) {
@@ -80,67 +109,7 @@ export function showCharacter(room: number, frame: number) {
 	item.dragging = false;
 	item.pos = frame;
 	item.vel = FPS;
-	for (let k = 0; k < 30; k += 1) requestFrame(frame + k, true);
-}
-
-function wrap(index: number) {
-	return ((index % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT;
-}
-
-function pump() {
-	while (decoding < 2 && queue.length > 0) {
-		const i = queue.shift();
-		if (i === undefined || images[i]) {
-			pending.delete(i ?? -1);
-			continue;
-		}
-		decoding += 1;
-		const image = new Image();
-		images[i] = image;
-		image.decoding = "async";
-		image.src = `/house/frames/${String(i).padStart(3, "0")}.jpg?v=2`;
-		const done = () => {
-			ready[i] = image.naturalWidth > 0;
-			decoding -= 1;
-			pump();
-		};
-		if (image.decode) image.decode().then(done, done);
-		else image.onload = image.onerror = done;
-	}
-}
-
-function requestFrame(index: number, urgent = false) {
-	const i = wrap(index);
-	if (images[i]) return;
-	if (pending.has(i)) {
-		if (!urgent) return;
-		const at = queue.indexOf(i);
-		if (at > 0) {
-			queue.splice(at, 1);
-			queue.unshift(i);
-		}
-		return;
-	}
-	pending.add(i);
-	if (urgent) queue.unshift(i);
-	else queue.push(i);
-	pump();
-}
-
-function startPreload() {
-	if (preloadStarted) return;
-	preloadStarted = true;
-	for (let i = 0; i < FRAME_COUNT; i += 1) requestFrame(i);
-}
-
-function takeUpload(frame: number) {
-	if (uploadTick !== frame) {
-		uploadTick = frame;
-		uploadBudget = 1;
-	}
-	if (uploadBudget <= 0) return false;
-	uploadBudget -= 1;
-	return true;
+	seekVideo(item, frame);
 }
 
 function nearestRoom(cameraX: number) {
@@ -156,37 +125,51 @@ function nearestRoom(cameraX: number) {
 	return best;
 }
 
-function nearestReady(index: number) {
-	const i = wrap(index);
-	if (ready[i]) return i;
-	for (let d = 1; d <= 10; d += 1) {
-		const previous = wrap(i - d);
-		const next = wrap(i + d);
-		if (ready[previous]) return previous;
-		if (ready[next]) return next;
-	}
-	return -1;
+function makeVideo(src: string) {
+	const video = document.createElement("video");
+	video.src = src;
+	video.crossOrigin = "anonymous";
+	video.loop = true;
+	video.muted = true;
+	video.playsInline = true;
+	video.preload = "auto";
+	video.setAttribute("playsinline", "");
+	video.setAttribute("muted", "");
+	return video;
 }
 
 export function FramePlane({
-	start,
 	room,
 	onFirstFrame,
 }: {
-	start: number;
 	room: number;
 	onFirstFrame?: () => void;
 }) {
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
-	const mapRef = useRef<Texture | null>(null);
-	const geometry = useMemo(() => plateGeometry(), []);
-	const shown = useRef(-1);
-	const uploadedAt = useRef(0);
+	const mapRef = useRef<VideoTexture | null>(null);
+	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
+	const onFirstFrameRef = useRef(onFirstFrame);
+	onFirstFrameRef.current = onFirstFrame;
+	const [aspect, setAspect] = useState(DEFAULT_ASPECT);
+	const geometry = useMemo(() => plateGeometry(aspect), [aspect]);
 
 	useEffect(() => {
-		const map = new Texture();
+		return () => {
+			geometry.dispose();
+		};
+	}, [geometry]);
+
+	useEffect(() => {
+		const src = ROOM_VIDEOS[room];
+		if (!src) return;
+		const video = makeVideo(src);
+		videoRef.current = video;
+		const item = play[room];
+		if (item) item.video = video;
+
+		const map = new VideoTexture(video);
 		map.colorSpace = SRGBColorSpace;
 		map.minFilter = LinearFilter;
 		map.magFilter = LinearFilter;
@@ -194,49 +177,103 @@ export function FramePlane({
 		map.wrapS = ClampToEdgeWrapping;
 		map.wrapT = ClampToEdgeWrapping;
 		mapRef.current = map;
+
 		const material = materialRef.current;
 		if (material) {
 			material.map = map;
 			material.needsUpdate = true;
 		}
-		for (let k = 0; k < FPS; k += 1) requestFrame(start + k, true);
-		startPreload();
+
+		const onMeta = () => {
+			if (item) {
+				item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+				item.pos = video.currentTime * FPS;
+			}
+			if (video.videoWidth > 0 && video.videoHeight > 0) {
+				setAspect(video.videoWidth / video.videoHeight);
+			}
+		};
+
+		const onReady = () => {
+			if (!announced.current && onFirstFrameRef.current) {
+				announced.current = true;
+				onFirstFrameRef.current();
+			}
+			void video.play().catch(() => { });
+		};
+
+		video.addEventListener("loadedmetadata", onMeta);
+		video.addEventListener("loadeddata", onReady);
+		if (video.readyState >= 1) onMeta();
+		if (video.readyState >= 2) onReady();
+
 		return () => {
+			video.removeEventListener("loadedmetadata", onMeta);
+			video.removeEventListener("loadeddata", onReady);
+			video.pause();
+			video.removeAttribute("src");
+			video.load();
+			if (item?.video === video) item.video = null;
+			videoRef.current = null;
 			mapRef.current = null;
 			if (material?.map === map) material.map = null;
 			map.dispose();
-			geometry.dispose();
 		};
-	}, [start, geometry]);
+	}, [room]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
 		const mesh = meshRef.current;
-		if (!map || !mesh) return;
+		const video = videoRef.current;
 		const item = play[room];
+		const material = materialRef.current;
+		if (map && material && material.map !== map) {
+			material.map = map;
+			material.needsUpdate = true;
+		}
+		if (!map || !mesh || !video || !item) return;
+
 		const focused = nearestRoom(state.camera.position.x) === room;
 		mesh.visible = focused;
-		if (item && !item.dragging) {
-			const target = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : FPS;
-			item.vel += (target - item.vel) * (1 - Math.exp(-delta * 2.2));
+
+		const reduce = typeof window !== "undefined"
+			&& window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		if (!focused) {
+			if (!video.paused) video.pause();
+			return;
+		}
+
+		if (item.dragging) {
+			if (!video.paused) video.pause();
+			map.needsUpdate = true;
+			return;
+		}
+
+		if (reduce) {
+			if (!video.paused) video.pause();
+			item.vel = 0;
+			map.needsUpdate = true;
+			return;
+		}
+
+		const coasting = Math.abs(item.vel - FPS) > 8;
+		if (coasting) {
+			if (!video.paused) video.pause();
+			item.vel += (FPS - item.vel) * (1 - Math.exp(-delta * 2.2));
 			item.pos += item.vel * delta;
+			if (item.duration > 0) {
+				item.pos = wrapTime(item.pos / FPS, item.duration) * FPS;
+			}
+			seekVideo(item, item.pos);
+			map.needsUpdate = true;
+			return;
 		}
-		const index = Math.floor(item?.pos ?? start);
-		for (let k = 0; k <= 3; k += 1) requestFrame(index + k, true);
-		const frame = nearestReady(index);
-		if (frame < 0 || frame === shown.current) return;
-		const image = images[frame];
-		if (!image) return;
-		if (!focused && state.clock.elapsedTime - uploadedAt.current < 0.4) return;
-		if (!takeUpload(state.gl.info.render.frame)) return;
-		map.image = image;
+
+		item.vel = FPS;
+		if (video.paused) void video.play().catch(() => { });
+		if (item.duration > 0) item.pos = video.currentTime * FPS;
 		map.needsUpdate = true;
-		shown.current = frame;
-		uploadedAt.current = state.clock.elapsedTime;
-		if (!announced.current && onFirstFrame) {
-			announced.current = true;
-			onFirstFrame();
-		}
 	});
 
 	return (
