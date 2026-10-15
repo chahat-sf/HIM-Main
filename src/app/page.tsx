@@ -1,5 +1,5 @@
 import HeroSection from "@/components/HeroSection";
-import ScrollSection from "@/components/ScrollSection";
+import Flythrough from "@/components/house/Flythrough";
 import ProductsSection from "@/components/ProductsSection";
 import Lookbook from "@/components/Lookbook";
 import Footer from "@/components/Footer";
@@ -9,10 +9,10 @@ export default function Home() {
   return (
     <main>
       <HeroSection />
-      <ScrollSection />
-      <ProductsSection/>
-      <Lookbook/>
-      <Footer/>
+      <Flythrough embedded />
+      <ProductsSection />
+      <Lookbook />
+      <Footer />
     </main>
   );
 }

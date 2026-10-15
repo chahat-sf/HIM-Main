@@ -58,7 +58,7 @@ function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number
   gain.gain.linearRampToValueAtTime(level, now + OUTSIDE_FADE);
 }
 
-export default function Flythrough() {
+export default function Flythrough({ embedded = false }: { embedded?: boolean }) {
   const [index, setIndex] = useState(0);
   const [navIndex, setNavIndex] = useState(0);
   const [sliding, setSliding] = useState(false);
@@ -89,7 +89,7 @@ export default function Flythrough() {
 
   useEffect(() => {
     const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!embedded) document.body.style.overflow = "hidden";
     const ctx = new AudioContext();
     audioCtx.current = ctx;
     let cancel = false;
@@ -129,9 +129,9 @@ export default function Flythrough() {
       outsideGain.current = null;
       audioCtx.current = null;
       void ctx.close();
-      document.body.style.overflow = previous;
+      if (!embedded) document.body.style.overflow = previous;
     };
-  }, []);
+  }, [embedded]);
 
   function enter(roomIndex: number) {
     if (swipedRef.current) return;
@@ -287,9 +287,11 @@ export default function Flythrough() {
   }
 
   const scene = mode === "interior" ? "character" : mode === "exterior" ? "entry" : undefined;
+  const Root = embedded ? "section" : "main";
 
   return (
-    <main
+    <Root
+      id={embedded ? "house" : undefined}
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
       aria-busy={!ready}
       style={{ touchAction: "none" }}
@@ -417,6 +419,6 @@ export default function Flythrough() {
           Loading
         </p>
       </div>
-    </main>
+    </Root>
   );
 }
