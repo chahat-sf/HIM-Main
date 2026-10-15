@@ -58,6 +58,17 @@ function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number
   gain.gain.linearRampToValueAtTime(level, now + OUTSIDE_FADE);
 }
 
+/** 0 when the house is off-screen; 1 when it fills the viewport; ramps with visible coverage. */
+function sectionProximity(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+  if (visible <= 0) return 0;
+  const coverage = Math.min(1, visible / vh);
+  // Ease so thin edge slivers stay near silent and full-screen sits at 1.
+  return coverage * coverage;
+}
+
 export default function Flythrough({ embedded = false }: { embedded?: boolean }) {
   const [index, setIndex] = useState(0);
   const [navIndex, setNavIndex] = useState(0);
@@ -80,12 +91,87 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const audioCtx = useRef<AudioContext | null>(null);
   const outsideGain = useRef<GainNode | null>(null);
   const outsideSource = useRef<AudioBufferSourceNode | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const proximityRef = useRef(embedded ? 0 : 1);
+  const applyAmbientRef = useRef<() => void>(() => { });
 
   useEffect(() => {
     modeRef.current = mode;
     indexRef.current = index;
     commandRef.current = command;
   }, [mode, index, command]);
+
+  useEffect(() => {
+    if (!embedded) return;
+    const html = document.documentElement;
+    const previousBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "smooth";
+
+    const coverageOf = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+      return { rect, vh, coverage: visible / vh };
+    };
+
+    // Armed only when fully off-screen; one snap per entry, then locked until off-screen again.
+    let armed = true;
+    const el0 = rootRef.current;
+    if (el0 && coverageOf(el0).coverage > 0) armed = false;
+
+    let idle = 0;
+    let snapping = false;
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let speed = 0;
+
+    const settle = () => {
+      const el = rootRef.current;
+      if (!el || snapping || !armed) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const { rect, vh, coverage } = coverageOf(el);
+      if (coverage <= 0) return;
+      // Already filling / aligned — consume the shot so we do not nudge again.
+      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
+        armed = false;
+        return;
+      }
+      // Only ease in when the house is partly on screen.
+      if (coverage < 0.28) return;
+      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
+      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
+      armed = false;
+      snapping = true;
+      window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
+      window.setTimeout(() => {
+        snapping = false;
+      }, 750);
+    };
+
+    const onScroll = () => {
+      const el = rootRef.current;
+      if (el && coverageOf(el).coverage <= 0) armed = true;
+
+      const now = performance.now();
+      const y = window.scrollY;
+      const dt = Math.max(1, now - lastT);
+      speed = Math.abs(y - lastY) / dt;
+      lastY = y;
+      lastT = now;
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        if (speed > 1.2) return;
+        settle();
+      }, 120);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      html.style.scrollBehavior = previousBehavior;
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(idle);
+    };
+  }, [embedded]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -110,7 +196,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         if (cancel) return;
         const gain = ctx.createGain();
         const inside = modeRef.current === "interior" || modeRef.current === "entering";
-        gain.gain.value = inside ? 0 : OUTSIDE_LEVEL;
+        gain.gain.value = inside ? 0 : proximityRef.current * OUTSIDE_LEVEL;
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
@@ -119,6 +205,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         source.start(0);
         outsideGain.current = gain;
         outsideSource.current = source;
+        // Start immediately when the browser allows autoplay. A later click still resumes if this is blocked.
+        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
       })
       .catch(() => undefined);
     return () => {
@@ -130,6 +218,84 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       audioCtx.current = null;
       void ctx.close();
       if (!embedded) document.body.style.overflow = previous;
+    };
+  }, [embedded]);
+
+  useEffect(() => {
+    if (!embedded) {
+      proximityRef.current = 1;
+      applyAmbientRef.current = () => { };
+      return;
+    }
+    let raf = 0;
+    const writeGain = () => {
+      const ctx = audioCtx.current;
+      const gain = outsideGain.current;
+      if (!ctx || !gain || ctx.state !== "running") return;
+      const proximity = proximityRef.current;
+      const current = modeRef.current;
+      if (proximity <= 0) {
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        return;
+      }
+      if (current !== "exterior" && current !== "moving") return;
+      const level = proximity * OUTSIDE_LEVEL;
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setValueAtTime(level, ctx.currentTime);
+    };
+    const apply = () => {
+      raf = 0;
+      const el = rootRef.current;
+      if (!el) return;
+      proximityRef.current = sectionProximity(el);
+      writeGain();
+    };
+    let resumeAttempted = false;
+    const resumeIfAllowed = () => {
+      const ctx = audioCtx.current;
+      if (!ctx || ctx.state !== "suspended") {
+        writeGain();
+        return;
+      }
+      const activation = navigator.userActivation;
+      const gesture = !activation || activation.isActive || activation.hasBeenActive;
+      // One attempt on load. Further attempts wait for a real click, tap, or key so scroll does not spam a blocked context.
+      if (!gesture && resumeAttempted) return;
+      resumeAttempted = true;
+      void ctx.resume().then(writeGain).catch(() => undefined);
+    };
+    applyAmbientRef.current = () => {
+      const el = rootRef.current;
+      if (el) proximityRef.current = sectionProximity(el);
+      resumeIfAllowed();
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        apply();
+        resumeIfAllowed();
+      });
+    };
+    // Click, tap, or key anywhere on the page — not only the house — unlocks audio.
+    const unlock = () => {
+      applyAmbientRef.current();
+    };
+    apply();
+    const capture = { capture: true } as const;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("pointerdown", unlock, capture);
+    window.addEventListener("keydown", unlock, capture);
+    window.addEventListener("touchstart", unlock, capture);
+    return () => {
+      applyAmbientRef.current = () => { };
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("pointerdown", unlock, capture);
+      window.removeEventListener("keydown", unlock, capture);
+      window.removeEventListener("touchstart", unlock, capture);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, [embedded]);
 
@@ -152,7 +318,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     token.current += 1;
     setMode("exiting");
     setCommand({ token: token.current, kind: "exit", index: indexRef.current });
-    fadeGain(audioCtx.current, outsideGain.current, OUTSIDE_LEVEL);
+    fadeGain(audioCtx.current, outsideGain.current, proximityRef.current * OUTSIDE_LEVEL);
   }
 
   function slide(to: number) {
@@ -291,10 +457,11 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   return (
     <Root
+      ref={rootRef}
       id={embedded ? "house" : undefined}
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
       aria-busy={!ready}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: embedded ? "pan-y" : "none" }}
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
         startSound(audioCtx.current, sprite.current, CLICK);
