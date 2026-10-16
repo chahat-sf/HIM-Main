@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ClampToEdgeWrapping,
@@ -17,21 +17,60 @@ const FPS = 24;
 const DEFAULT_ASPECT = 2212 / 936;
 
 const ROOM_VIDEOS = [
-	"/house/window-1.mp4",
+	"/house/window-1.mp4?v=hq3",
 	"/house/window-2.mp4",
 	"/house/window-3.mp4",
 ] as const;
 
 /**
- * The picture stays the size that fits the interior view. The mesh is
- * larger so the window opening cannot see past it on the way in or out.
- * UVs outside the picture clamp to the roof and floor.
+ * Picture uses the proven interior fit height. Mesh is larger so the window
+ * never sees past the plate. Baked letterbox is removed with texture
+ * offset/repeat — not by enlarging cover — so the subject stays full-frame.
+ *
+ * During the dolly the window reveals more of a far plate than the picture
+ * covers, so the plate eases toward the glass and keeps the opening filled.
+ * Once the camera is through, it sits at the interior gap again.
  */
 const PLANE_Z = -4.12;
+/** Proven interior FOV fit × slight overscan so the plate fills the view. */
 const IMAGE_HEIGHT = 5.38 * 1.11;
 const OPENING_HEIGHT = 2.5;
+/** Legacy depth used only to size the oversized mesh. */
 const WINDOW_Z = 0.35;
+/** Facade opening — the camera crosses this on the way in. */
+const FACADE_Z = 0.12;
+const INTERIOR_Z = -0.42;
+/** Camera-to-plate gap at the interior stop, where the shot already fills. */
+const INTERIOR_DIST = INTERIOR_Z - PLANE_Z;
+/** Closest the plate may come: nearer than this crops the shot inside the FOV. */
+const FRUSTUM_DIST = (IMAGE_HEIGHT * 0.97) / (2 * Math.tan((72 * Math.PI) / 360));
 const PLANE_HEIGHT = (OPENING_HEIGHT * (WINDOW_Z - PLANE_Z) / WINDOW_Z) * 1.08;
+
+function smoothstep(t: number) {
+	const x = Math.min(1, Math.max(0, t));
+	return x * x * (3 - 2 * x);
+}
+
+function coverPlaneZ(camZ: number) {
+	const span = camZ - FACADE_Z;
+	const cover = (IMAGE_HEIGHT * 0.97) / OPENING_HEIGHT;
+	const restDist = camZ - PLANE_Z;
+	// Through the glass, ease from the approach gap to the interior gap.
+	// A hard switch here pops the plate forward.
+	if (span <= 0) {
+		const travel = FACADE_Z - INTERIOR_Z;
+		const t = travel > 0 ? smoothstep(-span / travel) : 1;
+		return camZ - (FRUSTUM_DIST + (INTERIOR_DIST - FRUSTUM_DIST) * t);
+	}
+	const holeDist = span * cover;
+	const spanAtFrustum = FRUSTUM_DIST / cover;
+	const dist = holeDist + (FRUSTUM_DIST - holeDist) * smoothstep((spanAtFrustum - span) / spanAtFrustum);
+	return camZ - Math.min(dist, restDist);
+}
+
+/** Known letterbox on window-1 HQ (264px of 2160 each side). */
+const WINDOW1_V0 = 264 / 2160;
+const WINDOW1_VSPAN = 1 - 2 * WINDOW1_V0;
 
 function plateGeometry(aspect: number) {
 	const planeWidth = PLANE_HEIGHT * aspect;
@@ -39,7 +78,11 @@ function plateGeometry(aspect: number) {
 	const uv = geo.getAttribute("uv");
 	const scale = PLANE_HEIGHT / IMAGE_HEIGHT;
 	for (let i = 0; i < uv.count; i += 1) {
-		uv.setXY(i, (uv.getX(i) - 0.5) * scale + 0.5, (uv.getY(i) - 0.5) * scale + 0.5);
+		uv.setXY(
+			i,
+			(uv.getX(i) - 0.5) * scale + 0.5,
+			(uv.getY(i) - 0.5) * scale + 0.5,
+		);
 	}
 	return geo;
 }
@@ -138,6 +181,14 @@ function makeVideo(src: string) {
 	return video;
 }
 
+function applyLetterbox(map: VideoTexture, v0: number, vSpan: number) {
+	map.offset.set(0, v0);
+	map.repeat.set(1, vSpan);
+	map.wrapS = ClampToEdgeWrapping;
+	map.wrapT = ClampToEdgeWrapping;
+	map.needsUpdate = true;
+}
+
 export function FramePlane({
 	room,
 	onFirstFrame,
@@ -145,6 +196,7 @@ export function FramePlane({
 	room: number;
 	onFirstFrame?: () => void;
 }) {
+	const gl = useThree((state) => state.gl);
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
 	const mapRef = useRef<VideoTexture | null>(null);
@@ -174,8 +226,10 @@ export function FramePlane({
 		map.minFilter = LinearFilter;
 		map.magFilter = LinearFilter;
 		map.generateMipmaps = false;
-		map.wrapS = ClampToEdgeWrapping;
-		map.wrapT = ClampToEdgeWrapping;
+		map.anisotropy = gl.capabilities.getMaxAnisotropy();
+		// Crop baked letterbox without changing plate scale (avoids cover-zoom).
+		if (room === 0) applyLetterbox(map, WINDOW1_V0, WINDOW1_VSPAN);
+		else applyLetterbox(map, 0, 1);
 		mapRef.current = map;
 
 		const material = materialRef.current;
@@ -190,26 +244,36 @@ export function FramePlane({
 				item.pos = video.currentTime * FPS;
 			}
 			if (video.videoWidth > 0 && video.videoHeight > 0) {
-				setAspect(video.videoWidth / video.videoHeight);
+				const full = video.videoWidth / video.videoHeight;
+				// Active picture aspect after letterbox crop.
+				const vSpan = room === 0 ? WINDOW1_VSPAN : 1;
+				setAspect(full / vSpan);
 			}
 		};
 
+		const announce = () => {
+			if (announced.current) return;
+			announced.current = true;
+			onFirstFrameRef.current?.();
+		};
+
 		const onReady = () => {
-			if (!announced.current && onFirstFrameRef.current) {
-				announced.current = true;
-				onFirstFrameRef.current();
-			}
 			void video.play().catch(() => { });
+			announce();
 		};
 
 		video.addEventListener("loadedmetadata", onMeta);
 		video.addEventListener("loadeddata", onReady);
+		video.addEventListener("canplay", onReady);
 		if (video.readyState >= 1) onMeta();
 		if (video.readyState >= 2) onReady();
+		const readyFallback = window.setTimeout(announce, 2500);
 
 		return () => {
+			window.clearTimeout(readyFallback);
 			video.removeEventListener("loadedmetadata", onMeta);
 			video.removeEventListener("loadeddata", onReady);
+			video.removeEventListener("canplay", onReady);
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
@@ -219,7 +283,7 @@ export function FramePlane({
 			if (material?.map === map) material.map = null;
 			map.dispose();
 		};
-	}, [room]);
+	}, [room, gl]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
@@ -235,6 +299,8 @@ export function FramePlane({
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		mesh.visible = focused;
+		if (mesh.geometry !== geometry) mesh.geometry = geometry;
+		mesh.position.z = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
 
 		const reduce = typeof window !== "undefined"
 			&& window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -277,8 +343,13 @@ export function FramePlane({
 	});
 
 	return (
-		<mesh ref={meshRef} visible={room === 0} position={[0, 1.9, PLANE_Z]} raycast={() => null}>
-			<primitive object={geometry} attach="geometry" />
+		<mesh
+			ref={meshRef}
+			visible={room === 0}
+			position={[0, 1.9, PLANE_Z]}
+			geometry={geometry}
+			raycast={() => null}
+		>
 			<meshBasicMaterial ref={materialRef} toneMapped={false} />
 		</mesh>
 	);

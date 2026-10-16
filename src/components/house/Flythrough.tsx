@@ -474,7 +474,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       <Canvas
         shadows
         camera={{ position: [0, 1.9, 3.58], fov: 72, near: 0.1, far: 80 }}
-        dpr={[1, 1.75]}
+        dpr={[1, 2]}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
