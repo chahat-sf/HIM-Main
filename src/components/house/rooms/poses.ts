@@ -44,4 +44,8 @@ export function roomPoses(x: number): {
 	};
 }
 
-export const INITIAL_POSE = roomPoses(ROOMS[0].x).exterior;
+/** Resting exterior distance; kept separate because INITIAL_POSE is interior. */
+export const EXTERIOR_Z = 3.58;
+
+/** Boot pose: first room, looking at the plate. */
+export const INITIAL_POSE = roomPoses(ROOMS[0].x).interior;

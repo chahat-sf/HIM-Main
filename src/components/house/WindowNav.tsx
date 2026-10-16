@@ -60,6 +60,8 @@ function SceneHtml({
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const rootRef = useRef<Root | null>(null);
+  const buttonHalfPx = useRef(56);
+  const last = useRef({ w: -1, h: -1, fov: -1, view: "", inner: "" });
   const { camera, size, gl } = useThree();
 
   useLayoutEffect(() => {
@@ -94,6 +96,20 @@ function SceneHtml({
     );
   });
 
+  useLayoutEffect(() => {
+    const innerEl = inner.current;
+    if (!innerEl) return;
+    const button = innerEl.querySelector("button");
+    if (!button) return;
+    const measure = () => {
+      buttonHalfPx.current = button.offsetWidth / 2 || 56;
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(button);
+    return () => ro.disconnect();
+  });
+
   useFrame(() => {
     const object = group.current;
     const host = hostRef.current;
@@ -104,9 +120,7 @@ function SceneHtml({
       const distance = Math.max(0.2, camera.position.z - POP_Z);
       const halfHeight = Math.tan(((camera as PerspectiveCamera).fov * Math.PI) / 360) * distance;
       const halfWidth = halfHeight * (size.width / size.height);
-      const button = innerEl.querySelector("button");
-      const halfPx = button ? button.offsetWidth / 2 : 56;
-      const inset = (EDGE_PAD + halfPx) / (size.height / 2 / halfHeight);
+      const inset = (EDGE_PAD + buttonHalfPx.current) / (size.height / 2 / halfHeight);
       _forward.set(0, 0, -1).applyQuaternion(camera.quaternion);
       _right.set(1, 0, 0).applyQuaternion(camera.quaternion);
       _point.copy(camera.position).addScaledVector(_forward, distance).addScaledVector(_right, edge * (halfWidth - inset));
@@ -118,14 +132,27 @@ function SceneHtml({
     const heightHalf = size.height / 2;
     const fov = (camera as PerspectiveCamera).projectionMatrix.elements[5] * heightHalf;
     const view = cssMatrix(camera.matrixWorldInverse, CAMERA_MULTIPLIERS);
-    host.style.width = `${size.width}px`;
-    host.style.height = `${size.height}px`;
-    host.style.perspective = `${fov}px`;
-    outerEl.style.width = `${size.width}px`;
-    outerEl.style.height = `${size.height}px`;
-    outerEl.style.transform = `translateZ(${fov}px)${view}translate(${widthHalf}px,${heightHalf}px)`;
     const distanceFactor = (400 * (CAMERA_Z - POP_Z)) / fov;
-    innerEl.style.transform = cssMatrix(object.matrixWorld, objectMultipliers(distanceFactor), "translate(-50%,-50%)");
+    const innerTransform = cssMatrix(object.matrixWorld, objectMultipliers(distanceFactor), "translate(-50%,-50%)");
+    const prev = last.current;
+    if (prev.w !== size.width || prev.h !== size.height) {
+      prev.w = size.width;
+      prev.h = size.height;
+      host.style.width = `${size.width}px`;
+      host.style.height = `${size.height}px`;
+      outerEl.style.width = `${size.width}px`;
+      outerEl.style.height = `${size.height}px`;
+    }
+    if (prev.fov !== fov || prev.view !== view) {
+      prev.fov = fov;
+      prev.view = view;
+      host.style.perspective = `${fov}px`;
+      outerEl.style.transform = `translateZ(${fov}px)${view}translate(${widthHalf}px,${heightHalf}px)`;
+    }
+    if (prev.inner !== innerTransform) {
+      prev.inner = innerTransform;
+      innerEl.style.transform = innerTransform;
+    }
   });
 
   return <group ref={group} position={position} />;

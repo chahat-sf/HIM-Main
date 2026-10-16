@@ -139,6 +139,12 @@ export default function SpeedBlur() {
       streakTarget,
       zoom,
     });
+    const idle =
+      streak.current.lengthSq() < 1e-10 && Math.abs(zoom.current) < 1e-6;
+    if (idle) {
+      state.gl.render(state.scene, state.camera);
+      return;
+    }
     rig.uniforms.uStreak.value.copy(streak.current);
     rig.uniforms.uZoom.value = zoom.current;
     rig.composer.render();

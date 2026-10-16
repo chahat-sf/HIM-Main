@@ -35,6 +35,7 @@ export default function HeroSection() {
     ).matches;
 
     let disposed = false;
+    let released = false;
     const frames: (ImageBitmap | null)[] = Array(FRAME_COUNT).fill(null);
     let current = 0; // position shown right now (can be between two frames)
     let target = 0;  // position the scroll wants
@@ -42,6 +43,17 @@ export default function HeroSection() {
     let lastT = 0;
     let raf = 0;
     let loadedCount = 0;
+
+    const releaseFrames = () => {
+      if (released) return;
+      released = true;
+      frames.forEach((f, i) => {
+        f?.close();
+        frames[i] = null;
+      });
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
 
     const getFrame = (index: number) => {
       for (let i = index; i >= 0; i--) {
@@ -120,6 +132,13 @@ export default function HeroSection() {
     };
 
     const onScroll = () => {
+      if (released) return;
+      const rect = wrapper.getBoundingClientRect();
+      // House section is primary once the hero has scrolled fully off-screen.
+      if (rect.bottom <= 0) {
+        releaseFrames();
+        return;
+      }
       readScroll();
       if (!raf) raf = requestAnimationFrame(tick);
     };
@@ -131,10 +150,11 @@ export default function HeroSection() {
         const i = next++;
         if (i >= FRAME_COUNT) return;
         try {
+          if (released) return;
           const res = await fetch(framePath(i));
           const blob = await res.blob();
           const bmp = await createImageBitmap(blob);
-          if (disposed) {
+          if (disposed || released) {
             bmp.close();
             return;
           }
@@ -167,8 +187,7 @@ export default function HeroSection() {
       disposed = true;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", resize);
-      if (raf) cancelAnimationFrame(raf);
-      frames.forEach((f) => f?.close());
+      releaseFrames();
     };
   }, []);
 

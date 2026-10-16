@@ -74,13 +74,15 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [index, setIndex] = useState(0);
   const [navIndex, setNavIndex] = useState(0);
   const [sliding, setSliding] = useState(false);
-  const [mode, setMode] = useState<Mode>("exterior");
+  const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState([0, 1, 2]);
   const [nameSwap, setNameSwap] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [hint, setHint] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [ready, setReady] = useState(false);
+  const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
+  const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
   const homeLoad = useHomeLoad();
   const homeLoadRef = useRef(homeLoad);
   homeLoadRef.current = homeLoad;
@@ -104,6 +106,26 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     indexRef.current = index;
     commandRef.current = command;
   }, [mode, index, command]);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_WINDOW);
+    const sync = () => setDpr(mq.matches ? 1 : [1, 1.5]);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!embedded) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFrameloop(entry.isIntersecting ? "always" : "never"),
+      { threshold: 0.01 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [embedded]);
 
   useEffect(() => {
     if (!embedded) return;
@@ -476,9 +498,9 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       onPointerCancelCapture={onWindowPointerUp}
     >
       <Canvas
-        shadows
-        camera={{ position: [0, 1.9, 3.58], fov: 72, near: 0.1, far: 80 }}
-        dpr={[1, 2]}
+        frameloop={frameloop}
+        camera={{ position: [0, 1.9, -0.42], fov: 72, near: 0.1, far: 80 }}
+        dpr={dpr}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
@@ -489,6 +511,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           onComplete={onComplete}
           onSettled={onSettled}
           parallax={mode === "exterior" || mode === "moving"}
+          idleSway={mode === "exterior" || mode === "moving"}
         />
         <SpeedBlur />
         <Building

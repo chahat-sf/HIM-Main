@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ClampToEdgeWrapping,
@@ -11,7 +11,7 @@ import {
 	SRGBColorSpace,
 	VideoTexture,
 } from "three";
-import { ROOMS } from "./poses";
+import { BAY, ROOMS } from "./poses";
 
 const FPS = 24;
 const DEFAULT_ASPECT = 2212 / 936;
@@ -19,7 +19,7 @@ const DEFAULT_ASPECT = 2212 / 936;
 const ROOM_VIDEOS = [
 	"/house/window-3.mp4",
 	"/house/window-2.mp4",
-	"/house/window-1.mp4?v=prev",
+	"/house/window-1.mp4?v=2212",
 ] as const;
 
 /**
@@ -41,6 +41,15 @@ const INTERIOR_DIST = INTERIOR_Z - PLANE_Z;
 /** Closest the plate may come: nearer than this crops the shot inside the FOV. */
 const FRUSTUM_DIST = (IMAGE_HEIGHT * 0.97) / (2 * Math.tan((72 * Math.PI) / 360));
 const PLANE_HEIGHT = (OPENING_HEIGHT * (WINDOW_Z - PLANE_Z) / WINDOW_Z) * 1.08;
+
+let reduceMotionCached =
+	typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (typeof window !== "undefined") {
+	const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+	media.addEventListener("change", () => {
+		reduceMotionCached = media.matches;
+	});
+}
 
 function smoothstep(t: number) {
 	const x = Math.min(1, Math.max(0, t));
@@ -160,17 +169,23 @@ function nearestRoom(cameraX: number) {
 	return best;
 }
 
-function makeVideo(src: string) {
+function makeVideo(src: string, preload: "auto" | "metadata") {
 	const video = document.createElement("video");
 	video.src = src;
 	video.crossOrigin = "anonymous";
 	video.loop = true;
 	video.muted = true;
 	video.playsInline = true;
-	video.preload = "auto";
+	video.preload = preload;
 	video.setAttribute("playsinline", "");
 	video.setAttribute("muted", "");
 	return video;
+}
+
+function ensurePreload(video: HTMLVideoElement) {
+	if (video.preload === "auto") return;
+	video.preload = "auto";
+	video.load();
 }
 
 export function FramePlane({
@@ -180,7 +195,6 @@ export function FramePlane({
 	room: number;
 	onFirstFrame?: () => void;
 }) {
-	const gl = useThree((state) => state.gl);
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
 	const mapRef = useRef<VideoTexture | null>(null);
@@ -200,7 +214,7 @@ export function FramePlane({
 	useEffect(() => {
 		const src = ROOM_VIDEOS[room];
 		if (!src) return;
-		const video = makeVideo(src);
+		const video = makeVideo(src, room === 0 ? "auto" : "metadata");
 		videoRef.current = video;
 		const item = play[room];
 		if (item) item.video = video;
@@ -212,7 +226,6 @@ export function FramePlane({
 		map.generateMipmaps = false;
 		map.wrapS = ClampToEdgeWrapping;
 		map.wrapT = ClampToEdgeWrapping;
-		map.anisotropy = gl.capabilities.getMaxAnisotropy();
 		mapRef.current = map;
 
 		const material = materialRef.current;
@@ -263,7 +276,7 @@ export function FramePlane({
 			if (material?.map === map) material.map = null;
 			map.dispose();
 		};
-	}, [room, gl]);
+	}, [room]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
@@ -278,12 +291,12 @@ export function FramePlane({
 		if (!map || !mesh || !video || !item) return;
 
 		const focused = nearestRoom(state.camera.position.x) === room;
+		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
+		if (focused || near) ensurePreload(video);
+
 		mesh.visible = focused;
 		if (mesh.geometry !== geometry) mesh.geometry = geometry;
 		mesh.position.z = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
-
-		const reduce = typeof window !== "undefined"
-			&& window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 		if (!focused) {
 			if (!video.paused) video.pause();
@@ -296,7 +309,7 @@ export function FramePlane({
 			return;
 		}
 
-		if (reduce) {
+		if (reduceMotionCached) {
 			if (!video.paused) video.pause();
 			item.vel = 0;
 			map.needsUpdate = true;
@@ -319,7 +332,6 @@ export function FramePlane({
 		item.vel = FPS;
 		if (video.paused) void video.play().catch(() => { });
 		if (item.duration > 0) item.pos = video.currentTime * FPS;
-		map.needsUpdate = true;
 	});
 
 	return (

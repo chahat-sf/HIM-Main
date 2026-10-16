@@ -31,19 +31,7 @@ export default function Building({
 
       <hemisphereLight args={["#f4f8fc", "#c9b79a", 0.7]} />
       <ambientLight intensity={0.28} color="#fff4e8" />
-      <directionalLight
-        position={[12, 16, 10]}
-        intensity={1.8}
-        color="#fff6ea"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-far={40}
-        shadow-camera-left={-20}
-        shadow-camera-right={40}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
-      />
+      <directionalLight position={[12, 16, 10]} intensity={1.8} color="#fff6ea" />
     </group>
   );
 }
