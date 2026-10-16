@@ -17,19 +17,15 @@ const FPS = 24;
 const DEFAULT_ASPECT = 2212 / 936;
 
 const ROOM_VIDEOS = [
-	"/house/window-1.mp4?v=hq3",
-	"/house/window-2.mp4",
 	"/house/window-3.mp4",
+	"/house/window-2.mp4",
+	"/house/window-1.mp4?v=prev",
 ] as const;
 
 /**
  * Picture uses the proven interior fit height. Mesh is larger so the window
- * never sees past the plate. Baked letterbox is removed with texture
- * offset/repeat — not by enlarging cover — so the subject stays full-frame.
- *
- * During the dolly the window reveals more of a far plate than the picture
- * covers, so the plate eases toward the glass and keeps the opening filled.
- * Once the camera is through, it sits at the interior gap again.
+ * never sees past the plate. During the dolly the plate eases toward the
+ * glass so the opening stays filled, then sits at the interior gap again.
  */
 const PLANE_Z = -4.12;
 /** Proven interior FOV fit × slight overscan so the plate fills the view. */
@@ -67,10 +63,6 @@ function coverPlaneZ(camZ: number) {
 	const dist = holeDist + (FRUSTUM_DIST - holeDist) * smoothstep((spanAtFrustum - span) / spanAtFrustum);
 	return camZ - Math.min(dist, restDist);
 }
-
-/** Known letterbox on window-1 HQ (264px of 2160 each side). */
-const WINDOW1_V0 = 264 / 2160;
-const WINDOW1_VSPAN = 1 - 2 * WINDOW1_V0;
 
 function plateGeometry(aspect: number) {
 	const planeWidth = PLANE_HEIGHT * aspect;
@@ -181,14 +173,6 @@ function makeVideo(src: string) {
 	return video;
 }
 
-function applyLetterbox(map: VideoTexture, v0: number, vSpan: number) {
-	map.offset.set(0, v0);
-	map.repeat.set(1, vSpan);
-	map.wrapS = ClampToEdgeWrapping;
-	map.wrapT = ClampToEdgeWrapping;
-	map.needsUpdate = true;
-}
-
 export function FramePlane({
 	room,
 	onFirstFrame,
@@ -226,10 +210,9 @@ export function FramePlane({
 		map.minFilter = LinearFilter;
 		map.magFilter = LinearFilter;
 		map.generateMipmaps = false;
+		map.wrapS = ClampToEdgeWrapping;
+		map.wrapT = ClampToEdgeWrapping;
 		map.anisotropy = gl.capabilities.getMaxAnisotropy();
-		// Crop baked letterbox without changing plate scale (avoids cover-zoom).
-		if (room === 0) applyLetterbox(map, WINDOW1_V0, WINDOW1_VSPAN);
-		else applyLetterbox(map, 0, 1);
 		mapRef.current = map;
 
 		const material = materialRef.current;
@@ -244,10 +227,7 @@ export function FramePlane({
 				item.pos = video.currentTime * FPS;
 			}
 			if (video.videoWidth > 0 && video.videoHeight > 0) {
-				const full = video.videoWidth / video.videoHeight;
-				// Active picture aspect after letterbox crop.
-				const vSpan = room === 0 ? WINDOW1_VSPAN : 1;
-				setAspect(full / vSpan);
+				setAspect(video.videoWidth / video.videoHeight);
 			}
 		};
 

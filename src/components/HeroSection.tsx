@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Navbar from "./Navbar";
+import { useHomeLoad } from "./HomeGate";
 
 /* ─────────────── Settings you can tweak ─────────────── */
 const FRAME_COUNT = 72;          // number of files in /public/homepage/frames
@@ -18,10 +19,9 @@ export default function HeroSection() {
   const wrapperRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLSpanElement>(null);
-
-  const [ready, setReady] = useState(false);
+  const homeLoad = useHomeLoad();
+  const homeLoadRef = useRef(homeLoad);
+  homeLoadRef.current = homeLoad;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -144,15 +144,14 @@ export default function HeroSection() {
         }
         loadedCount++;
         const pct = Math.round((loadedCount / FRAME_COUNT) * 100);
-        if (barRef.current) barRef.current.style.width = `${pct}%`;
-        if (textRef.current) textRef.current.textContent = `Loading ${pct}%`;
+        homeLoadRef.current?.reportHeroProgress(pct);
         if (i === 0) draw(true);
       }
     };
 
     Promise.all(Array.from({ length: CONCURRENCY }, worker)).then(() => {
       if (disposed) return;
-      setReady(true);
+      homeLoadRef.current?.reportHeroReady();
       readScroll();
       current = target;
       draw(true);
@@ -211,37 +210,23 @@ export default function HeroSection() {
 
         {/* Navbar */}
         <Navbar />
-
-        {/* Loader */}
-        <div
-          className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-black transition-opacity duration-700 ${
-            ready ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-        >
-          <div className="h-px w-48 bg-white/20">
-            <div ref={barRef} className="h-full w-0 bg-white" />
-          </div>
-          <span ref={textRef} className="text-xs text-white/60">
-            Loading 0%
-          </span>
-        </div>
       </div>
 
       <style jsx global>{`
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
+				*,
+				*::before,
+				*::after {
+					box-sizing: border-box;
+					margin: 0;
+					padding: 0;
+				}
 
-        html,
-        body {
-          background: #000;
-          color: #fff;
-        }
-      `}</style>
+				html,
+				body {
+					background: #000;
+					color: #fff;
+				}
+			`}</style>
     </section>
   );
 }

@@ -9,6 +9,7 @@ import CameraController, { type CameraCommand } from "./camera/CameraController"
 import SpeedBlur from "./camera/SpeedBlur";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
+import { useHomeLoad } from "../HomeGate";
 import { beginDrag, frameCount, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
@@ -80,6 +81,9 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [hint, setHint] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [ready, setReady] = useState(false);
+  const homeLoad = useHomeLoad();
+  const homeLoadRef = useRef(homeLoad);
+  homeLoadRef.current = homeLoad;
   const token = useRef(0);
   const modeRef = useRef(mode);
   const indexRef = useRef(index);
@@ -487,7 +491,14 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           parallax={mode === "exterior" || mode === "moving"}
         />
         <SpeedBlur />
-        <Building interactive={mode === "exterior"} onEnter={enter} onFirstFrame={() => setReady(true)} />
+        <Building
+          interactive={mode === "exterior"}
+          onEnter={enter}
+          onFirstFrame={() => {
+            setReady(true);
+            if (embedded) homeLoadRef.current?.reportHouseReady();
+          }}
+        />
         <WindowNav
           x={ROOMS[index].x}
           visible={mode === "exterior"}
@@ -565,27 +576,29 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         </div>
       </div>
 
-      <div
-        aria-hidden={ready}
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 40,
-          display: "grid",
-          placeItems: "center",
-          background: "#c5d0dc",
-          opacity: ready ? 0 : 1,
-          pointerEvents: ready ? "none" : "auto",
-          transition: "opacity 0.45s ease",
-        }}
-      >
-        <p
-          className="m-0 text-[12px] tracking-[0.22em] uppercase"
-          style={{ fontFamily: sans, color: "#1a120c" }}
+      {!embedded && (
+        <div
+          aria-hidden={ready}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 40,
+            display: "grid",
+            placeItems: "center",
+            background: "#c5d0dc",
+            opacity: ready ? 0 : 1,
+            pointerEvents: ready ? "none" : "auto",
+            transition: "opacity 0.45s ease",
+          }}
         >
-          Loading
-        </p>
-      </div>
+          <p
+            className="m-0 text-[12px] tracking-[0.22em] uppercase"
+            style={{ fontFamily: sans, color: "#1a120c" }}
+          >
+            Loading
+          </p>
+        </div>
+      )}
     </Root>
   );
 }
