@@ -215,7 +215,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         .catch(() => undefined);
     }
     load("/house/sounds.mp4", sprite);
-    fetch("/house/outside.mp3")
+    fetch("/house/oudoor%20bg%20sound%202.mp4")
       .then((response) => response.arrayBuffer())
       .then((data) => ctx.decodeAudioData(data))
       .then((buffer) => {

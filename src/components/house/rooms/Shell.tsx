@@ -8,6 +8,7 @@ import {
   DataTexture,
   DoubleSide,
   LinearFilter,
+  LinearSRGBColorSpace,
   MeshBasicMaterial,
   MeshStandardMaterial,
   NoColorSpace,
@@ -286,7 +287,8 @@ function useWallMaterial() {
   return useMemo(() => {
     map.wrapS = RepeatWrapping;
     map.wrapT = RepeatWrapping;
-    map.colorSpace = SRGBColorSpace;
+    // Desktop wallstone is HDR float (R32G32B32A32); mobile pack is sRGB UASTC.
+    map.colorSpace = mobile ? SRGBColorSpace : LinearSRGBColorSpace;
     map.anisotropy = gl.capabilities.getMaxAnisotropy();
     const material = new MeshStandardMaterial({
       map,
@@ -296,7 +298,8 @@ function useWallMaterial() {
       side: DoubleSide,
     });
     // The window photo is unlit. Lift the lit wall so the stone matches that frame.
-    material.color.setRGB(1.45, 1.38, 1.28);
+    // HDR albedo needs less gain than the old LDR tile.
+    material.color.setRGB(mobile ? 1.45 : 1.12, mobile ? 1.38 : 1.08, mobile ? 1.28 : 1.02);
     applyFacadeGobo(material, mobile);
     return material;
   }, [map, gl, gobo, mobile]);
