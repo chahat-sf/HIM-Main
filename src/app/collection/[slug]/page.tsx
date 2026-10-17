@@ -5,7 +5,7 @@ import Link from "next/link";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
@@ -73,6 +73,64 @@ const PRODUCT = {
     "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.",
 };
 
+// ─── Scroll focus: which crop of the hero each right-column beat shows ─
+// x / y are the focal point in % of the image box; tuned for pdp-hero.jpg.
+type Focus = { scale: number; x: number; y: number };
+
+const FOCUS: Record<string, Focus> = {
+  intro: { scale: 1, x: 50, y: 50 },
+  details: { scale: 2, x: 50, y: 0 },
+  sizeFit: { scale: 2, x: 50, y: 0 },
+  shipping: { scale: 1, x: 50, y: 50 },
+  related: { scale: 1, x: 50, y: 50 },
+  fabric: { scale: 1.9, x: 50, y: 66 },
+  howToWear: { scale: 1.3, x: 50, y: 42 },
+  care: { scale: 1.75, x: 50, y: 34 },
+  provenance: { scale: 1.8, x: 44, y: 44 },
+  fit: { scale: 1.45, x: 50, y: 72 },
+  studio: { scale: 1, x: 50, y: 50 },
+};
+
+/** Translate that centres the focal point, clamped so no image edge shows. */
+function focusTransform({ scale, x, y }: Focus) {
+  const limit = ((scale - 1) / (2 * scale)) * 100;
+  const clamp = (v: number) => Math.max(-limit, Math.min(limit, v));
+  return `scale(${scale}) translate(${clamp(50 - x)}%, ${clamp(50 - y)}%)`;
+}
+
+const DUMMY_BLOCKS = [
+  {
+    focus: "fabric",
+    title: "The Fabric Story",
+    body: "Cut from a brushed cotton-blend developed for drape and recovery. The hand-feel softens with wear while the structure holds through the shoulder and sleeve. Each roll is dyed in small batches so tone stays consistent across colourways.",
+  },
+  {
+    focus: "howToWear",
+    title: "How To Wear",
+    body: "Layer over a ribbed henley for cooler evenings, or wear open as a light outer. Pair with tailored trousers for evening and straight denim for day. Hardware is tonal so the piece reads clean under a coat.",
+  },
+  {
+    focus: "care",
+    title: "Care Notes",
+    body: "Machine wash cold on a gentle cycle, inside out. Reshape while damp and dry flat. Avoid tumble drying and high heat. Steam lightly to release creases — do not iron directly over the zip tape.",
+  },
+  {
+    focus: "provenance",
+    title: "Provenance",
+    body: "Patterned in our studio, cut and finished by a long-standing workshop we work with season after season. Trims are sourced for longevity: YKK zip, bonded tape, and bartack reinforcement at stress points.",
+  },
+  {
+    focus: "fit",
+    title: "Fit Philosophy",
+    body: "Relaxed through the chest with a slightly tapered hem. Designed to sit clean over a tee without swimming. If you prefer a closer silhouette, size down; for layering room, stay true to size.",
+  },
+  {
+    focus: "studio",
+    title: "Studio Notes",
+    body: "Photographed on location under soft window light. Colour on screen may vary by device. Swatches are the most accurate reference for Heather Grey and Burgundy before you commit.",
+  },
+];
+
 const RELATED = [
   { slug: "textured-thermal-white", name: "Textured Thermal - White", price: "16,000", image: "/products/item-4.webp", rating: 4.8, color: "#111" },
   { slug: "textured-thermal-white-2", name: "Textured Thermal - White", price: "16,000", image: "/products/item-4.webp", rating: 4.8, color: "#111" },
@@ -80,10 +138,10 @@ const RELATED = [
 ];
 
 // ─── Accordion row ───────────────────────────────────────────────────
-function Accordion({ label, children }: { label: string; children: React.ReactNode }) {
+function Accordion({ label, focus, children }: { label: string; focus?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`pdp-accordion${open ? " open" : ""}`}>
+    <div className={`pdp-accordion${open ? " open" : ""}`} data-pdp-focus={focus}>
       <button
         type="button"
         className="pdp-accordion-trigger"
@@ -106,6 +164,39 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
+  const [focusId, setFocusId] = useState("intro");
+  const rightRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = rightRef.current;
+    if (!root) return;
+    const markers = Array.from(root.querySelectorAll<HTMLElement>("[data-pdp-focus]"));
+    if (!markers.length) return;
+
+    // The active beat is the last marker whose top has crossed the band's lower edge (55% down).
+    const pick = () => {
+      const line = window.innerHeight * 0.55;
+      let next = "intro";
+      for (const el of markers) {
+        if (el.getBoundingClientRect().top <= line) next = el.dataset.pdpFocus ?? next;
+      }
+      setFocusId(next);
+    };
+
+    const observer = new IntersectionObserver(pick, {
+      root: null,
+      rootMargin: "-35% 0px -45% 0px",
+      threshold: [0, 1],
+    });
+    markers.forEach((el) => observer.observe(el));
+    // A fast fling can jump a short marker clean over the band without an intersection change.
+    window.addEventListener("scrollend", pick);
+    pick();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scrollend", pick);
+    };
+  }, []);
 
   const imageCount = PRODUCT.images.length;
   const angle = Math.round((activeImg * 360) / imageCount);
@@ -127,18 +218,23 @@ export default function ProductDetailPage() {
           {/* ── LEFT: IMAGE PANEL ──────────────────────── */}
           <div className="pdp-left">
             <div className="pdp-main-img">
-              {PRODUCT.images.map((src, i) => (
-                <Image
-                  key={src}
-                  src={src}
-                  alt={i === activeImg ? PRODUCT.name : ""}
-                  fill
-                  priority={i === 0}
-                  quality={85}
-                  sizes="(max-width: 1280px) 50vw, 40vw"
-                  className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
-                />
-              ))}
+              <div
+                className="pdp-main-img-focus"
+                style={{ transform: focusTransform(FOCUS[focusId] ?? FOCUS.intro) }}
+              >
+                {PRODUCT.images.map((src, i) => (
+                  <Image
+                    key={src}
+                    src={src}
+                    alt={i === activeImg ? PRODUCT.name : ""}
+                    fill
+                    priority={i === 0}
+                    quality={90}
+                    sizes="(max-width: 1280px) 50vw, 40vw"
+                    className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
+                  />
+                ))}
+              </div>
 
               <div className="pdp-rotate" role="group" aria-label="Rotate product view">
                 <button type="button" onClick={() => rotate(-1)} aria-label="Rotate left">
@@ -153,8 +249,8 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ── RIGHT: PRODUCT INFO PANEL ──────────────── */}
-          <div className="pdp-right">
-            <h1 className="pdp-title">{PRODUCT.name}</h1>
+          <div className="pdp-right" ref={rightRef}>
+            <h1 className="pdp-title" data-pdp-focus="intro">{PRODUCT.name}</h1>
             <p className="pdp-price">Rs. {PRODUCT.price}</p>
 
             <div className="pdp-divider" />
@@ -206,19 +302,19 @@ export default function ProductDetailPage() {
 
             {/* Accordions */}
             <div className="pdp-accordions">
-              <Accordion label="Details">
+              <Accordion label="Details" focus="details">
                 <p>{PRODUCT.details}</p>
               </Accordion>
-              <Accordion label="Size & Fit">
+              <Accordion label="Size & Fit" focus="sizeFit">
                 <p>{PRODUCT.sizeFit}</p>
               </Accordion>
-              <Accordion label="Shipping">
+              <Accordion label="Shipping" focus="shipping">
                 <p>{PRODUCT.shipping}</p>
               </Accordion>
             </div>
 
             {/* ── MORE WAYS TO WEAR IT ───────────────── */}
-            <section className="pdp-related" aria-labelledby="pdp-related-title">
+            <section className="pdp-related" aria-labelledby="pdp-related-title" data-pdp-focus="related">
               <div className="pdp-related-header">
                 <h2 id="pdp-related-title" className="pdp-related-title">More ways to wear it</h2>
                 <Link href="/collection" className="pdp-view-all">VIEW ALL</Link>
@@ -248,33 +344,8 @@ export default function ProductDetailPage() {
 
             {/* Dummy blocks — lengthen the right column for sticky scroll testing */}
             <section className="pdp-dummy" aria-hidden="true">
-              {[
-                {
-                  title: "The Fabric Story",
-                  body: "Cut from a brushed cotton-blend developed for drape and recovery. The hand-feel softens with wear while the structure holds through the shoulder and sleeve. Each roll is dyed in small batches so tone stays consistent across colourways.",
-                },
-                {
-                  title: "How To Wear",
-                  body: "Layer over a ribbed henley for cooler evenings, or wear open as a light outer. Pair with tailored trousers for evening and straight denim for day. Hardware is tonal so the piece reads clean under a coat.",
-                },
-                {
-                  title: "Care Notes",
-                  body: "Machine wash cold on a gentle cycle, inside out. Reshape while damp and dry flat. Avoid tumble drying and high heat. Steam lightly to release creases — do not iron directly over the zip tape.",
-                },
-                {
-                  title: "Provenance",
-                  body: "Patterned in our studio, cut and finished by a long-standing workshop we work with season after season. Trims are sourced for longevity: YKK zip, bonded tape, and bartack reinforcement at stress points.",
-                },
-                {
-                  title: "Fit Philosophy",
-                  body: "Relaxed through the chest with a slightly tapered hem. Designed to sit clean over a tee without swimming. If you prefer a closer silhouette, size down; for layering room, stay true to size.",
-                },
-                {
-                  title: "Studio Notes",
-                  body: "Photographed on location under soft window light. Colour on screen may vary by device. Swatches are the most accurate reference for Heather Grey and Burgundy before you commit.",
-                },
-              ].map((block) => (
-                <article key={block.title} className="pdp-dummy-block">
+              {DUMMY_BLOCKS.map((block) => (
+                <article key={block.title} className="pdp-dummy-block" data-pdp-focus={block.focus}>
                   <h3 className="pdp-dummy-title">{block.title}</h3>
                   <p className="pdp-dummy-body">{block.body}</p>
                 </article>
@@ -324,6 +395,14 @@ export default function ProductDetailPage() {
           min-height: calc(100svh - var(--pdp-nav-h));
           overflow: hidden;
           background: #e9e6e1;
+        }
+
+        .pdp-main-img-focus {
+          position: absolute;
+          inset: 0;
+          transform-origin: center center;
+          transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
         }
 
         .pdp-main-img-frame {
@@ -650,6 +729,11 @@ export default function ProductDetailPage() {
 
           .pdp-main-img-frame {
             transform: none;
+          }
+
+          .pdp-main-img-focus {
+            transform: none !important;
+            transition: none !important;
           }
 
           .pdp-accordion-body {
