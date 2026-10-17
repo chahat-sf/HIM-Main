@@ -6,9 +6,7 @@ import { useEffect, useMemo, type ReactNode } from "react";
 import {
   CanvasTexture,
   DoubleSide,
-  LinearSRGBColorSpace,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   PlaneGeometry,
   RepeatWrapping,
   SRGBColorSpace,
@@ -35,10 +33,6 @@ const OPENING_WIDTH = PLANE_WIDTH * OPENING_FRAC_W;
 const BLACK_KEY = 18;
 const WINDOW_Z = 0.12;
 export const WINDOW_CENTER_Y = 1.9;
-
-function isMobileWall() {
-  return typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
-}
 
 let windowMaterial: MeshBasicMaterial | null = null;
 
@@ -103,7 +97,7 @@ export function Block({
 }
 
 function wallUrl() {
-  return isMobileWall() ? encodeURI("/wall stone mobile.ktx2") : "/wallstone.ktx2";
+  return "/house/walnut-wall.ktx2";
 }
 
 function useWallMaterial() {
@@ -112,25 +106,18 @@ function useWallMaterial() {
   const map = useLoader(KTX2Loader, url, (loader) => {
     loader.detectSupport(gl);
   });
-  const mobile = useMemo(isMobileWall, []);
   return useMemo(() => {
     map.wrapS = RepeatWrapping;
     map.wrapT = RepeatWrapping;
-    // Desktop wallstone is HDR float (R32G32B32A32); mobile pack is sRGB UASTC.
-    map.colorSpace = mobile ? SRGBColorSpace : LinearSRGBColorSpace;
+    map.colorSpace = SRGBColorSpace;
     map.anisotropy = gl.capabilities.getMaxAnisotropy();
-    const material = new MeshStandardMaterial({
+    return new MeshBasicMaterial({
       map,
       color: "#ffffff",
-      roughness: 0.96,
-      metalness: 0,
       side: DoubleSide,
+      toneMapped: false,
     });
-    // The window photo is unlit. Lift the lit wall so the stone matches that frame.
-    // HDR albedo needs less gain than the old LDR tile.
-    material.color.setRGB(mobile ? 1.45 : 1.12, mobile ? 1.38 : 1.08, mobile ? 1.28 : 1.02);
-    return material;
-  }, [map, gl, mobile]);
+  }, [map, gl]);
 }
 
 function BrickFace({
@@ -142,7 +129,7 @@ function BrickFace({
   offsetX = 0,
   offsetY = 0,
 }: {
-  material: MeshStandardMaterial;
+  material: MeshBasicMaterial;
   width: number;
   height: number;
   position: [number, number, number];
