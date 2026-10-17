@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
+import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
+import Dropdown from "@/components/Dropdown";
 import { useState } from "react";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
@@ -28,21 +29,12 @@ function RotateIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-// ─── Chevron for the size dropdown ──────────────────────────────────
-function Chevron() {
-  return (
-    <svg width="9" height="6" viewBox="0 0 9 6" fill="none" aria-hidden="true">
-      <path d="M1 1L4.5 4.5L8 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 // ─── Plus / Minus icon for accordions ───────────────────────────────
 function PlusIcon({ open }: { open: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
       <line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" strokeWidth="1"
-        style={{ opacity: open ? 0 : 1, transition: "opacity 200ms" }} />
+        style={{ opacity: open ? 0 : 1, transition: "opacity 350ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
       <line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" strokeWidth="1" />
     </svg>
   );
@@ -69,7 +61,7 @@ const PRODUCT = {
   ],
   sizes: ["XS", "S", "M", "L", "XL", "XXL"],
   images: [
-    "/products/item-4.webp",
+    "/products/pdp-hero.jpg",
     "/products/man-image-1.webp",
     "/products/man-image-2.webp",
   ],
@@ -91,7 +83,7 @@ const RELATED = [
 function Accordion({ label, children }: { label: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="pdp-accordion">
+    <div className={`pdp-accordion${open ? " open" : ""}`}>
       <button
         type="button"
         className="pdp-accordion-trigger"
@@ -101,7 +93,9 @@ function Accordion({ label, children }: { label: string; children: React.ReactNo
         <span>{label}</span>
         <PlusIcon open={open} />
       </button>
-      {open && <div className="pdp-accordion-body">{children}</div>}
+      <div className="pdp-accordion-panel">
+        <div className="pdp-accordion-body">{children}</div>
+      </div>
     </div>
   );
 }
@@ -125,7 +119,7 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <Navbar />
+      <PdpNavbar />
 
       <main className="pdp-main">
         <div className="pdp-columns">
@@ -140,7 +134,7 @@ export default function ProductDetailPage() {
                   alt={i === activeImg ? PRODUCT.name : ""}
                   fill
                   priority={i === 0}
-                  quality={75}
+                  quality={85}
                   sizes="(max-width: 1280px) 50vw, 40vw"
                   className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
                 />
@@ -190,19 +184,15 @@ export default function ProductDetailPage() {
               <label htmlFor="pdp-size" className="pdp-field-label">SIZE</label>
               <button type="button" className="pdp-size-chart">SIZE CHART</button>
             </div>
-            <div className="pdp-select">
-              <select
-                id="pdp-size"
-                value={selectedSize}
-                onChange={(e) => setSelectedSize(e.target.value)}
-              >
-                <option value="" disabled>Select Size</option>
-                {PRODUCT.sizes.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <Chevron />
-            </div>
+            <Dropdown
+              id="pdp-size"
+              options={PRODUCT.sizes}
+              value={selectedSize}
+              onChange={setSelectedSize}
+              placeholder="Select Size"
+              aria-label="Select size"
+              className="pdp-size-dropdown"
+            />
 
             {/* Add to bag */}
             <button
@@ -255,6 +245,41 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             </section>
+
+            {/* Dummy blocks — lengthen the right column for sticky scroll testing */}
+            <section className="pdp-dummy" aria-hidden="true">
+              {[
+                {
+                  title: "The Fabric Story",
+                  body: "Cut from a brushed cotton-blend developed for drape and recovery. The hand-feel softens with wear while the structure holds through the shoulder and sleeve. Each roll is dyed in small batches so tone stays consistent across colourways.",
+                },
+                {
+                  title: "How To Wear",
+                  body: "Layer over a ribbed henley for cooler evenings, or wear open as a light outer. Pair with tailored trousers for evening and straight denim for day. Hardware is tonal so the piece reads clean under a coat.",
+                },
+                {
+                  title: "Care Notes",
+                  body: "Machine wash cold on a gentle cycle, inside out. Reshape while damp and dry flat. Avoid tumble drying and high heat. Steam lightly to release creases — do not iron directly over the zip tape.",
+                },
+                {
+                  title: "Provenance",
+                  body: "Patterned in our studio, cut and finished by a long-standing workshop we work with season after season. Trims are sourced for longevity: YKK zip, bonded tape, and bartack reinforcement at stress points.",
+                },
+                {
+                  title: "Fit Philosophy",
+                  body: "Relaxed through the chest with a slightly tapered hem. Designed to sit clean over a tee without swimming. If you prefer a closer silhouette, size down; for layering room, stay true to size.",
+                },
+                {
+                  title: "Studio Notes",
+                  body: "Photographed on location under soft window light. Colour on screen may vary by device. Swatches are the most accurate reference for Heather Grey and Burgundy before you commit.",
+                },
+              ].map((block) => (
+                <article key={block.title} className="pdp-dummy-block">
+                  <h3 className="pdp-dummy-title">{block.title}</h3>
+                  <p className="pdp-dummy-body">{block.body}</p>
+                </article>
+              ))}
+            </section>
           </div>
         </div>
       </main>
@@ -271,7 +296,8 @@ export default function ProductDetailPage() {
           background: #fff;
           color: var(--pdp-ink);
           --u: calc(min(100vw, 1440px) / 1440);
-          padding-top: 68px; /* navbar height */
+          --pdp-nav-h: 68px;
+          padding-top: var(--pdp-nav-h);
         }
 
         /* ── TWO COLUMNS ── */
@@ -285,24 +311,32 @@ export default function ProductDetailPage() {
            LEFT PANEL
         ══════════════════════ */
         .pdp-left {
-          position: relative;
+          position: sticky;
+          top: var(--pdp-nav-h);
+          align-self: start;
+          animation: pdp-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .pdp-main-img {
           position: relative;
           width: 100%;
-          aspect-ratio: 720 / 882;
+          height: calc(100svh - var(--pdp-nav-h));
+          min-height: calc(100svh - var(--pdp-nav-h));
           overflow: hidden;
           background: #e9e6e1;
         }
 
         .pdp-main-img-frame {
           opacity: 0;
-          transition: opacity 450ms ease;
+          transform: scale(1.02);
+          transition:
+            opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .pdp-main-img-frame.active {
           opacity: 1;
+          transform: scale(1);
         }
 
         .pdp-rotate {
@@ -357,6 +391,38 @@ export default function ProductDetailPage() {
           max-width: none;
           box-sizing: border-box;
           padding: calc(96 * var(--u)) calc(96 * var(--u)) calc(96 * var(--u)) calc(96 * var(--u));
+        }
+
+        .pdp-right > * {
+          animation: pdp-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .pdp-right > *:nth-child(1) { animation-delay: 0.08s; }
+        .pdp-right > *:nth-child(2) { animation-delay: 0.14s; }
+        .pdp-right > *:nth-child(3) { animation-delay: 0.2s; }
+        .pdp-right > *:nth-child(4) { animation-delay: 0.26s; }
+        .pdp-right > *:nth-child(5) { animation-delay: 0.3s; }
+        .pdp-right > *:nth-child(6) { animation-delay: 0.34s; }
+        .pdp-right > *:nth-child(7) { animation-delay: 0.38s; }
+        .pdp-right > *:nth-child(8) { animation-delay: 0.42s; }
+        .pdp-right > *:nth-child(9) { animation-delay: 0.48s; }
+        .pdp-right > *:nth-child(10) { animation-delay: 0.54s; }
+        .pdp-right > *:nth-child(n+11) { animation-delay: 0.6s; }
+
+        @keyframes pdp-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes pdp-fade-up {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
         }
 
         .pdp-title {
@@ -456,38 +522,15 @@ export default function ProductDetailPage() {
           color: var(--pdp-ink);
         }
 
-        .pdp-select {
-          position: relative;
-          color: var(--pdp-ink);
+        .pdp-size-dropdown {
+          --dd-ink: var(--pdp-ink);
+          --dd-muted: var(--pdp-muted);
+          --dd-border: var(--pdp-ink);
+          --dd-sans: var(--pdp-sans);
         }
 
-        .pdp-select select {
-          width: 100%;
+        .pdp-size-dropdown button {
           height: max(42px, calc(52 * var(--u)));
-          padding: 0 44px 0 calc(20 * var(--u));
-          border: 1px solid var(--pdp-ink);
-          border-radius: 0;
-          background: #fff;
-          appearance: none;
-          -webkit-appearance: none;
-          font-family: var(--pdp-sans);
-          font-size: 12px;
-          font-weight: 400;
-          color: var(--pdp-ink);
-          cursor: pointer;
-        }
-
-        .pdp-select select:focus-visible {
-          outline: 1px solid var(--pdp-ink);
-          outline-offset: 2px;
-        }
-
-        .pdp-select svg {
-          position: absolute;
-          top: 50%;
-          right: 20px;
-          transform: translateY(-50%);
-          pointer-events: none;
         }
 
         /* Add to bag */
@@ -505,11 +548,15 @@ export default function ProductDetailPage() {
           letter-spacing: 0.22em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: background 180ms ease;
+          transition: background 280ms ease, transform 280ms ease;
         }
 
         .pdp-add-btn:hover {
           background: #2a2a2a;
+        }
+
+        .pdp-add-btn:active {
+          transform: scale(0.992);
         }
 
         .pdp-add-btn[aria-disabled="true"] {
@@ -542,22 +589,73 @@ export default function ProductDetailPage() {
           color: var(--pdp-ink);
           cursor: pointer;
           text-align: left;
+          transition: color 250ms ease;
+        }
+
+        .pdp-accordion-trigger:hover {
+          color: #3a3a3a;
         }
 
         .pdp-accordion-trigger svg {
           margin-right: 4px;
         }
 
+        .pdp-accordion-panel {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .pdp-accordion.open .pdp-accordion-panel {
+          grid-template-rows: 1fr;
+        }
+
         .pdp-accordion-body {
-          padding: 0 0 24px;
+          overflow: hidden;
+          min-height: 0;
+          padding: 0 0 0;
           font-family: var(--pdp-sans);
           font-size: 12px;
           line-height: 1.7;
           color: var(--pdp-muted);
+          opacity: 0;
+          transform: translateY(-8px);
+          transition:
+            opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+            padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .pdp-accordion.open .pdp-accordion-body {
+          opacity: 1;
+          transform: none;
+          padding: 0 0 24px;
         }
 
         .pdp-accordion-body p {
           margin: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pdp-left,
+          .pdp-right > *,
+          .pdp-main-img-frame,
+          .pdp-accordion-panel,
+          .pdp-accordion-body,
+          .pdp-accordion-trigger svg,
+          .pdp-add-btn {
+            animation: none !important;
+            transition: none !important;
+          }
+
+          .pdp-main-img-frame {
+            transform: none;
+          }
+
+          .pdp-accordion-body {
+            opacity: 1;
+            transform: none;
+          }
         }
 
         /* ── RELATED / MORE WAYS ── */
@@ -652,7 +750,47 @@ export default function ProductDetailPage() {
           color: var(--pdp-muted);
         }
 
+        /* ── DUMMY SCROLL FILL ── */
+        .pdp-dummy {
+          margin-top: calc(80 * var(--u));
+          padding-bottom: calc(40 * var(--u));
+        }
+
+        .pdp-dummy-block {
+          padding: calc(36 * var(--u)) 0;
+          border-top: 1px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .pdp-dummy-block:last-child {
+          border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        }
+
+        .pdp-dummy-title {
+          margin: 0 0 12px;
+          font-family: var(--pdp-serif);
+          font-size: max(17px, calc(20 * var(--u)));
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--pdp-ink);
+        }
+
+        .pdp-dummy-body {
+          margin: 0;
+          max-width: 42em;
+          font-family: var(--pdp-sans);
+          font-size: 13px;
+          line-height: 1.75;
+          color: var(--pdp-muted);
+        }
+
         /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+          .pdp-main {
+            --pdp-nav-h: 96px; /* fixed bar + mobile link row */
+          }
+        }
+
         @media (max-width: 1280px) {
           .pdp-main {
             --u: 0.8px;
@@ -660,10 +798,6 @@ export default function ProductDetailPage() {
 
           .pdp-columns {
             grid-template-columns: 50% 50%;
-          }
-
-          .pdp-main-img {
-            aspect-ratio: 4 / 5;
           }
 
           .pdp-rotate {
