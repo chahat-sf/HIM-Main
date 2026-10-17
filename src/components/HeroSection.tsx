@@ -13,6 +13,11 @@ const ZOOM = 1;                  // 1 = fill screen. Use 1.16 for the extra zoom
 const CONCURRENCY = 8;           // how many frames download at once
 const TEXT_FADE_SPEED = 8;       // how fast the left text fades while scrolling (higher = faster)
 
+// Memory handling: frames are freed once the hero is this many screens above the viewport,
+// and are loaded again as soon as the hero is within RELOAD_SCREENS of coming back.
+const RELEASE_SCREENS = 2;
+const RELOAD_SCREENS = 1;
+
 const framePath = (i: number) =>
   `/homepage/frames/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
@@ -21,13 +26,10 @@ export default function HeroSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  const homeLoad = useHomeLoad();
-const homeLoadRef = useRef(homeLoad);
-homeLoadRef.current = homeLoad;
-  // const barRef = useRef<HTMLDivElement>(null);
-  // const textRef = useRef<HTMLSpanElement>(null);
 
-  // const [ready, setReady] = useState(false);
+  const homeLoad = useHomeLoad();
+  const homeLoadRef = useRef(homeLoad);
+  homeLoadRef.current = homeLoad;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,27 +44,35 @@ homeLoadRef.current = homeLoad;
 
     let disposed = false;
     let released = false;
+    let loadToken = 0; // bumping this cancels any running loaders
     const frames: (ImageBitmap | null)[] = Array(FRAME_COUNT).fill(null);
     let current = 0; // position shown right now (can be between two frames)
     let target = 0;  // position the scroll wants
     let lastPos = -1;
     let lastT = 0;
     let raf = 0;
-    let loadedCount = 0;
 
+    /* Free the bitmaps when the hero is far off-screen (can be reloaded later) */
     const releaseFrames = () => {
       if (released) return;
       released = true;
+      loadToken++; // stop loaders
       frames.forEach((f, i) => {
         f?.close();
         frames[i] = null;
       });
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
+      lastT = 0;
     };
 
+    /* Nearest loaded frame — looks down first, then up (needed while reloading) */
     const getFrame = (index: number) => {
       for (let i = index; i >= 0; i--) {
+        const f = frames[i];
+        if (f) return f;
+      }
+      for (let i = index + 1; i < FRAME_COUNT; i++) {
         const f = frames[i];
         if (f) return f;
       }
@@ -144,45 +154,76 @@ homeLoadRef.current = homeLoad;
       raf = requestAnimationFrame(tick);
     };
 
+    /* Load frames, decode off the main thread (ImageBitmap).
+       report = true only for the very first load (drives the loading screen).
+       descending = true when coming back from below, so the open end loads first. */
+    const loadFrames = (report: boolean, descending: boolean) => {
+      const token = ++loadToken;
+      const order = Array.from({ length: FRAME_COUNT }, (_, k) =>
+        descending ? FRAME_COUNT - 1 - k : k
+      );
+      let next = 0;
+      let done = 0;
+
+      const worker = async () => {
+        while (!disposed && token === loadToken) {
+          const k = next++;
+          if (k >= FRAME_COUNT) return;
+          const i = order[k];
+
+          if (!frames[i]) {
+            try {
+              const res = await fetch(framePath(i));
+              const blob = await res.blob();
+              const bmp = await createImageBitmap(blob);
+              if (disposed || token !== loadToken) {
+                bmp.close();
+                return;
+              }
+              frames[i] = bmp;
+              if (!report) draw(true); // repaint as frames come back
+            } catch {
+              /* skip a missing frame */
+            }
+          }
+
+          done++;
+          if (report) {
+            const pct = Math.round((done / FRAME_COUNT) * 100);
+            homeLoadRef.current?.reportHeroProgress(pct);
+            if (i === 0) draw(true);
+          }
+        }
+      };
+
+      return Promise.all(Array.from({ length: CONCURRENCY }, worker));
+    };
+
     const onScroll = () => {
-      if (released) return;
       const rect = wrapper.getBoundingClientRect();
-      // House section is primary once the hero has scrolled fully off-screen.
-      if (rect.bottom <= 0) {
-        releaseFrames();
-        return;
+      const vh = window.innerHeight || 1;
+
+      if (!released) {
+        // Hero is far above the viewport → free memory
+        if (rect.bottom < -vh * RELEASE_SCREENS) {
+          releaseFrames();
+          return;
+        }
+      } else {
+        // Hero is getting close again → bring the frames back
+        if (rect.bottom > -vh * RELOAD_SCREENS) {
+          released = false;
+          loadFrames(false, true);
+        } else {
+          return;
+        }
       }
+
       readScroll();
       if (!raf) raf = requestAnimationFrame(tick);
     };
 
-    /* Load every frame, decode it off the main thread (ImageBitmap) */
-    let next = 0;
-    const worker = async () => {
-      while (!disposed) {
-        const i = next++;
-        if (i >= FRAME_COUNT) return;
-        try {
-          if (released) return;
-          const res = await fetch(framePath(i));
-          const blob = await res.blob();
-          const bmp = await createImageBitmap(blob);
-          if (disposed || released) {
-            bmp.close();
-            return;
-          }
-          frames[i] = bmp;
-        } catch {
-          /* skip a missing frame */
-        }
-        loadedCount++;
-        const pct = Math.round((loadedCount / FRAME_COUNT) * 100);
-        homeLoadRef.current?.reportHeroProgress(pct);
-        if (i === 0) draw(true);
-      }
-    };
-
-    Promise.all(Array.from({ length: CONCURRENCY }, worker)).then(() => {
+    loadFrames(true, false).then(() => {
       if (disposed) return;
       homeLoadRef.current?.reportHeroReady();
       readScroll();
@@ -295,13 +336,13 @@ homeLoadRef.current = homeLoad;
       </div>
 
       <style jsx global>{`
-				*,
-				*::before,
-				*::after {
-					box-sizing: border-box;
-					margin: 0;
-					padding: 0;
-				}
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
 
         html,
         body {

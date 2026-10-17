@@ -22,34 +22,25 @@ function Arrow() {
 }
 
 // ─── Product data ────────────────────────────────────────────────────
+const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
+
 const PRODUCTS = [
-  { slug: "textured-thermal-white",   name: "Textured Thermal – White",   price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
-  { slug: "textured-thermal-white-2", name: "Textured Thermal – White",   price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
-  { slug: "textured-thermal-white-3", name: "Textured Thermal – White",   price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
-  { slug: "textured-thermal-white-4", name: "Textured Thermal – White",   price: "₹16,000", category: "JEANS",   image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
-  { slug: "textured-thermal-white-5", name: "Textured Thermal – White",   price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
-  { slug: "textured-thermal-white-6", name: "Textured Thermal – White",   price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp",  rating: 4.8, reviews: 124 },
+  { slug: "textured-thermal-white",   name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-2", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-3", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-4", name: "Textured Thermal – White", price: "₹16,000", category: "JEANS",   image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-5", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-6", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
 ];
 
 const FILTERS = ["ALL", "SHIRTS", "TSHIRTS", "JEANS"];
 
-const LOOKBOOK_STORIES = [
-  { image: "/lookbook/man-on-lunch.webp",             category: "PEOPLE",   title: "Where the Sun Settles" },
-  { image: "/lookbook/man-on-bike.webp",              category: "JOURNEYS", title: "On Set: Lane Splitters" },
-  { image: "/lookbook/man-on-car.webp",               category: "CULTURE",  title: "Archives from Brooklyn" },
-  { image: "/lookbook/Where-The-Sun-Settles.webp",    category: "PEOPLE",   title: "Made for Movement" },
-  { image: "/lookbook/On-Set-Lane-Splitters.webp",    category: "JOURNEYS", title: "Outside and Better" },
+const EXPLORE_ITEMS = [
+  { label: "ALL MEN'S", href: "/collection",      image: "/lookbook/man-on-lunch.webp" },
+  { label: "SHIRTS",    href: "/collection",      image: "/lookbook/man-on-bike.webp" },
+  { label: "TSHIRTS",   href: "/collection",      image: "/lookbook/man-on-car.webp" },
+  { label: "JEANS",     href: "/collection",      image: "/lookbook/Where-The-Sun-Settles.webp" },
 ];
-
-// ─── Star rating ─────────────────────────────────────────────────────
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span style={{ color: "#c9a84c", fontSize: "10px", letterSpacing: "1px" }}>
-      {"★".repeat(Math.floor(rating))}
-      {rating % 1 >= 0.5 ? "½" : ""}
-    </span>
-  );
-}
 
 // ─── Single product card ─────────────────────────────────────────────
 function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
@@ -70,12 +61,25 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
       {/* Info */}
       <div className="product-card-body">
         <p className="product-card-name">{product.name}</p>
-        <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "4px" }}>
-          <Stars rating={product.rating} />
-          <span style={{ fontSize: "9px", color: "rgba(0,0,0,0.4)", fontFamily: "Arial, sans-serif" }}>
-            ({product.reviews})
-          </span>
+
+        {/* SWATCHES */}
+        <div className="flex items-center" style={{ gap: "4px", marginTop: "6px" }}>
+          {product.swatches.map((swatch, i) => (
+            <span
+              key={`${swatch}-${i}`}
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: swatch,
+                border: "1px solid rgba(0,0,0,0.15)",
+                display: "inline-block",
+                flex: "0 0 auto",
+              }}
+            />
+          ))}
         </div>
+
         <p className="product-card-price">{product.price}</p>
       </div>
     </Link>
@@ -156,33 +160,41 @@ export default function CollectionPage() {
         </div>
 
         {/* ── MORE WAYS TO WEAR IT ─────────────────────────────────── */}
-        <div className="mwwi-section">
+        <section className="mwwi-section">
           <div className="mwwi-header">
-            <span className="mwwi-title">MORE WAYS TO WEAR IT</span>
+            <div>
+              <span className="mwwi-eyebrow">EXPLORE MORE</span>
+              <h2 className="mwwi-title">More Ways to Wear It</h2>
+            </div>
+
             <Link href="/lookbook" className="mwwi-view-all">
-              VIEW ALL &nbsp;<Arrow />
+              <span>VIEW ALL</span>
+              <Arrow />
             </Link>
           </div>
 
           <div className="mwwi-strip">
-            {LOOKBOOK_STORIES.map((story) => (
-              <div key={story.title} className="mwwi-item group">
+            {EXPLORE_ITEMS.map((item) => (
+              <Link key={item.label} href={item.href} className="mwwi-item group">
                 <div className="mwwi-img">
                   <Image
-                    src={story.image}
-                    alt={story.title}
+                    src={item.image}
+                    alt={item.label}
                     fill
                     quality={70}
-                    sizes="(max-width: 640px) 80vw, 22vw"
+                    sizes="(max-width: 768px) 70vw, 25vw"
                     className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
-                <p className="mwwi-cat">{story.category}</p>
-                <p className="mwwi-name">{story.title}</p>
-              </div>
+
+                <div className="mwwi-label">
+                  <span>{item.label}</span>
+                  <Arrow />
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
       </main>
 
       <Footer />
@@ -347,7 +359,7 @@ export default function CollectionPage() {
         }
 
         .product-card-price {
-          margin: 6px 0 0;
+          margin: 8px 0 0;
           font-family: Arial, Helvetica, sans-serif;
           font-size: 12px;
           font-weight: 600;
@@ -385,87 +397,112 @@ export default function CollectionPage() {
 
         /* ── MORE WAYS TO WEAR IT ── */
         .mwwi-section {
-          padding: 0 clamp(16px, 4vw, 56px) 60px;
-          background: #fff;
+          padding: clamp(10px, 2.5vw, 68px) clamp(16px, 4vw, 56px) clamp(48px, 5vw, 80px);
+          background: #f6f5f3;
           border-top: 1px solid rgba(0,0,0,0.08);
         }
 
         .mwwi-header {
           display: flex;
-          align-items: center;
+          align-items: flex-end;
           justify-content: space-between;
-          height: 60px;
+          gap: 16px;
+          margin-bottom: clamp(18px, 2vw, 28px);
+        }
+
+        .mwwi-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: rgba(0,0,0,0.6);
         }
 
         .mwwi-title {
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: #111;
+          margin: 0;
+          font-family: "Cormorant Garamond", "Cinzel", Georgia, serif;
+          font-size: clamp(30px, 3.4vw, 52px);
+          font-weight: 400;
+          font-variant: small-caps;
+          line-height: 1;
+          letter-spacing: 0.01em;
+          color: #17140f;
         }
 
         .mwwi-view-all {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 8px;
+          height: 30px;
+          padding: 0 16px;
+          border: 1px solid #17140f;
+          border-radius: 999px;
+          background: transparent;
           font-family: Arial, Helvetica, sans-serif;
           font-size: 9px;
           font-weight: 600;
           letter-spacing: 0.5px;
           text-transform: uppercase;
-          color: #111;
           text-decoration: none;
-          transition: opacity 150ms ease;
+          color: #17140f;
+          white-space: nowrap;
+          transition: background 180ms ease, color 180ms ease;
         }
 
         .mwwi-view-all:hover {
-          opacity: 0.5;
+          background: #17140f;
+          color: #fff;
         }
 
         .mwwi-strip {
-          display: flex;
-          gap: 14px;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .mwwi-strip::-webkit-scrollbar {
-          display: none;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: clamp(8px, 1vw, 16px);
         }
 
         .mwwi-item {
-          flex: 0 0 auto;
-          width: clamp(160px, 20vw, 240px);
-          cursor: pointer;
+          display: block;
+          min-width: 0;
+          background: #fff;
+          border-radius: 3px;
+          overflow: hidden;
+          text-decoration: none;
+          color: #111;
         }
 
         .mwwi-img {
           position: relative;
           width: 100%;
-          aspect-ratio: 3 / 4;
+          aspect-ratio: 4 / 3;
           overflow: hidden;
           background: #e8e5df;
         }
 
-        .mwwi-cat {
-          margin: 10px 0 0;
+        .mwwi-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: clamp(34px, 3vw, 44px);
+          padding: 0 clamp(10px, 1vw, 14px);
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 8px;
-          font-weight: 400;
-          letter-spacing: 0.5px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
           text-transform: uppercase;
-          color: rgba(0,0,0,0.4);
+          color: #111;
         }
 
-        .mwwi-name {
-          margin: 4px 0 0;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
+        .mwwi-label svg {
+          color: rgba(0,0,0,0.4);
+          transition: transform 200ms ease, color 200ms ease;
+        }
+
+        .mwwi-item:hover .mwwi-label svg {
           color: #111;
-          line-height: 1.3;
+          transform: translateX(3px);
         }
 
         /* ── RESPONSIVE ── */
@@ -478,6 +515,23 @@ export default function CollectionPage() {
 
           .collection-hero-title {
             font-size: clamp(28px, 8vw, 44px);
+          }
+
+          /* More ways to wear it → swipeable row on phones */
+          .mwwi-strip {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+          }
+
+          .mwwi-strip::-webkit-scrollbar {
+            display: none;
+          }
+
+          .mwwi-item {
+            flex: 0 0 72%;
+            scroll-snap-align: start;
           }
         }
 
