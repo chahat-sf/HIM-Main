@@ -122,7 +122,8 @@ function seekVideo(item: PlayState, pos: number) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
 	const t = wrapTime(pos / FPS, item.duration);
-	if (Math.abs(video.currentTime - t) > 1 / 60) video.currentTime = t;
+	// Seek only when the target crosses a frame boundary (all-intra encode).
+	if (Math.abs(video.currentTime - t) > 1 / FPS) video.currentTime = t;
 }
 
 export function beginDrag(room: number) {

@@ -1,23 +1,18 @@
 "use client";
 
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { useLoader, useThree } from "@react-three/fiber";
 import { ROOMS } from "./poses";
 import { useEffect, useMemo, type ReactNode } from "react";
 import {
   CanvasTexture,
-  DataTexture,
   DoubleSide,
-  LinearFilter,
   LinearSRGBColorSpace,
   MeshBasicMaterial,
   MeshStandardMaterial,
-  NoColorSpace,
   PlaneGeometry,
   RepeatWrapping,
   SRGBColorSpace,
   TextureLoader,
-  Vector2,
-  type Texture,
 } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 
@@ -28,212 +23,48 @@ const FACADE_TOP = 7;
 const FACADE_LEFT = -12;
 const FACADE_RIGHT = ROOMS[ROOMS.length - 1].x + 12;
 
-const WINDOW_URL = "/second-window.avif";
-const MASK_URL = encodeURI("/window mask.webp");
-const OPENING_FRAC_W = 0.4018445322793149;
-const OPENING_FRAC_H = 0.5991808074897601;
+const WINDOW_URL = "/walnut-window.jpg";
+/** Pane size relative to the full walnut texture (909×1024). */
+const OPENING_FRAC_W = 0.39933993399339934;
+const OPENING_FRAC_H = 0.6005859375;
 const OPENING_HEIGHT = 2.5;
 export const PLANE_HEIGHT = OPENING_HEIGHT / OPENING_FRAC_H;
-export const PLANE_WIDTH = PLANE_HEIGHT * (1518 / 1709);
+export const PLANE_WIDTH = PLANE_HEIGHT * (909 / 1024);
 const OPENING_WIDTH = PLANE_WIDTH * OPENING_FRAC_W;
+/** Near-black in the texture is the outer void and the glass pane. */
+const BLACK_KEY = 18;
 const WINDOW_Z = 0.12;
 export const WINDOW_CENTER_Y = 1.9;
-const GOBO_URL = "/gobo.png?canopy=1";
-
-const goboUniforms = {
-  uGoboMap: { value: null as Texture | null },
-  uNoiseMap: { value: null as Texture | null },
-  uGoboTime: { value: 0 },
-  uGoboScale: { value: new Vector2(10.2, 6.5) },
-  uGoboStrength: { value: 1 },
-};
-
-const GOBO_VARYING = /* glsl */ `
-#ifndef DISABLE_GOBO
-varying vec3 vGoboWorld;
-#endif
-`;
-
-const GOBO_WORLD = /* glsl */ `
-#ifndef DISABLE_GOBO
-vGoboWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
-#endif
-`;
-
-const GOBO_FRAG = /* glsl */ `
-#ifndef DISABLE_GOBO
-uniform sampler2D uGoboMap;
-uniform sampler2D uNoiseMap;
-uniform float uGoboTime;
-uniform vec2 uGoboScale;
-uniform float uGoboStrength;
-
-vec3 applyGobo(vec3 color) {
-  vec2 broad = texture2D(uNoiseMap, vGoboWorld.xy * 0.035 + vec2(uGoboTime * 0.012, uGoboTime * 0.004)).rg;
-  vec2 fine = texture2D(uNoiseMap, vGoboWorld.xy * 0.16 + vec2(uGoboTime * 0.02, -uGoboTime * 0.03)).rg;
-  vec2 goboUv = vGoboWorld.xy / uGoboScale + vec2(0.5, 0.21);
-  goboUv += (broad - 0.5) * 0.04 + (fine - 0.5) * 0.012;
-  float raw = clamp(texture2D(uGoboMap, goboUv).r, 0.0, 1.0);
-  vec3 sunlit = color * vec3(1.16, 1.08, 0.96);
-  return sunlit * mix(1.0, raw, uGoboStrength);
-}
-#endif
-`;
-
-const GOBO_APPLY = /* glsl */ `
-#ifndef DISABLE_GOBO
-gl_FragColor.rgb = applyGobo(gl_FragColor.rgb);
-#endif
-`;
 
 function isMobileWall() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 }
 
-function fade(t: number) {
-  return t * t * (3 - 2 * t);
-}
+let windowMaterial: MeshBasicMaterial | null = null;
 
-function noiseValue(lattice: Float32Array, cells: number, x: number, y: number) {
-  const x0 = Math.floor(x);
-  const y0 = Math.floor(y);
-  const tx = fade(x - x0);
-  const ty = fade(y - y0);
-  const at = (ix: number, iy: number) => lattice[iy * (cells + 1) + ix];
-  return (
-    at(x0, y0) * (1 - tx) * (1 - ty) +
-    at(x0 + 1, y0) * tx * (1 - ty) +
-    at(x0, y0 + 1) * (1 - tx) * ty +
-    at(x0 + 1, y0 + 1) * tx * ty
-  );
-}
-
-let noiseMap: DataTexture | null = null;
-
-function getNoiseMap() {
-  if (noiseMap) return noiseMap;
-  const size = 128;
-  const cells = 16;
-  const count = (cells + 1) * (cells + 1);
-  const latticeA = new Float32Array(count);
-  const latticeB = new Float32Array(count);
-  for (let i = 0; i < count; i += 1) {
-    latticeA[i] = Math.random();
-    latticeB[i] = Math.random();
-  }
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const gx = (x / size) * cells;
-      const gy = (y / size) * cells;
-      const offset = (y * size + x) * 4;
-      data[offset] = Math.round(noiseValue(latticeA, cells, gx, gy) * 255);
-      data[offset + 1] = Math.round(noiseValue(latticeB, cells, gx, gy) * 255);
-      data[offset + 3] = 255;
-    }
-  }
-  const texture = new DataTexture(data, size, size);
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
-  texture.colorSpace = NoColorSpace;
-  texture.needsUpdate = true;
-  noiseMap = texture;
-  return texture;
-}
-
-function applyFacadeGobo(material: MeshBasicMaterial | MeshStandardMaterial, disabled: boolean) {
-  material.customProgramCacheKey = () => (disabled ? "facade-gobo-off" : "facade-gobo-canopy");
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, goboUniforms);
-    const define = disabled ? "#define DISABLE_GOBO\n" : "";
-    shader.vertexShader =
-      define +
-      shader.vertexShader
-        .replace("#include <common>", `#include <common>\n${GOBO_VARYING}`)
-        .replace("#include <project_vertex>", `#include <project_vertex>\n${GOBO_WORLD}`);
-    shader.fragmentShader =
-      define +
-      shader.fragmentShader
-        .replace("#include <common>", `#include <common>\n${GOBO_VARYING}\n${GOBO_FRAG}`)
-        .replace("#include <opaque_fragment>", `#include <opaque_fragment>\n${GOBO_APPLY}`);
-  };
-}
-
-function useGoboTexture() {
-  const map = useLoader(TextureLoader, GOBO_URL);
+function useWindowMaterial(_door: number) {
+  const color = useLoader(TextureLoader, WINDOW_URL);
   return useMemo(() => {
-    map.colorSpace = NoColorSpace;
-    map.wrapS = RepeatWrapping;
-    map.wrapT = RepeatWrapping;
-    map.magFilter = LinearFilter;
-    map.minFilter = LinearFilter;
-    goboUniforms.uGoboMap.value = map;
-    goboUniforms.uNoiseMap.value = getNoiseMap();
-    return map;
-  }, [map]);
-}
-
-function openingPixel(r: number, g: number, b: number) {
-  return r > 160 && r > g + 80 && r > b + 80;
-}
-
-const DOOR_COLORS: [number, number, number][] = [
-  [0x3a, 0x77, 0xe7],
-  [0x27, 0x9b, 0x2b],
-  [0xff, 0x08, 0x00],
-];
-
-function softLight(base: number, blend: number) {
-  const b = base / 255;
-  const s = blend / 255;
-  const out =
-    s <= 0.5
-      ? b - (1 - 2 * s) * b * (1 - b)
-      : b + (2 * s - 1) * ((b <= 0.25 ? ((16 * b - 12) * b + 4) * b : Math.sqrt(b)) - b);
-  return Math.round(Math.min(1, Math.max(0, out)) * 255);
-}
-
-const windowMaterials = new Map<number, MeshBasicMaterial>();
-
-function useWindowMaterial(door: number) {
-  const [color, mask] = useLoader(TextureLoader, [WINDOW_URL, MASK_URL]);
-  const gobo = useGoboTexture();
-  const mobile = useMemo(isMobileWall, []);
-  return useMemo(() => {
-    const cached = windowMaterials.get(door);
-    if (cached?.map) return cached;
+    if (windowMaterial?.map) return windowMaterial;
     const photo = color.image as HTMLImageElement;
-    const key = mask.image as HTMLImageElement;
     const width = photo.naturalWidth || photo.width;
     const height = photo.naturalHeight || photo.height;
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = width;
-    maskCanvas.height = height;
-    const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx || !maskCtx) return new MeshBasicMaterial();
+    if (!ctx) return new MeshBasicMaterial();
     ctx.drawImage(photo, 0, 0, width, height);
-    maskCtx.drawImage(key, 0, 0, width, height);
     const image = ctx.getImageData(0, 0, width, height);
-    const keyed = maskCtx.getImageData(0, 0, width, height);
-    const [tr, tg, tb] = DOOR_COLORS[door] ?? DOOR_COLORS[0];
     const pixels = image.data;
-    const keys = keyed.data;
     for (let i = 0; i < pixels.length; i += 4) {
-      if (openingPixel(keys[i], keys[i + 1], keys[i + 2])) {
+      if (
+        (pixels[i] ?? 0) < BLACK_KEY
+        && (pixels[i + 1] ?? 0) < BLACK_KEY
+        && (pixels[i + 2] ?? 0) < BLACK_KEY
+      ) {
         pixels[i + 3] = 0;
-        continue;
       }
-      const amount = keys[i + 2] / 255;
-      if (amount <= 0) continue;
-      pixels[i] += (softLight(pixels[i], tr) - pixels[i]) * amount;
-      pixels[i + 1] += (softLight(pixels[i + 1], tg) - pixels[i + 1]) * amount;
-      pixels[i + 2] += (softLight(pixels[i + 2], tb) - pixels[i + 2]) * amount;
     }
     ctx.putImageData(image, 0, 0);
     const map = new CanvasTexture(canvas);
@@ -245,10 +76,9 @@ function useWindowMaterial(door: number) {
       depthWrite: false,
       toneMapped: false,
     });
-    applyFacadeGobo(material, mobile);
-    windowMaterials.set(door, material);
+    windowMaterial = material;
     return material;
-  }, [color, mask, gobo, mobile, door]);
+  }, [color]);
 }
 
 export function Block({
@@ -282,7 +112,6 @@ function useWallMaterial() {
   const map = useLoader(KTX2Loader, url, (loader) => {
     loader.detectSupport(gl);
   });
-  const gobo = useGoboTexture();
   const mobile = useMemo(isMobileWall, []);
   return useMemo(() => {
     map.wrapS = RepeatWrapping;
@@ -300,9 +129,8 @@ function useWallMaterial() {
     // The window photo is unlit. Lift the lit wall so the stone matches that frame.
     // HDR albedo needs less gain than the old LDR tile.
     material.color.setRGB(mobile ? 1.45 : 1.12, mobile ? 1.38 : 1.08, mobile ? 1.28 : 1.02);
-    applyFacadeGobo(material, mobile);
     return material;
-  }, [map, gl, gobo, mobile]);
+  }, [map, gl, mobile]);
 }
 
 function BrickFace({
@@ -409,9 +237,6 @@ export function RoomShell({
 
 export function Facade() {
   const material = useWallMaterial();
-  useFrame((_, delta) => {
-    goboUniforms.uGoboTime.value += delta;
-  });
   const edge = OPENING_WIDTH / 2;
   const sillTop = WINDOW_CENTER_Y - OPENING_HEIGHT / 2;
   const headerBottom = WINDOW_CENTER_Y + OPENING_HEIGHT / 2;
