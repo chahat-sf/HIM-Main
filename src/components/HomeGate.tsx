@@ -40,6 +40,11 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	const magneticZoneRef = useRef<HTMLDivElement>(null);
 	const magneticBtnRef = useRef<HTMLButtonElement>(null);
 	const magneticLabelRef = useRef<HTMLSpanElement>(null);
+	const progressFillRef = useRef<HTMLSpanElement>(null);
+	const targetPctRef = useRef(0);
+	const displayPctRef = useRef(0);
+	const revealedRef = useRef(false);
+	revealedRef.current = revealed;
 
 	const reportHeroProgress = useCallback((pct: number) => {
 		setHeroPct((prev) => Math.max(prev, Math.min(100, pct)));
@@ -63,16 +68,43 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	const progress = combinedProgress(heroPct, heroReady, houseReady);
 
 	useEffect(() => {
+		targetPctRef.current = pageReady ? 100 : progress;
+	}, [progress, pageReady]);
+
+	// Smooth fill + label via rAF so discrete frame/house jumps do not restart CSS transitions.
+	useEffect(() => {
 		if (revealed) return;
-		setDisplayPct(pageReady ? 100 : progress);
-	}, [progress, pageReady, revealed]);
+		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		let raf = 0;
+		const tick = () => {
+			const target = targetPctRef.current;
+			const cur = displayPctRef.current;
+			const next = reduce ? target : cur + (target - cur) * 0.1;
+			const value = !reduce && Math.abs(target - next) < 0.2 ? target : next;
+			displayPctRef.current = value;
+			const fill = progressFillRef.current;
+			if (fill) fill.style.transform = `scaleX(${value / 100})`;
+			const rounded = Math.round(value);
+			setDisplayPct((prev) => (prev === rounded ? prev : rounded));
+			if (!revealedRef.current) raf = requestAnimationFrame(tick);
+		};
+		raf = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(raf);
+	}, [revealed]);
 
 	useEffect(() => {
 		if (!pageReady || revealed) return;
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		// Let the fill ease to 100%, hold a beat, then show the CTA.
-		const delay = reduce ? 80 : 700;
-		const timer = window.setTimeout(() => setRevealed(true), delay);
+		// Wait until the smoothed bar is near 100%, then hold a beat and show the CTA.
+		let timer = 0;
+		const check = () => {
+			if (displayPctRef.current < 99.5 && !reduce) {
+				timer = window.setTimeout(check, 50);
+				return;
+			}
+			timer = window.setTimeout(() => setRevealed(true), reduce ? 80 : 400);
+		};
+		timer = window.setTimeout(check, reduce ? 0 : 120);
 		return () => window.clearTimeout(timer);
 	}, [pageReady, revealed]);
 
@@ -186,8 +218,9 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 					>
 						{!revealed && (
 							<span
+								ref={progressFillRef}
 								className="magnetic-btn__progress"
-								style={{ transform: `scaleX(${displayPct / 100})` }}
+								style={{ transform: "scaleX(0)" }}
 								aria-hidden
 							/>
 						)}
@@ -220,7 +253,9 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 					letter-spacing: 0.08em;
 					text-transform: uppercase;
 					overflow: hidden;
-					will-change: transform;
+					/* scaleX progress breaks overflow+radius clipping; clip-path keeps the pill. */
+					clip-path: inset(0 round 999px);
+					isolation: isolate;
 					transition:
 						border-color 0.3s ease,
 						color 0.3s ease,
@@ -236,12 +271,14 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 				.magnetic-btn--ready {
 					cursor: pointer;
 					padding: 22px 42px;
+					will-change: transform;
 				}
 
 				.magnetic-btn__progress,
 				.magnetic-btn__hover {
 					position: absolute;
 					inset: 0;
+					border-radius: inherit;
 					background: #fff;
 					z-index: 1;
 					pointer-events: none;
@@ -249,7 +286,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 
 				.magnetic-btn__progress {
 					transform-origin: left center;
-					transition: transform 0.35s ease;
+					will-change: transform;
 				}
 
 				.magnetic-btn__hover {
