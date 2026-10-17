@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { PerspectiveCamera } from "three";
 import { PLANE_WIDTH } from "../rooms/Shell";
-import { INITIAL_POSE, ROOMS, roomPoses, type Pose } from "../rooms/poses";
+import { EXTERIOR_Z, INITIAL_POSE, ROOMS, roomPoses, type Pose } from "../rooms/poses";
 
 gsap.registerPlugin(useGSAP);
 
@@ -62,15 +62,16 @@ function wave(time: number, speed: number, phase: number) {
   return Math.sin(time * speed + phase) * 0.65 + Math.sin(time * speed * 0.57 + phase * 1.7) * 0.35;
 }
 
-function sway(time: number) {
-  return {
-    x: wave(time, 0.9, 0.4) * 0.06,
-    y: wave(time, 0.7, 1.2) * 0.04,
-    z: wave(time, 0.55, 2.8) * 0.03,
-    aimX: wave(time, 0.8, 0.9) * 0.05,
-    aimY: wave(time, 0.62, 1.8) * 0.04,
-    roll: wave(time, 0.74, 2.4) * (Math.PI / 180),
-  };
+const SWAY = { x: 0, y: 0, z: 0, aimX: 0, aimY: 0, roll: 0 };
+
+function fillSway(time: number) {
+  SWAY.x = wave(time, 0.9, 0.4) * 0.06;
+  SWAY.y = wave(time, 0.7, 1.2) * 0.04;
+  SWAY.z = wave(time, 0.55, 2.8) * 0.03;
+  SWAY.aimX = wave(time, 0.8, 0.9) * 0.05;
+  SWAY.aimY = wave(time, 0.62, 1.8) * 0.04;
+  SWAY.roll = wave(time, 0.74, 2.4) * (Math.PI / 180);
+  return SWAY;
 }
 
 const PARALLAX_X = 0.28;
@@ -81,11 +82,10 @@ const HANG_STIFFNESS = 70;
 const HANG_DAMPING = 16.5;
 const HANG_AIM = 0.22;
 const WINDOW_Z = 0.12;
-const EXTERIOR_Z = INITIAL_POSE.pz;
 const WINDOW_FIT = 1.06;
 
 function fittedExteriorZ(aspect: number) {
-  const tanHalf = Math.tan((INITIAL_POSE.fov * Math.PI) / 360);
+  const tanHalf = Math.tan((72 * Math.PI) / 360);
   const tanHalfH = tanHalf * Math.max(aspect, 0.01);
   const distance = (PLANE_WIDTH * WINDOW_FIT) / 2 / tanHalfH;
   return Math.max(EXTERIOR_Z, WINDOW_Z + distance);
@@ -102,11 +102,13 @@ export default function CameraController({
   onComplete,
   onSettled,
   parallax = false,
+  idleSway = false,
 }: {
   command: CameraCommand | null;
   onComplete: () => void;
   onSettled?: () => void;
   parallax?: boolean;
+  idleSway?: boolean;
 }) {
   const pose = useRef<Pose>({ ...INITIAL_POSE });
   const body = useRef<Pose>({ ...INITIAL_POSE });
@@ -119,15 +121,17 @@ export default function CameraController({
   const onCompleteRef = useRef(onComplete);
   const onSettledRef = useRef(onSettled);
   const moving = useRef(false);
-  const hover = useRef(1);
+  const hover = useRef(0);
   const reduceMotion = useRef(false);
   const finePointer = useRef(false);
   const pointer = useRef({ x: 0, y: 0 });
   const eased = useRef({ x: 0, y: 0 });
   const parallaxOn = useRef(parallax);
+  const idleSwayOn = useRef(idleSway);
   const exteriorDistance = useRef(EXTERIOR_Z);
-  const outside = useRef(true);
+  const outside = useRef(false);
   parallaxOn.current = parallax;
+  idleSwayOn.current = idleSway;
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -268,10 +272,11 @@ export default function CameraController({
     }
 
     const current = hanging.current ? body.current : pose.current;
-    const goal = moving.current || hanging.current || reduceMotion.current ? 0 : 1;
+    const goal =
+      !idleSwayOn.current || moving.current || hanging.current || reduceMotion.current ? 0 : 1;
     hover.current += (goal - hover.current) * Math.min(1, delta * 3);
     const weight = hover.current;
-    const hand = sway(performance.now() / 1000);
+    const hand = weight > 0.001 ? fillSway(performance.now() / 1000) : SWAY;
     const allow = parallaxOn.current && finePointer.current && !reduceMotion.current;
     const lead = Math.min(1, delta * 6);
     eased.current.x += ((allow ? pointer.current.x : 0) - eased.current.x) * lead;

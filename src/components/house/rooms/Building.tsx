@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { FRAME_STARTS, FramePlane } from "./Frames";
+import { FramePlane } from "./Frames";
 import { ROOMS } from "./poses";
 import { Facade, RoomShell } from "./Shell";
 
@@ -18,32 +18,20 @@ export default function Building({
     <group>
       <Suspense fallback={null}>
         <RoomShell x={ROOMS[0].x} door={0} interactive={interactive} onEnter={() => onEnter(0)}>
-          <FramePlane room={0} start={FRAME_STARTS[0]} onFirstFrame={onFirstFrame} />
+          <FramePlane room={0} onFirstFrame={onFirstFrame} />
         </RoomShell>
         <RoomShell x={ROOMS[1].x} door={1} interactive={interactive} onEnter={() => onEnter(1)}>
-          <FramePlane room={1} start={FRAME_STARTS[1]} />
+          <FramePlane room={1} />
         </RoomShell>
         <RoomShell x={ROOMS[2].x} door={2} interactive={interactive} onEnter={() => onEnter(2)}>
-          <FramePlane room={2} start={FRAME_STARTS[2]} />
+          <FramePlane room={2} />
         </RoomShell>
         <Facade />
       </Suspense>
 
       <hemisphereLight args={["#f4f8fc", "#c9b79a", 0.7]} />
       <ambientLight intensity={0.28} color="#fff4e8" />
-      <directionalLight
-        position={[12, 16, 10]}
-        intensity={1.8}
-        color="#fff6ea"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-far={40}
-        shadow-camera-left={-20}
-        shadow-camera-right={40}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
-      />
+      <directionalLight position={[12, 16, 10]} intensity={1.8} color="#fff6ea" />
     </group>
   );
 }

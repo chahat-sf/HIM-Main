@@ -9,7 +9,8 @@ import CameraController, { type CameraCommand } from "./camera/CameraController"
 import SpeedBlur from "./camera/SpeedBlur";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
-import { beginDrag, FRAME_COUNT, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
+import { useHomeLoad } from "../HomeGate";
+import { beginDrag, frameCount, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
 type Mode = "exterior" | "entering" | "interior" | "exiting" | "moving";
@@ -58,17 +59,33 @@ function fadeGain(ctx: AudioContext | null, gain: GainNode | null, level: number
   gain.gain.linearRampToValueAtTime(level, now + OUTSIDE_FADE);
 }
 
-export default function Flythrough() {
+/** 0 when the house is off-screen; 1 when it fills the viewport; ramps with visible coverage. */
+function sectionProximity(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+  if (visible <= 0) return 0;
+  const coverage = Math.min(1, visible / vh);
+  // Ease so thin edge slivers stay near silent and full-screen sits at 1.
+  return coverage * coverage;
+}
+
+export default function Flythrough({ embedded = false }: { embedded?: boolean }) {
   const [index, setIndex] = useState(0);
   const [navIndex, setNavIndex] = useState(0);
   const [sliding, setSliding] = useState(false);
-  const [mode, setMode] = useState<Mode>("exterior");
+  const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState([0, 1, 2]);
   const [nameSwap, setNameSwap] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [hint, setHint] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [ready, setReady] = useState(false);
+  const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
+  const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
+  const homeLoad = useHomeLoad();
+  const homeLoadRef = useRef(homeLoad);
+  homeLoadRef.current = homeLoad;
   const token = useRef(0);
   const modeRef = useRef(mode);
   const indexRef = useRef(index);
@@ -80,6 +97,9 @@ export default function Flythrough() {
   const audioCtx = useRef<AudioContext | null>(null);
   const outsideGain = useRef<GainNode | null>(null);
   const outsideSource = useRef<AudioBufferSourceNode | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const proximityRef = useRef(embedded ? 0 : 1);
+  const applyAmbientRef = useRef<() => void>(() => { });
 
   useEffect(() => {
     modeRef.current = mode;
@@ -88,8 +108,100 @@ export default function Flythrough() {
   }, [mode, index, command]);
 
   useEffect(() => {
+    const mq = window.matchMedia(MOBILE_WINDOW);
+    const sync = () => setDpr(mq.matches ? 1 : [1, 1.5]);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!embedded) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFrameloop(entry.isIntersecting ? "always" : "never"),
+      { threshold: 0.01 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [embedded]);
+
+  useEffect(() => {
+    if (!embedded) return;
+    const html = document.documentElement;
+    const previousBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "smooth";
+
+    const coverageOf = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+      return { rect, vh, coverage: visible / vh };
+    };
+
+    // Armed only when fully off-screen; one snap per entry, then locked until off-screen again.
+    let armed = true;
+    const el0 = rootRef.current;
+    if (el0 && coverageOf(el0).coverage > 0) armed = false;
+
+    let idle = 0;
+    let snapping = false;
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let speed = 0;
+
+    const settle = () => {
+      const el = rootRef.current;
+      if (!el || snapping || !armed) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const { rect, vh, coverage } = coverageOf(el);
+      if (coverage <= 0) return;
+      // Already filling / aligned — consume the shot so we do not nudge again.
+      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
+        armed = false;
+        return;
+      }
+      // Only ease in when the house is partly on screen.
+      if (coverage < 0.28) return;
+      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
+      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
+      armed = false;
+      snapping = true;
+      window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
+      window.setTimeout(() => {
+        snapping = false;
+      }, 750);
+    };
+
+    const onScroll = () => {
+      const el = rootRef.current;
+      if (el && coverageOf(el).coverage <= 0) armed = true;
+
+      const now = performance.now();
+      const y = window.scrollY;
+      const dt = Math.max(1, now - lastT);
+      speed = Math.abs(y - lastY) / dt;
+      lastY = y;
+      lastT = now;
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        if (speed > 1.2) return;
+        settle();
+      }, 120);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      html.style.scrollBehavior = previousBehavior;
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(idle);
+    };
+  }, [embedded]);
+
+  useEffect(() => {
     const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!embedded) document.body.style.overflow = "hidden";
     const ctx = new AudioContext();
     audioCtx.current = ctx;
     let cancel = false;
@@ -103,14 +215,14 @@ export default function Flythrough() {
         .catch(() => undefined);
     }
     load("/house/sounds.mp4", sprite);
-    fetch("/house/outside.mp3")
+    fetch("/house/oudoor%20bg%20sound%202.mp4")
       .then((response) => response.arrayBuffer())
       .then((data) => ctx.decodeAudioData(data))
       .then((buffer) => {
         if (cancel) return;
         const gain = ctx.createGain();
         const inside = modeRef.current === "interior" || modeRef.current === "entering";
-        gain.gain.value = inside ? 0 : OUTSIDE_LEVEL;
+        gain.gain.value = inside ? 0 : proximityRef.current * OUTSIDE_LEVEL;
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
@@ -119,6 +231,8 @@ export default function Flythrough() {
         source.start(0);
         outsideGain.current = gain;
         outsideSource.current = source;
+        // Start immediately when the browser allows autoplay. A later click still resumes if this is blocked.
+        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
       })
       .catch(() => undefined);
     return () => {
@@ -129,9 +243,87 @@ export default function Flythrough() {
       outsideGain.current = null;
       audioCtx.current = null;
       void ctx.close();
-      document.body.style.overflow = previous;
+      if (!embedded) document.body.style.overflow = previous;
     };
-  }, []);
+  }, [embedded]);
+
+  useEffect(() => {
+    if (!embedded) {
+      proximityRef.current = 1;
+      applyAmbientRef.current = () => { };
+      return;
+    }
+    let raf = 0;
+    const writeGain = () => {
+      const ctx = audioCtx.current;
+      const gain = outsideGain.current;
+      if (!ctx || !gain || ctx.state !== "running") return;
+      const proximity = proximityRef.current;
+      const current = modeRef.current;
+      if (proximity <= 0) {
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        return;
+      }
+      if (current !== "exterior" && current !== "moving") return;
+      const level = proximity * OUTSIDE_LEVEL;
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setValueAtTime(level, ctx.currentTime);
+    };
+    const apply = () => {
+      raf = 0;
+      const el = rootRef.current;
+      if (!el) return;
+      proximityRef.current = sectionProximity(el);
+      writeGain();
+    };
+    let resumeAttempted = false;
+    const resumeIfAllowed = () => {
+      const ctx = audioCtx.current;
+      if (!ctx || ctx.state !== "suspended") {
+        writeGain();
+        return;
+      }
+      const activation = navigator.userActivation;
+      const gesture = !activation || activation.isActive || activation.hasBeenActive;
+      // One attempt on load. Further attempts wait for a real click, tap, or key so scroll does not spam a blocked context.
+      if (!gesture && resumeAttempted) return;
+      resumeAttempted = true;
+      void ctx.resume().then(writeGain).catch(() => undefined);
+    };
+    applyAmbientRef.current = () => {
+      const el = rootRef.current;
+      if (el) proximityRef.current = sectionProximity(el);
+      resumeIfAllowed();
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        apply();
+        resumeIfAllowed();
+      });
+    };
+    // Click, tap, or key anywhere on the page — not only the house — unlocks audio.
+    const unlock = () => {
+      applyAmbientRef.current();
+    };
+    apply();
+    const capture = { capture: true } as const;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("pointerdown", unlock, capture);
+    window.addEventListener("keydown", unlock, capture);
+    window.addEventListener("touchstart", unlock, capture);
+    return () => {
+      applyAmbientRef.current = () => { };
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("pointerdown", unlock, capture);
+      window.removeEventListener("keydown", unlock, capture);
+      window.removeEventListener("touchstart", unlock, capture);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [embedded]);
 
   function enter(roomIndex: number) {
     if (swipedRef.current) return;
@@ -152,7 +344,7 @@ export default function Flythrough() {
     token.current += 1;
     setMode("exiting");
     setCommand({ token: token.current, kind: "exit", index: indexRef.current });
-    fadeGain(audioCtx.current, outsideGain.current, OUTSIDE_LEVEL);
+    fadeGain(audioCtx.current, outsideGain.current, proximityRef.current * OUTSIDE_LEVEL);
   }
 
   function slide(to: number) {
@@ -221,7 +413,7 @@ export default function Flythrough() {
     window.setTimeout(() => setNameSwap(false), 220);
     setHint(false);
     window.setTimeout(() => {
-      showCharacter(room, Math.round(CHARACTERS[character].start * FRAME_COUNT));
+      showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
     }, 260);
   }
 
@@ -270,7 +462,7 @@ export default function Flythrough() {
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
     const span = Math.min(900, Math.max(320, window.innerWidth * 0.8));
-    const target = drag.p0 + (drag.x - event.clientX) * (FRAME_COUNT / span);
+    const target = drag.p0 + (drag.x - event.clientX) * (frameCount(indexRef.current) / span);
     const now = performance.now();
     const dt = Math.max(1, now - drag.lt) / 1000;
     drag.v += ((target - roomPlay(indexRef.current).pos) / dt - drag.v) * 0.4;
@@ -287,12 +479,15 @@ export default function Flythrough() {
   }
 
   const scene = mode === "interior" ? "character" : mode === "exterior" ? "entry" : undefined;
+  const Root = embedded ? "section" : "main";
 
   return (
-    <main
+    <Root
+      ref={rootRef}
+      id={embedded ? "house" : undefined}
       className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
       aria-busy={!ready}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: embedded ? "pan-y" : "none" }}
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
         startSound(audioCtx.current, sprite.current, CLICK);
@@ -303,9 +498,9 @@ export default function Flythrough() {
       onPointerCancelCapture={onWindowPointerUp}
     >
       <Canvas
-        shadows
-        camera={{ position: [0, 1.9, 3.58], fov: 72, near: 0.1, far: 80 }}
-        dpr={[1, 1.75]}
+        frameloop={frameloop}
+        camera={{ position: [0, 1.9, -0.42], fov: 72, near: 0.1, far: 80 }}
+        dpr={dpr}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
@@ -316,9 +511,17 @@ export default function Flythrough() {
           onComplete={onComplete}
           onSettled={onSettled}
           parallax={mode === "exterior" || mode === "moving"}
+          idleSway={mode === "exterior" || mode === "moving"}
         />
         <SpeedBlur />
-        <Building interactive={mode === "exterior"} onEnter={enter} onFirstFrame={() => setReady(true)} />
+        <Building
+          interactive={mode === "exterior"}
+          onEnter={enter}
+          onFirstFrame={() => {
+            setReady(true);
+            if (embedded) homeLoadRef.current?.reportHouseReady();
+          }}
+        />
         <WindowNav
           x={ROOMS[index].x}
           visible={mode === "exterior"}
@@ -396,27 +599,29 @@ export default function Flythrough() {
         </div>
       </div>
 
-      <div
-        aria-hidden={ready}
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 40,
-          display: "grid",
-          placeItems: "center",
-          background: "#c5d0dc",
-          opacity: ready ? 0 : 1,
-          pointerEvents: ready ? "none" : "auto",
-          transition: "opacity 0.45s ease",
-        }}
-      >
-        <p
-          className="m-0 text-[12px] tracking-[0.22em] uppercase"
-          style={{ fontFamily: sans, color: "#1a120c" }}
+      {!embedded && (
+        <div
+          aria-hidden={ready}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 40,
+            display: "grid",
+            placeItems: "center",
+            background: "#c5d0dc",
+            opacity: ready ? 0 : 1,
+            pointerEvents: ready ? "none" : "auto",
+            transition: "opacity 0.45s ease",
+          }}
         >
-          Loading
-        </p>
-      </div>
-    </main>
+          <p
+            className="m-0 text-[12px] tracking-[0.22em] uppercase"
+            style={{ fontFamily: sans, color: "#1a120c" }}
+          >
+            Loading
+          </p>
+        </div>
+      )}
+    </Root>
   );
 }

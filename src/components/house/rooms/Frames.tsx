@@ -1,57 +1,129 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
-import { ClampToEdgeWrapping, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, Texture } from "three";
-import { ROOMS } from "./poses";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	ClampToEdgeWrapping,
+	LinearFilter,
+	Mesh,
+	MeshBasicMaterial,
+	PlaneGeometry,
+	SRGBColorSpace,
+	VideoTexture,
+} from "three";
+import { BAY, ROOMS } from "./poses";
 
-export const FRAME_COUNT = 337;
 const FPS = 24;
-const PLATE_ASPECT = 2212 / 936;
+const DEFAULT_ASPECT = 2212 / 936;
+
+const ROOM_VIDEOS = [
+	"/house/window-3.mp4",
+	"/house/window-2.mp4",
+	"/house/window-1.mp4?v=2212",
+] as const;
 
 /**
- * The picture stays the size that fits the interior view. The mesh is
- * larger so the window opening cannot see past it on the way in or out.
- * UVs outside the picture clamp to the roof and floor.
+ * Picture uses the proven interior fit height. Mesh is larger so the window
+ * never sees past the plate. During the dolly the plate eases toward the
+ * glass so the opening stays filled, then sits at the interior gap again.
  */
 const PLANE_Z = -4.12;
+/** Proven interior FOV fit × slight overscan so the plate fills the view. */
 const IMAGE_HEIGHT = 5.38 * 1.11;
 const OPENING_HEIGHT = 2.5;
+/** Legacy depth used only to size the oversized mesh. */
 const WINDOW_Z = 0.35;
+/** Facade opening — the camera crosses this on the way in. */
+const FACADE_Z = 0.12;
+const INTERIOR_Z = -0.42;
+/** Camera-to-plate gap at the interior stop, where the shot already fills. */
+const INTERIOR_DIST = INTERIOR_Z - PLANE_Z;
+/** Closest the plate may come: nearer than this crops the shot inside the FOV. */
+const FRUSTUM_DIST = (IMAGE_HEIGHT * 0.97) / (2 * Math.tan((72 * Math.PI) / 360));
 const PLANE_HEIGHT = (OPENING_HEIGHT * (WINDOW_Z - PLANE_Z) / WINDOW_Z) * 1.08;
-const PLANE_WIDTH = PLANE_HEIGHT * PLATE_ASPECT;
 
-function plateGeometry() {
-	const geo = new PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT);
+let reduceMotionCached =
+	typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (typeof window !== "undefined") {
+	const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+	media.addEventListener("change", () => {
+		reduceMotionCached = media.matches;
+	});
+}
+
+function smoothstep(t: number) {
+	const x = Math.min(1, Math.max(0, t));
+	return x * x * (3 - 2 * x);
+}
+
+function coverPlaneZ(camZ: number) {
+	const span = camZ - FACADE_Z;
+	const cover = (IMAGE_HEIGHT * 0.97) / OPENING_HEIGHT;
+	const restDist = camZ - PLANE_Z;
+	// Through the glass, ease from the approach gap to the interior gap.
+	// A hard switch here pops the plate forward.
+	if (span <= 0) {
+		const travel = FACADE_Z - INTERIOR_Z;
+		const t = travel > 0 ? smoothstep(-span / travel) : 1;
+		return camZ - (FRUSTUM_DIST + (INTERIOR_DIST - FRUSTUM_DIST) * t);
+	}
+	const holeDist = span * cover;
+	const spanAtFrustum = FRUSTUM_DIST / cover;
+	const dist = holeDist + (FRUSTUM_DIST - holeDist) * smoothstep((spanAtFrustum - span) / spanAtFrustum);
+	return camZ - Math.min(dist, restDist);
+}
+
+function plateGeometry(aspect: number) {
+	const planeWidth = PLANE_HEIGHT * aspect;
+	const geo = new PlaneGeometry(planeWidth, PLANE_HEIGHT);
 	const uv = geo.getAttribute("uv");
 	const scale = PLANE_HEIGHT / IMAGE_HEIGHT;
 	for (let i = 0; i < uv.count; i += 1) {
-		uv.setXY(i, (uv.getX(i) - 0.5) * scale + 0.5, (uv.getY(i) - 0.5) * scale + 0.5);
+		uv.setXY(
+			i,
+			(uv.getX(i) - 0.5) * scale + 0.5,
+			(uv.getY(i) - 0.5) * scale + 0.5,
+		);
 	}
 	return geo;
 }
 
+type PlayState = {
+	pos: number;
+	vel: number;
+	dragging: boolean;
+	duration: number;
+	video: HTMLVideoElement | null;
+};
 
-const images = new Array<HTMLImageElement | undefined>(FRAME_COUNT);
-const ready = new Array<boolean>(FRAME_COUNT).fill(false);
-const pending = new Set<number>();
-const queue: number[] = [];
-let decoding = 0;
-let preloadStarted = false;
-let uploadTick = -1;
-let uploadBudget = 0;
-
-const OLD_COUNT = 241;
-export const FRAME_STARTS = [0, 209, 181].map((frame) => Math.round((frame / OLD_COUNT) * FRAME_COUNT));
-
-const play: { pos: number; vel: number; dragging: boolean }[] = FRAME_STARTS.map((start) => ({
-	pos: start,
+const play: PlayState[] = ROOM_VIDEOS.map(() => ({
+	pos: 0,
 	vel: FPS,
 	dragging: false,
+	duration: 0,
+	video: null,
 }));
+
+export function frameCount(room: number) {
+	const duration = play[room]?.duration ?? 0;
+	return Math.max(1, Math.round(duration * FPS));
+}
 
 export function roomPlay(room: number) {
 	return play[room];
+}
+
+function wrapTime(seconds: number, duration: number) {
+	if (duration <= 0) return 0;
+	return ((seconds % duration) + duration) % duration;
+}
+
+function seekVideo(item: PlayState, pos: number) {
+	const video = item.video;
+	if (!video || item.duration <= 0) return;
+	const t = wrapTime(pos / FPS, item.duration);
+	// Seek only when the target crosses a frame boundary (all-intra encode).
+	if (Math.abs(video.currentTime - t) > 1 / FPS) video.currentTime = t;
 }
 
 export function beginDrag(room: number) {
@@ -59,12 +131,14 @@ export function beginDrag(room: number) {
 	if (!item) return;
 	item.dragging = true;
 	item.vel = 0;
+	item.video?.pause();
 }
 
 export function scrub(room: number, pos: number) {
 	const item = play[room];
 	if (!item) return;
 	item.pos = pos;
+	seekVideo(item, pos);
 }
 
 export function releaseDrag(room: number, velocity: number) {
@@ -80,67 +154,7 @@ export function showCharacter(room: number, frame: number) {
 	item.dragging = false;
 	item.pos = frame;
 	item.vel = FPS;
-	for (let k = 0; k < 30; k += 1) requestFrame(frame + k, true);
-}
-
-function wrap(index: number) {
-	return ((index % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT;
-}
-
-function pump() {
-	while (decoding < 2 && queue.length > 0) {
-		const i = queue.shift();
-		if (i === undefined || images[i]) {
-			pending.delete(i ?? -1);
-			continue;
-		}
-		decoding += 1;
-		const image = new Image();
-		images[i] = image;
-		image.decoding = "async";
-		image.src = `/house/frames/${String(i).padStart(3, "0")}.jpg?v=2`;
-		const done = () => {
-			ready[i] = image.naturalWidth > 0;
-			decoding -= 1;
-			pump();
-		};
-		if (image.decode) image.decode().then(done, done);
-		else image.onload = image.onerror = done;
-	}
-}
-
-function requestFrame(index: number, urgent = false) {
-	const i = wrap(index);
-	if (images[i]) return;
-	if (pending.has(i)) {
-		if (!urgent) return;
-		const at = queue.indexOf(i);
-		if (at > 0) {
-			queue.splice(at, 1);
-			queue.unshift(i);
-		}
-		return;
-	}
-	pending.add(i);
-	if (urgent) queue.unshift(i);
-	else queue.push(i);
-	pump();
-}
-
-function startPreload() {
-	if (preloadStarted) return;
-	preloadStarted = true;
-	for (let i = 0; i < FRAME_COUNT; i += 1) requestFrame(i);
-}
-
-function takeUpload(frame: number) {
-	if (uploadTick !== frame) {
-		uploadTick = frame;
-		uploadBudget = 1;
-	}
-	if (uploadBudget <= 0) return false;
-	uploadBudget -= 1;
-	return true;
+	seekVideo(item, frame);
 }
 
 function nearestRoom(cameraX: number) {
@@ -156,37 +170,57 @@ function nearestRoom(cameraX: number) {
 	return best;
 }
 
-function nearestReady(index: number) {
-	const i = wrap(index);
-	if (ready[i]) return i;
-	for (let d = 1; d <= 10; d += 1) {
-		const previous = wrap(i - d);
-		const next = wrap(i + d);
-		if (ready[previous]) return previous;
-		if (ready[next]) return next;
-	}
-	return -1;
+function makeVideo(src: string, preload: "auto" | "metadata") {
+	const video = document.createElement("video");
+	video.src = src;
+	video.crossOrigin = "anonymous";
+	video.loop = true;
+	video.muted = true;
+	video.playsInline = true;
+	video.preload = preload;
+	video.setAttribute("playsinline", "");
+	video.setAttribute("muted", "");
+	return video;
+}
+
+function ensurePreload(video: HTMLVideoElement) {
+	if (video.preload === "auto") return;
+	video.preload = "auto";
+	video.load();
 }
 
 export function FramePlane({
-	start,
 	room,
 	onFirstFrame,
 }: {
-	start: number;
 	room: number;
 	onFirstFrame?: () => void;
 }) {
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
-	const mapRef = useRef<Texture | null>(null);
-	const geometry = useMemo(() => plateGeometry(), []);
-	const shown = useRef(-1);
-	const uploadedAt = useRef(0);
+	const mapRef = useRef<VideoTexture | null>(null);
+	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
+	const onFirstFrameRef = useRef(onFirstFrame);
+	onFirstFrameRef.current = onFirstFrame;
+	const [aspect, setAspect] = useState(DEFAULT_ASPECT);
+	const geometry = useMemo(() => plateGeometry(aspect), [aspect]);
 
 	useEffect(() => {
-		const map = new Texture();
+		return () => {
+			geometry.dispose();
+		};
+	}, [geometry]);
+
+	useEffect(() => {
+		const src = ROOM_VIDEOS[room];
+		if (!src) return;
+		const video = makeVideo(src, room === 0 ? "auto" : "metadata");
+		videoRef.current = video;
+		const item = play[room];
+		if (item) item.video = video;
+
+		const map = new VideoTexture(video);
 		map.colorSpace = SRGBColorSpace;
 		map.minFilter = LinearFilter;
 		map.magFilter = LinearFilter;
@@ -194,54 +228,121 @@ export function FramePlane({
 		map.wrapS = ClampToEdgeWrapping;
 		map.wrapT = ClampToEdgeWrapping;
 		mapRef.current = map;
+
 		const material = materialRef.current;
 		if (material) {
 			material.map = map;
 			material.needsUpdate = true;
 		}
-		for (let k = 0; k < FPS; k += 1) requestFrame(start + k, true);
-		startPreload();
+
+		const onMeta = () => {
+			if (item) {
+				item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+				item.pos = video.currentTime * FPS;
+			}
+			if (video.videoWidth > 0 && video.videoHeight > 0) {
+				setAspect(video.videoWidth / video.videoHeight);
+			}
+		};
+
+		const announce = () => {
+			if (announced.current) return;
+			announced.current = true;
+			onFirstFrameRef.current?.();
+		};
+
+		const onReady = () => {
+			void video.play().catch(() => { });
+			announce();
+		};
+
+		video.addEventListener("loadedmetadata", onMeta);
+		video.addEventListener("loadeddata", onReady);
+		video.addEventListener("canplay", onReady);
+		if (video.readyState >= 1) onMeta();
+		if (video.readyState >= 2) onReady();
+		const readyFallback = window.setTimeout(announce, 2500);
+
 		return () => {
+			window.clearTimeout(readyFallback);
+			video.removeEventListener("loadedmetadata", onMeta);
+			video.removeEventListener("loadeddata", onReady);
+			video.removeEventListener("canplay", onReady);
+			video.pause();
+			video.removeAttribute("src");
+			video.load();
+			if (item?.video === video) item.video = null;
+			videoRef.current = null;
 			mapRef.current = null;
 			if (material?.map === map) material.map = null;
 			map.dispose();
-			geometry.dispose();
 		};
-	}, [start, geometry]);
+	}, [room]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
 		const mesh = meshRef.current;
-		if (!map || !mesh) return;
+		const video = videoRef.current;
 		const item = play[room];
+		const material = materialRef.current;
+		if (map && material && material.map !== map) {
+			material.map = map;
+			material.needsUpdate = true;
+		}
+		if (!map || !mesh || !video || !item) return;
+
 		const focused = nearestRoom(state.camera.position.x) === room;
+		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
+		if (focused || near) ensurePreload(video);
+
 		mesh.visible = focused;
-		if (item && !item.dragging) {
-			const target = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : FPS;
-			item.vel += (target - item.vel) * (1 - Math.exp(-delta * 2.2));
+		if (mesh.geometry !== geometry) mesh.geometry = geometry;
+		mesh.position.z = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
+
+		if (!focused) {
+			if (!video.paused) video.pause();
+			return;
+		}
+
+		if (item.dragging) {
+			if (!video.paused) video.pause();
+			map.needsUpdate = true;
+			return;
+		}
+
+		if (reduceMotionCached) {
+			if (!video.paused) video.pause();
+			item.vel = 0;
+			map.needsUpdate = true;
+			return;
+		}
+
+		const coasting = Math.abs(item.vel - FPS) > 8;
+		if (coasting) {
+			if (!video.paused) video.pause();
+			item.vel += (FPS - item.vel) * (1 - Math.exp(-delta * 2.2));
 			item.pos += item.vel * delta;
+			if (item.duration > 0) {
+				item.pos = wrapTime(item.pos / FPS, item.duration) * FPS;
+			}
+			seekVideo(item, item.pos);
+			map.needsUpdate = true;
+			return;
 		}
-		const index = Math.floor(item?.pos ?? start);
-		for (let k = 0; k <= 3; k += 1) requestFrame(index + k, true);
-		const frame = nearestReady(index);
-		if (frame < 0 || frame === shown.current) return;
-		const image = images[frame];
-		if (!image) return;
-		if (!focused && state.clock.elapsedTime - uploadedAt.current < 0.4) return;
-		if (!takeUpload(state.gl.info.render.frame)) return;
-		map.image = image;
-		map.needsUpdate = true;
-		shown.current = frame;
-		uploadedAt.current = state.clock.elapsedTime;
-		if (!announced.current && onFirstFrame) {
-			announced.current = true;
-			onFirstFrame();
-		}
+
+		item.vel = FPS;
+		if (video.paused) void video.play().catch(() => { });
+		if (item.duration > 0) item.pos = video.currentTime * FPS;
 	});
 
 	return (
-		<mesh ref={meshRef} visible={room === 0} position={[0, 1.9, PLANE_Z]} raycast={() => null}>
-			<primitive object={geometry} attach="geometry" />
+		<mesh
+			ref={meshRef}
+			visible={room === 0}
+			position={[0, 1.9, PLANE_Z]}
+			geometry={geometry}
+			raycast={() => null}
+		>
 			<meshBasicMaterial ref={materialRef} toneMapped={false} />
 		</mesh>
 	);

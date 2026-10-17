@@ -9,13 +9,9 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 
 // A window switch covers 9.2 units in 0.5s with power4.inOut, peaking near 74 units/s.
-// Enter and exit cover about 4 units in 2.6s with power2.inOut, peaking near 3.1 units/s.
 const WINDOW_PEAK_SPEED = 74;
-const ENTER_PEAK_SPEED = 3.1;
 const STREAK_GAIN = 0.007 / WINDOW_PEAK_SPEED;
-const ZOOM_GAIN = 0.08 / ENTER_PEAK_SPEED;
 const MAX_STREAK = 0.008;
-const MAX_ZOOM = 0.09;
 const SMOOTH = 18;
 
 const SpeedBlurShader = {
@@ -23,7 +19,7 @@ const SpeedBlurShader = {
   uniforms: {
     tDiffuse: { value: null },
     uStreak: { value: new Vector2() },
-    uZoom: { value: 0 },
+    uZoom: { value: 0 }, // kept at 0 — radial blur smears the video on enter
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -84,7 +80,6 @@ export default function SpeedBlur() {
   const primed = useRef(false);
   const previous = useRef(new Vector3());
   const velocity = useRef(new Vector3());
-  const forward = useRef(new Vector3());
   const right = useRef(new Vector3());
   const up = useRef(new Vector3());
   const streak = useRef(new Vector2());
@@ -138,13 +133,18 @@ export default function SpeedBlur() {
       primed,
       previous,
       velocity,
-      forward,
       right,
       up,
       streak,
       streakTarget,
       zoom,
     });
+    const idle =
+      streak.current.lengthSq() < 1e-10 && Math.abs(zoom.current) < 1e-6;
+    if (idle) {
+      state.gl.render(state.scene, state.camera);
+      return;
+    }
     rig.uniforms.uStreak.value.copy(streak.current);
     rig.uniforms.uZoom.value = zoom.current;
     rig.composer.render();
@@ -161,7 +161,6 @@ function applyBlur(
     primed: { current: boolean };
     previous: { current: Vector3 };
     velocity: { current: Vector3 };
-    forward: { current: Vector3 };
     right: { current: Vector3 };
     up: { current: Vector3 };
     streak: { current: Vector2 };
@@ -180,17 +179,15 @@ function applyBlur(
   refs.velocity.current.copy(camera.position).sub(refs.previous.current).divideScalar(delta);
   refs.previous.current.copy(camera.position);
   camera.updateMatrixWorld();
-  camera.getWorldDirection(refs.forward.current);
   refs.right.current.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
   refs.up.current.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
 
   const lateral = refs.velocity.current.dot(refs.right.current);
   const vertical = refs.velocity.current.dot(refs.up.current);
-  const along = refs.velocity.current.dot(refs.forward.current);
   refs.streakTarget.current.set(lateral * STREAK_GAIN, vertical * STREAK_GAIN);
   const length = refs.streakTarget.current.length();
   if (length > MAX_STREAK) refs.streakTarget.current.multiplyScalar(MAX_STREAK / length);
-  const zoomTarget = Math.min(Math.abs(along) * ZOOM_GAIN, MAX_ZOOM);
+  const zoomTarget = 0;
 
   const blend = 1 - Math.exp(-delta * SMOOTH);
   refs.streak.current.lerp(refs.streakTarget.current, blend);

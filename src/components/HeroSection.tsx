@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Navbar from "./Navbar";
+import { useHomeLoad } from "./HomeGate";
 
 /* ─────────────── Settings you can tweak ─────────────── */
 const FRAME_COUNT = 72;          // number of files in /public/homepage/frames
@@ -20,10 +21,13 @@ export default function HeroSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLSpanElement>(null);
+  const homeLoad = useHomeLoad();
+const homeLoadRef = useRef(homeLoad);
+homeLoadRef.current = homeLoad;
+  // const barRef = useRef<HTMLDivElement>(null);
+  // const textRef = useRef<HTMLSpanElement>(null);
 
-  const [ready, setReady] = useState(false);
+  // const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,6 +41,7 @@ export default function HeroSection() {
     ).matches;
 
     let disposed = false;
+    let released = false;
     const frames: (ImageBitmap | null)[] = Array(FRAME_COUNT).fill(null);
     let current = 0; // position shown right now (can be between two frames)
     let target = 0;  // position the scroll wants
@@ -44,6 +49,17 @@ export default function HeroSection() {
     let lastT = 0;
     let raf = 0;
     let loadedCount = 0;
+
+    const releaseFrames = () => {
+      if (released) return;
+      released = true;
+      frames.forEach((f, i) => {
+        f?.close();
+        frames[i] = null;
+      });
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
 
     const getFrame = (index: number) => {
       for (let i = index; i >= 0; i--) {
@@ -129,6 +145,13 @@ export default function HeroSection() {
     };
 
     const onScroll = () => {
+      if (released) return;
+      const rect = wrapper.getBoundingClientRect();
+      // House section is primary once the hero has scrolled fully off-screen.
+      if (rect.bottom <= 0) {
+        releaseFrames();
+        return;
+      }
       readScroll();
       if (!raf) raf = requestAnimationFrame(tick);
     };
@@ -140,10 +163,11 @@ export default function HeroSection() {
         const i = next++;
         if (i >= FRAME_COUNT) return;
         try {
+          if (released) return;
           const res = await fetch(framePath(i));
           const blob = await res.blob();
           const bmp = await createImageBitmap(blob);
-          if (disposed) {
+          if (disposed || released) {
             bmp.close();
             return;
           }
@@ -153,15 +177,14 @@ export default function HeroSection() {
         }
         loadedCount++;
         const pct = Math.round((loadedCount / FRAME_COUNT) * 100);
-        if (barRef.current) barRef.current.style.width = `${pct}%`;
-        if (textRef.current) textRef.current.textContent = `Loading ${pct}%`;
+        homeLoadRef.current?.reportHeroProgress(pct);
         if (i === 0) draw(true);
       }
     };
 
     Promise.all(Array.from({ length: CONCURRENCY }, worker)).then(() => {
       if (disposed) return;
-      setReady(true);
+      homeLoadRef.current?.reportHeroReady();
       readScroll();
       current = target;
       draw(true);
@@ -177,8 +200,7 @@ export default function HeroSection() {
       disposed = true;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", resize);
-      if (raf) cancelAnimationFrame(raf);
-      frames.forEach((f) => f?.close());
+      releaseFrames();
     };
   }, []);
 
@@ -241,7 +263,7 @@ export default function HeroSection() {
             Timeless fits, modern details and colours that go anywhere.
           </p>
 
-          <a href="/shop" className="him-hero-btn">
+          <a href="/collection" className="him-hero-btn">
             <span>EXPLORE COLLECTION</span>
             <svg
               width="12"
@@ -270,30 +292,16 @@ export default function HeroSection() {
 
         {/* Navbar */}
         <Navbar />
-
-        {/* Loader */}
-        <div
-          className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-black transition-opacity duration-700 ${
-            ready ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-        >
-          <div className="h-px w-48 bg-white/20">
-            <div ref={barRef} className="h-full w-0 bg-white" />
-          </div>
-          <span ref={textRef} className="text-xs text-white/60">
-            Loading 0%
-          </span>
-        </div>
       </div>
 
       <style jsx global>{`
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
+				*,
+				*::before,
+				*::after {
+					box-sizing: border-box;
+					margin: 0;
+					padding: 0;
+				}
 
         html,
         body {
