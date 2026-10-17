@@ -97,7 +97,7 @@ export function Block({
 }
 
 function wallUrl() {
-  return "/house/walnut-wall.ktx2";
+  return "/house/walnut-wall-2.ktx2";
 }
 
 function useWallMaterial() {
