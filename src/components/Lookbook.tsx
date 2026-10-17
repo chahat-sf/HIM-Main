@@ -1,24 +1,26 @@
+
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 
 const lookbooks = [
   {
-    image: "/lookbook/Where-The-Sun-Settles.webp",
+    image: "/lookbook/man-on-lunch.webp",
     date: "29.05.26",
     title: "WHERE THE SUN SETTLES",
     description:
       "Shot in Lisbon, our second drop of summer is built for long days in the sun. Inspired by coastal living and vintage travel culture, the collection combines lightweight fabrics, washed textures and summer-ready colourways designed for the season ahead...",
   },
   {
-    image: "/lookbook/On-Set-Lane-Splitters.webp",
+    image: "/lookbook/man-on-bike.webp",
     date: "24.04.26",
     title: "ON SET: LANE SPLITTERS",
     description:
       "Join us on set as we shoot our first instalment of summer — a meeting of studio and the open road, inspired by the golden era of film. Mid-century silhouettes, elevated bowling shirts, and nostalgic detailing come together in motion, capturing the spirit of the season as it unfolds...",
   },
   {
-    image: "/lookbook/Archives-from-Brooklyn.webp",
+    image: "/lookbook/man-on-car.webp",
     date: "27.03.26",
     title: "ARCHIVES FROM BROOKLYN",
     description:
@@ -48,61 +50,86 @@ function Arrow() {
 }
 
 export default function Lookbook() {
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  const toggle = (title: string) => {
+    setOpen((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
+
   return (
     <section className="lookbook-section">
-      {/* =========================================================
-          HEADER
-      ========================================================= */}
+      {/* STORIES HEADER */}
+
       <div className="lookbook-header">
-        <div className="lookbook-header-title">VIEW LOOKBOOKS</div>
+        <div className="lookbook-header-title">STORIES</div>
 
         <a href="#lookbooks" className="lookbook-header-link">
-          <span>VIEW LOOKBOOK</span>
+          <span>VIEW ALL</span>
           <Arrow />
         </a>
       </div>
 
-      {/* =========================================================
-          LOOKBOOK GRID
-      ========================================================= */}
+      {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
+
       <div id="lookbooks" className="lookbook-grid">
         {lookbooks.map((lookbook, index) => (
           <article className="lookbook-card" key={lookbook.title}>
-            {/* IMAGE */}
             <div className="lookbook-image">
-              <Image
-                src={lookbook.image}
-                alt={lookbook.title}
-                fill
-                priority={index === 0}
-                quality={90}
-                sizes="(max-width: 768px) 100vw, 33.33vw"
-                className="lookbook-image-element"
-              />
+              <div className="lookbook-image-reveal">
+                <div className="lookbook-image-frame">
+                  <Image
+                    src={lookbook.image}
+                    alt={lookbook.title}
+                    fill
+                    priority={index === 0}
+                    quality={90}
+                    sizes="(max-width: 640px) 84vw, (max-width: 900px) 50vw, 33vw"
+                    className="lookbook-image-element"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* CONTENT */}
             <div className="lookbook-content">
-              <h2>{lookbook.title}</h2>
-
-              <p className="lookbook-description">
-                <span>{lookbook.date}</span> | {lookbook.description}
+              <p className="lookbook-category">
+                {index === 0
+                  ? "PEOPLE"
+                  : index === 1
+                    ? "JOURNEYS"
+                    : "CULTURE"}
               </p>
 
-              <a href="#" className="lookbook-read-more">
-                <span>VIEW LOOKBOOK</span>
+              <h2>{lookbook.title}</h2>
+
+              <p
+                className={`lookbook-description${
+                  open[lookbook.title] ? " is-open" : ""
+                }`}
+              >
+                {lookbook.description}
+              </p>
+
+              <button
+                type="button"
+                className="lookbook-read-more"
+                onClick={() => toggle(lookbook.title)}
+                aria-expanded={!!open[lookbook.title]}
+              >
+                <span>
+                  {open[lookbook.title] ? "READ LESS" : "READ MORE"}
+                </span>
                 <Arrow />
-              </a>
+              </button>
             </div>
           </article>
         ))}
-        <div className="review-bar">
-          <div className="review-bar-inner">
-            <span className="review-stars">★★★★★</span>
-            <span className="review-text">4.8/5 STARS ON REVIEWS.IO</span>
-          </div>
-        </div>
       </div>
+
+      {/* LOWER VIDEO FEATURE */}
+
       <section className="summer-feature">
         <div className="summer-feature-media">
           <video
@@ -118,50 +145,45 @@ export default function Lookbook() {
 
         <div className="summer-feature-content">
           <div className="summer-feature-inner">
-            <h2>WHERE THE SUN SETTLES</h2>
+            <span className="summer-feature-label">OUR APPROACH</span>
+
+            <h2>WHERE THE DAY UNFOLDS</h2>
 
             <p>
-              Shot in Lisbon, our second drop of summer is built for long days in the
-              sun. Inspired by coastal living and vintage travel culture, the
-              collection combines lightweight fabrics, washed textures and
-              summer-ready colourways designed for the season ahead.
+              Him is about clothes that live with you — in the routine,
+              the detours and everything in between. Designed for comfort,
+              movement and a more considered tomorrow.
             </p>
 
             <a href="#" className="summer-feature-link">
-              <span>VIEW THE LOOKBOOK</span>
+              <span>OUR BRAND</span>
               <Arrow />
             </a>
           </div>
         </div>
       </section>
 
-      {/* =========================================================
-          STYLES
-      ========================================================= */}
+      {/* STYLES */}
+
       <style jsx>{`
         .lookbook-section {
           width: 100%;
-          background: #0b0502;
+          background: #121212;
           color: #f4eee5;
-          border-left: 1px solid rgba(255, 255, 255, 0.35);
-          border-right: 1px solid rgba(255, 255, 255, 0.35);
+          border-left: 1px solid rgba(255, 255, 255, 0.12);
+          border-right: 1px solid rgba(255, 255, 255, 0.12);
           overflow: hidden;
         }
 
-        /* =========================
-           HEADER
-        ========================= */
+        /* STORIES HEADER */
 
         .lookbook-header {
-          height: 48px;
           width: 100%;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 20px;
-          border-top: 1px solid rgba(255, 255, 255, 0.4);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-          background: #0b0502;
+          padding: 32px clamp(20px, 5.6vw, 80px) 20px;
+          background: #121212;
         }
 
         .lookbook-header-title {
@@ -169,7 +191,7 @@ export default function Lookbook() {
           font-size: 9px;
           font-weight: 700;
           line-height: 1;
-          letter-spacing: 0.25px;
+          letter-spacing: 0.6px;
           text-transform: uppercase;
           color: #f5eee5;
         }
@@ -178,156 +200,279 @@ export default function Lookbook() {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          color: rgba(245, 238, 229, 0.72);
+          color: rgba(245, 238, 229, 0.9);
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 7px;
-          font-weight: 400;
+          font-size: 10px;
+          font-weight: 600;
           line-height: 1;
           text-decoration: none;
           text-transform: uppercase;
           transition: opacity 180ms ease;
         }
 
-        .lookbook-header-link:hover {
-          opacity: 0.55;
+        .lookbook-header-link:hover,
+        .lookbook-read-more:hover {
+          opacity: 0.6;
         }
 
-        /* =========================
-           GRID
-        ========================= */
+        /* DESKTOP STORY GRID */
 
         .lookbook-grid {
           width: 100%;
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
+          column-gap: 18px;
+          row-gap: 0;
+          padding: 0 clamp(20px, 5.6vw, 80px);
+          box-sizing: border-box;
         }
-
-        /* =========================
-           CARD
-        ========================= */
 
         .lookbook-card {
+          position: relative;
           min-width: 0;
-          background: #0b0502;
-          border-right: 1px solid rgba(255, 255, 255, 0.35);
+          background: transparent;
+          border: none;
         }
 
-        .lookbook-card:last-child {
-          border-right: none;
-        }
-
-        /* =========================
-           IMAGE
-        ========================= */
+        /* IMAGE REVEAL */
 
         .lookbook-image {
           position: relative;
           width: 100%;
-          aspect-ratio: 1 / 0.97;
+          aspect-ratio: 16 / 10;
+          container-type: inline-size;
+          --shift: 25cqw;
+        }
+
+        .lookbook-image-reveal {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 62.5cqw;
           overflow: hidden;
-          background: #21140e;
+          background: #121212;
+          transition: height 650ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .lookbook-image-element {
+        .lookbook-image-frame {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 3 / 4;
+          margin-top: calc(var(--shift) * -1);
+          transition: margin-top 650ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .lookbook-image-frame :global(.lookbook-image-element) {
           object-fit: cover;
-          object-position: center center;
-          transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+          object-position: center;
         }
 
-        .lookbook-card:hover .lookbook-image-element {
-          transform: scale(1.025);
+        @media (hover: hover) and (min-width: 641px) {
+          .lookbook-image:hover {
+            z-index: 5;
+          }
+
+          .lookbook-image:hover .lookbook-image-reveal {
+            height: 133.34cqw;
+          }
+
+          .lookbook-image:hover .lookbook-image-frame {
+            margin-top: 0;
+          }
         }
 
-        /* =========================
-           CONTENT
-        ========================= */
+        /* STORY CONTENT */
 
         .lookbook-content {
-          min-height: 170px;
-          padding: 18px 13px 20px;
-          border-top: 1px solid rgba(255, 255, 255, 0.35);
+          min-height: 0;
+          padding: 15px 0 24px;
+          border: none;
+        }
+
+        .lookbook-category {
+          margin: 0 0 9px;
+          color: rgba(244, 238, 229, 0.45);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10px;
+          font-weight: 350;
+          line-height: 1;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
         }
 
         .lookbook-content h2 {
           margin: 0;
-          color: #f4eee5;
+          color: #ffffff;
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 9px;
+          font-size: 12px;
           font-weight: 700;
-          line-height: 1.15;
-          letter-spacing: 0.45px;
+          line-height: 1.3;
+          letter-spacing: 0.1px;
           text-transform: uppercase;
         }
 
         .lookbook-description {
-          margin: 17px 0 0;
-          max-width: 285px;
-          color: rgba(244, 238, 229, 0.68);
+          margin: 9px 0 0;
+          max-width: 100%;
+          color: rgba(244, 238, 229, 0.58);
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 8px;
+          font-size: 10px;
           font-weight: 400;
-          line-height: 1.35;
+          line-height: 1.5;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
-        .lookbook-description span {
-          color: rgba(244, 238, 229, 0.72);
+        .lookbook-description.is-open {
+          display: block;
+          overflow: visible;
+          -webkit-line-clamp: unset;
         }
-
-        /* =========================
-           READ MORE
-        ========================= */
 
         .lookbook-read-more {
+          background: none;
+          border: 0;
+          padding: 0;
+          cursor: pointer;
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          margin-top: 20px;
-          color: rgba(244, 238, 229, 0.72);
+          gap: 6px;
+          margin-top: 12px;
+          color: rgba(244, 238, 229, 0.85);
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 7px;
-          font-weight: 400;
+          font-size: 9px;
+          font-weight: 600;
           line-height: 1;
           text-decoration: none;
           text-transform: uppercase;
-          border-bottom: 1px solid rgba(244, 238, 229, 0.38);
+          transition: opacity 180ms ease;
+        }
+
+        /* LOWER VIDEO FEATURE */
+
+        .summer-feature {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 1fr 1.23fr;
+          min-height: 480px;
+          border-top: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .summer-feature-media {
+          position: relative;
+          min-width: 0;
+          height: 480px;
+          overflow: hidden;
+          background: #17120e;
+        }
+
+        .summer-feature-video {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .summer-feature-content {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          min-width: 0;
+          background: #fafafa;
+          color: #222;
+          padding: 36px clamp(28px, 5.5vw, 80px);
+        }
+
+        .summer-feature-inner {
+          width: 100%;
+          max-width: 390px;
+          text-align: left;
+        }
+
+        .summer-feature-label {
+          display: block;
+          margin-bottom: 12px;
+          color: #777;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 8px;
+          font-weight: 600;
+          line-height: 1;
+          letter-spacing: 0.8px;
+        }
+
+        .summer-feature-inner h2 {
+          margin: 0;
+          color: #292724;
+          font-family: "Cormorant Garamond", Georgia, serif;
+          font-size: clamp(28px, 2.3vw, 36px);
+          font-weight: 400;
+          line-height: 0.98;
+          letter-spacing: -0.6px;
+          text-transform: uppercase;
+          max-width: 360px;
+        }
+
+        .summer-feature-inner p {
+          margin: 14px 0 0;
+          max-width: 360px;
+          color: #777;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10px;
+          font-weight: 400;
+          line-height: 1.55;
+        }
+
+        .summer-feature-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 16px;
           padding-bottom: 3px;
-          transition:
-            color 180ms ease,
-            opacity 180ms ease;
+          border-bottom: 1px solid #292724;
+          color: #292724;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 8px;
+          font-weight: 600;
+          line-height: 1;
+          letter-spacing: 0.3px;
+          text-decoration: none;
+          text-transform: uppercase;
+          transition: opacity 180ms ease;
         }
 
-        .lookbook-read-more:hover {
-          color: #fff;
-          opacity: 0.8;
+        .summer-feature-link:hover {
+          opacity: 0.6;
         }
 
-        /* =====================================================
-           TABLET
-        ===================================================== */
+        /* TABLET */
 
-        @media (max-width: 900px) {
-          .lookbook-header {
-            padding: 0 16px;
+        @media (max-width: 1024px) {
+          .summer-feature {
+            grid-template-columns: 1fr 1fr;
           }
 
-          .lookbook-content {
-            min-height: 185px;
-            padding: 16px 11px 18px;
+          .summer-feature-media {
+            height: 280px;
           }
 
-          .lookbook-description {
-            font-size: 7.5px;
+          .summer-feature-content {
+            padding: 28px;
+          }
+
+          .summer-feature-inner h2 {
+            font-size: clamp(25px, 3vw, 32px);
           }
         }
 
-        /* =====================================================
-           MOBILE
-        ===================================================== */
+        /* MOBILE SLIDER */
 
         @media (max-width: 640px) {
           .lookbook-header {
-            height: 46px;
-            padding: 0 13px;
+            padding: 26px 16px 16px;
           }
 
           .lookbook-header-title {
@@ -335,218 +480,129 @@ export default function Lookbook() {
           }
 
           .lookbook-header-link {
-            font-size: 6.5px;
+            font-size: 7px;
           }
 
           .lookbook-grid {
-            grid-template-columns: 1fr;
+            display: grid;
+            grid-template-columns: none;
+            grid-auto-columns: 84%;
+            grid-auto-flow: column;
+            gap: 14px;
+            padding: 0 16px 16px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-padding-left: 16px;
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+          }
+
+          .lookbook-grid::-webkit-scrollbar {
+            display: none;
           }
 
           .lookbook-card {
-            border-right: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+            width: 100%;
+            min-width: 0;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            border: none;
           }
 
-          .lookbook-card:last-child {
-            border-bottom: none;
-          }
+          /* Full portrait images on mobile */
 
           .lookbook-image {
-            aspect-ratio: 1.45 / 1;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            --shift: 0cqw;
+          }
+
+          .lookbook-image-reveal {
+            height: 133.34cqw;
+          }
+
+          .lookbook-image-frame {
+            margin-top: 0;
           }
 
           .lookbook-content {
             min-height: auto;
-            padding: 16px 14px 20px;
+            padding: 12px 0 16px;
+          }
+
+          .lookbook-category {
+            font-size: 9px;
           }
 
           .lookbook-content h2 {
-            font-size: 9px;
+            font-size: 11px;
           }
 
           .lookbook-description {
             max-width: 100%;
-            font-size: 8px;
-            line-height: 1.4;
-            margin-top: 14px;
+            font-size: 9px;
+            line-height: 1.5;
+            margin-top: 9px;
           }
 
           .lookbook-read-more {
-            margin-top: 17px;
+            margin-top: 12px;
+          }
+
+          /* Video feature */
+
+          .summer-feature {
+            grid-template-columns: 1fr;
+          }
+
+          .summer-feature-media {
+            height: 260px;
+          }
+
+          .summer-feature-content {
+            padding: 36px 24px;
+          }
+
+          .summer-feature-inner {
+            max-width: 100%;
+          }
+
+          .summer-feature-inner h2 {
+            font-size: 32px;
+            max-width: 320px;
+          }
+
+          .summer-feature-inner p {
+            font-size: 11px;
+            line-height: 1.65;
           }
         }
 
-        /* =====================================================
-   FEATURE SECTION
-===================================================== */
+        /* SMALL MOBILE */
 
-.summer-feature {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  border-top: 1px solid rgba(255, 255, 255, 0.35);
-}
+        @media (max-width: 380px) {
+          .lookbook-grid {
+            grid-auto-columns: 88%;
+            gap: 12px;
+            padding-left: 12px;
+            padding-right: 12px;
+          }
 
-.summer-feature-media {
-  position: relative;
-  height: 420px;
-  overflow: hidden;
-  background: #111;
-}
+          .lookbook-header {
+            padding-left: 12px;
+            padding-right: 12px;
+          }
 
-.summer-feature-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+          .summer-feature-content {
+            padding: 32px 18px;
+          }
 
-.summer-feature-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  padding: 80px 50px;
-}
-
-.summer-feature-inner {
-  max-width: 420px;
-  text-align: center;
-}
-
-.summer-feature-inner h2 {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #202020;
-}
-
-.summer-feature-inner p {
-  margin: 22px 0 0;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  line-height: 1.8;
-  color: #666;
-}
-
-.summer-feature-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 28px;
-  color: #9d8464;
-  text-decoration: none;
-  text-transform: uppercase;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(157, 132, 100, 0.4);
-  padding-bottom: 4px;
-  transition: opacity 0.2s ease;
-}
-
-.summer-feature-link:hover {
-  opacity: 0.7;
-}
-
-/* =====================================================
-   TABLET
-===================================================== */
-
-@media (max-width: 1024px) {
-  .summer-feature-media {
-    height: 600px;
-  }
-
-  .summer-feature-content {
-    padding: 60px 40px;
-  }
-
-  .summer-feature-inner h2 {
-    font-size: 26px;
-  }
-}
-
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 768px) {
-  .summer-feature {
-    grid-template-columns: 1fr;
-  }
-
-  .summer-feature-media {
-    height: 450px;
-  }
-
-  .summer-feature-content {
-    padding: 45px 24px;
-  }
-
-  .summer-feature-inner {
-    max-width: 100%;
-  }
-
-  .summer-feature-inner h2 {
-    font-size: 22px;
-  }
-
-  .summer-feature-inner p {
-    font-size: 13px;
-    line-height: 1.7;
-  }
-}
-
-/* =====================================================
-   REVIEW BAR
-===================================================== */
-
-.review-bar {
-  grid-column: 1 / -1;
-  width: 100%;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: #0b0502;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.review-bar-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  color: #a88b64;
-
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-
-}
-
-.review-stars {
-  color: #b8986b;
-  font-size: 10px;
-  letter-spacing: 1px;
-  line-height: 1;
-}
-
-.review-text {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 8px;
-  line-height: 1;
-}
+          .summer-feature-inner h2 {
+            font-size: 29px;
+          }
+        }
       `}</style>
     </section>
   );
