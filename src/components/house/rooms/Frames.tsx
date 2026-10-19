@@ -18,7 +18,7 @@ const DEFAULT_ASPECT = 2212 / 936;
 
 const ROOM_VIDEOS = [
 	"/house/window-3.mp4?v=1019",
-	"/house/window-2.mp4?v=1019",
+	"/house/window-2.mp4?v=1019b",
 	"/house/window-1.mp4?v=2212",
 ] as const;
 
