@@ -175,32 +175,33 @@ export function beginDrag(room: number) {
 	item.vel = 0;
 	item.target = item.pos;
 	item.video?.pause();
-	const index = Math.round(wrapFrame(item.pos, item.count)) % item.count;
+	const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
 	item.sequence.beginDrag(index);
 }
 
 export function scrub(room: number, pos: number) {
 	const item = play[room];
 	if (!item) return;
+	const gap = frameDelta(item.pos, pos, item.count);
+	item.pos = pos;
+	item.target = pos;
 	if (!item.usingFrames) {
-		item.pos = pos;
-		item.target = pos;
 		seekVideo(item, pos);
 		return;
 	}
-	item.target = pos;
-	const gap = frameDelta(item.pos, item.target, item.count);
-	item.sequence.prefetch(
-		Math.round(wrapFrame(item.pos, item.count)) % item.count,
-		gap >= 0 ? 1 : -1,
-	);
+	if (!item.sequence.fullyDecoded) {
+		item.sequence.prefetch(
+			Math.floor(wrapFrame(item.pos, item.count)) % item.count,
+			gap >= 0 ? 1 : -1,
+		);
+	}
 }
 
 export function releaseDrag(room: number, velocity: number) {
 	const item = play[room];
 	if (!item) return;
 	item.dragging = false;
-	// Keep walking to the last pointer target; flick only applies after we arrive.
+	item.pos = item.target;
 	item.vel = Math.max(-260, Math.min(260, velocity));
 	item.sequence.endDrag();
 }
@@ -398,10 +399,12 @@ export function FramePlane({
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
+		// Near rooms prefetch blobs; only the focused room holds a full decoded set.
 		if (focused || near) sequence.load();
 		else if (room !== 0) sequence.release();
-		if (!focused) sequence.trim();
-		if (focused && !sequence.ready) ensurePreload(video);
+		if (focused) sequence.decodeAll();
+		else sequence.trim();
+		if (focused && !sequence.fullyDecoded) ensurePreload(video);
 
 		mesh.visible = focused;
 		if (mesh.geometry !== geometry) mesh.geometry = geometry;
@@ -416,7 +419,8 @@ export function FramePlane({
 			return;
 		}
 
-		if (sequence.ready && frameMap) {
+		// Video carries the plate until every native frame is decoded in memory.
+		if (sequence.fullyDecoded && frameMap) {
 			if (!item.usingFrames) {
 				if (item.duration > 0 && video.readyState >= 1) {
 					item.pos = video.currentTime * item.fps;
@@ -427,19 +431,8 @@ export function FramePlane({
 			}
 			if (!video.paused) video.pause();
 
-			const gap = frameDelta(item.pos, item.target, item.count);
-			const catchingUp = Math.abs(gap) >= 0.5;
-
-			if (item.dragging || catchingUp) {
-				// Walk one displayed frame at a time so every pose is seen.
-				const step = Math.sign(gap);
-				const next = Math.round(wrapFrame(item.pos + step, item.count)) % item.count;
-				sequence.prefetch(next, step);
-				if (sequence.has(next)) {
-					item.pos = next;
-					directionRef.current = step;
-				}
-			} else if (!item.dragging) {
+			// Drag already snaps pos 1:1 in scrub(); idle spin eases velocity here.
+			if (!item.dragging) {
 				if (reduceMotionCached) {
 					item.vel = 0;
 				} else {
@@ -449,14 +442,13 @@ export function FramePlane({
 				}
 			}
 
-			const index = Math.round(wrapFrame(item.pos, item.count)) % item.count;
+			const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
 			if (index !== lastIndexRef.current) {
 				directionRef.current = frameDelta(lastIndexRef.current, index, item.count) >= 0 ? 1 : -1;
 				lastIndexRef.current = index;
 			}
-			sequence.prefetch(index, directionRef.current);
 
-			const bitmap = sequence.frame(index, item.dragging || catchingUp);
+			const bitmap = sequence.frame(index);
 			const ctx = frameCtxRef.current;
 			if (bitmap && ctx && bitmap !== drawnRef.current) {
 				const canvas = ctx.canvas;
