@@ -16,11 +16,7 @@ import { BAY, ROOMS } from "./poses";
 const FPS = 24;
 const DEFAULT_ASPECT = 2212 / 936;
 
-const ROOM_VIDEOS = [
-	"/house/window-3.mp4?v=1019",
-	"/house/window-2.mp4?v=1019b",
-	"/house/window-1.mp4?v=2212",
-] as const;
+const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1021`);
 
 /**
  * Picture uses the proven interior fit height. Mesh is larger so the window

@@ -10,7 +10,7 @@ export type Pose = {
 	fov: number;
 };
 
-export type RoomId = "living" | "bedroom" | "study";
+export type RoomId = `room-${number}`;
 
 export type RoomDef = {
 	id: RoomId;
@@ -18,11 +18,13 @@ export type RoomDef = {
 	x: number;
 };
 
-export const ROOMS: RoomDef[] = [
-	{ id: "living", name: "Living room", x: 0 },
-	{ id: "bedroom", name: "Bedroom", x: BAY },
-	{ id: "study", name: "Study", x: BAY * 2 },
-];
+export const ROOM_COUNT = 10;
+
+export const ROOMS: RoomDef[] = Array.from({ length: ROOM_COUNT }, (_, i) => ({
+	id: `room-${i + 1}`,
+	name: `Window ${i + 1}`,
+	x: BAY * i,
+}));
 
 export function roomPoses(x: number): {
 	exterior: Pose;

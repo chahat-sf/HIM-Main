@@ -76,7 +76,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [sliding, setSliding] = useState(false);
   const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
-  const [picked, setPicked] = useState([0, 1, 2]);
+  const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % CHARACTERS.length));
   const [nameSwap, setNameSwap] = useState(false);
   const [hint, setHint] = useState(true);
   const [dragging, setDragging] = useState(false);
