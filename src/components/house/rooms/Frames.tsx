@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+	CanvasTexture,
 	ClampToEdgeWrapping,
 	LinearFilter,
 	Mesh,
@@ -90,6 +91,8 @@ type PlayState = {
 	dragging: boolean;
 	duration: number;
 	video: HTMLVideoElement | null;
+	pendingTime: number | null;
+	captureFrame: (() => void) | null;
 };
 
 const play: PlayState[] = ROOM_VIDEOS.map(() => ({
@@ -98,6 +101,8 @@ const play: PlayState[] = ROOM_VIDEOS.map(() => ({
 	dragging: false,
 	duration: 0,
 	video: null,
+	pendingTime: null,
+	captureFrame: null,
 }));
 
 export function frameCount(room: number) {
@@ -114,17 +119,31 @@ function wrapTime(seconds: number, duration: number) {
 	return ((seconds % duration) + duration) % duration;
 }
 
+function flushSeek(item: PlayState) {
+	const video = item.video;
+	if (!video || item.duration <= 0) return;
+	if (video.seeking) return;
+	const t = item.pendingTime;
+	if (t == null) return;
+	if (Math.abs(video.currentTime - t) <= 1 / FPS) {
+		item.pendingTime = null;
+		return;
+	}
+	item.captureFrame?.();
+	video.currentTime = t;
+}
+
 function seekVideo(item: PlayState, pos: number) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
-	const t = wrapTime(pos / FPS, item.duration);
-	// Seek only when the target crosses a frame boundary (all-intra encode).
-	if (Math.abs(video.currentTime - t) > 1 / FPS) video.currentTime = t;
+	item.pendingTime = wrapTime(pos / FPS, item.duration);
+	flushSeek(item);
 }
 
 export function beginDrag(room: number) {
 	const item = play[room];
 	if (!item) return;
+	item.captureFrame?.();
 	item.dragging = true;
 	item.vel = 0;
 	item.video?.pause();
@@ -195,6 +214,8 @@ export function FramePlane({
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
 	const mapRef = useRef<VideoTexture | null>(null);
+	const freezeMapRef = useRef<CanvasTexture | null>(null);
+	const freezeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
 	const onFirstFrameRef = useRef(onFirstFrame);
@@ -225,6 +246,30 @@ export function FramePlane({
 		map.wrapT = ClampToEdgeWrapping;
 		mapRef.current = map;
 
+		const freezeCanvas = document.createElement("canvas");
+		freezeCanvasRef.current = freezeCanvas;
+		const freezeMap = new CanvasTexture(freezeCanvas);
+		freezeMap.colorSpace = SRGBColorSpace;
+		freezeMap.minFilter = LinearFilter;
+		freezeMap.magFilter = LinearFilter;
+		freezeMap.generateMipmaps = false;
+		freezeMap.wrapS = ClampToEdgeWrapping;
+		freezeMap.wrapT = ClampToEdgeWrapping;
+		freezeMapRef.current = freezeMap;
+
+		const captureFrame = () => {
+			if (video.readyState < 2 || video.videoWidth === 0) return;
+			if (freezeCanvas.width !== video.videoWidth || freezeCanvas.height !== video.videoHeight) {
+				freezeCanvas.width = video.videoWidth;
+				freezeCanvas.height = video.videoHeight;
+			}
+			const ctx = freezeCanvas.getContext("2d", { alpha: false });
+			if (!ctx) return;
+			ctx.drawImage(video, 0, 0);
+			freezeMap.needsUpdate = true;
+		};
+		if (item) item.captureFrame = captureFrame;
+
 		const material = materialRef.current;
 		if (material) {
 			material.map = map;
@@ -248,13 +293,20 @@ export function FramePlane({
 		};
 
 		const onReady = () => {
+			captureFrame();
 			void video.play().catch(() => { });
 			announce();
+		};
+
+		const onSeeked = () => {
+			captureFrame();
+			if (item) flushSeek(item);
 		};
 
 		video.addEventListener("loadedmetadata", onMeta);
 		video.addEventListener("loadeddata", onReady);
 		video.addEventListener("canplay", onReady);
+		video.addEventListener("seeked", onSeeked);
 		if (video.readyState >= 1) onMeta();
 		if (video.readyState >= 2) onReady();
 		const readyFallback = window.setTimeout(announce, 2500);
@@ -264,28 +316,30 @@ export function FramePlane({
 			video.removeEventListener("loadedmetadata", onMeta);
 			video.removeEventListener("loadeddata", onReady);
 			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("seeked", onSeeked);
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
 			if (item?.video === video) item.video = null;
+			if (item?.captureFrame === captureFrame) item.captureFrame = null;
 			videoRef.current = null;
 			mapRef.current = null;
-			if (material?.map === map) material.map = null;
+			freezeMapRef.current = null;
+			freezeCanvasRef.current = null;
+			if (material?.map === map || material?.map === freezeMap) material.map = null;
 			map.dispose();
+			freezeMap.dispose();
 		};
 	}, [room]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
+		const freezeMap = freezeMapRef.current;
 		const mesh = meshRef.current;
 		const video = videoRef.current;
 		const item = play[room];
 		const material = materialRef.current;
-		if (map && material && material.map !== map) {
-			material.map = map;
-			material.needsUpdate = true;
-		}
-		if (!map || !mesh || !video || !item) return;
+		if (!map || !mesh || !video || !item || !material) return;
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
@@ -300,20 +354,25 @@ export function FramePlane({
 			return;
 		}
 
+		const coasting = !item.dragging && Math.abs(item.vel - FPS) > 8;
+		const freeze = item.dragging || video.seeking || coasting;
+		const nextMap = freeze && freezeMap && freezeMap.image.width > 0 ? freezeMap : map;
+		if (material.map !== nextMap) {
+			material.map = nextMap;
+			material.needsUpdate = true;
+		}
+
 		if (item.dragging) {
 			if (!video.paused) video.pause();
-			map.needsUpdate = true;
 			return;
 		}
 
 		if (reduceMotionCached) {
 			if (!video.paused) video.pause();
 			item.vel = 0;
-			map.needsUpdate = true;
 			return;
 		}
 
-		const coasting = Math.abs(item.vel - FPS) > 8;
 		if (coasting) {
 			if (!video.paused) video.pause();
 			item.vel += (FPS - item.vel) * (1 - Math.exp(-delta * 2.2));
@@ -322,7 +381,6 @@ export function FramePlane({
 				item.pos = wrapTime(item.pos / FPS, item.duration) * FPS;
 			}
 			seekVideo(item, item.pos);
-			map.needsUpdate = true;
 			return;
 		}
 
