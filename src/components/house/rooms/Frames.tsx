@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+	CanvasTexture,
 	ClampToEdgeWrapping,
 	LinearFilter,
 	Mesh,
@@ -12,11 +13,12 @@ import {
 	VideoTexture,
 } from "three";
 import { BAY, ROOMS } from "./poses";
+import { FrameSequence, SEQUENCES } from "./sequence";
 
-const FPS = 24;
-const DEFAULT_ASPECT = 2212 / 936;
+const DEFAULT_FPS = 24;
+const DEFAULT_ASPECT = 5084 / 2160;
 
-const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1021d`);
+const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1021g`);
 
 /**
  * Picture uses the proven interior fit height. Mesh is larger so the window
@@ -85,24 +87,54 @@ function plateGeometry(aspect: number) {
 }
 
 type PlayState = {
+	/** Frame currently shown. */
 	pos: number;
+	/** Frame the pointer wants; pos walks here one frame at a time. */
+	target: number;
 	vel: number;
+	fps: number;
+	count: number;
 	dragging: boolean;
 	duration: number;
 	video: HTMLVideoElement | null;
+	pendingTime: number | null;
+	seekLock: boolean;
+	sequence: FrameSequence;
+	usingFrames: boolean;
 };
 
-const play: PlayState[] = ROOM_VIDEOS.map(() => ({
-	pos: 0,
-	vel: FPS,
-	dragging: false,
-	duration: 0,
-	video: null,
-}));
+const play: PlayState[] = ROOM_VIDEOS.map((_, i) => {
+	const info = SEQUENCES[i] ?? { count: 1, fps: DEFAULT_FPS };
+	return {
+		pos: 0,
+		target: 0,
+		fps: info.fps,
+		vel: info.fps,
+		count: info.count,
+		dragging: false,
+		duration: 0,
+		video: null,
+		pendingTime: null,
+		seekLock: false,
+		sequence: new FrameSequence(i, info),
+		usingFrames: false,
+	};
+});
 
 export function frameCount(room: number) {
-	const duration = play[room]?.duration ?? 0;
-	return Math.max(1, Math.round(duration * FPS));
+	return Math.max(1, play[room]?.count ?? 1);
+}
+
+function wrapFrame(pos: number, count: number) {
+	return ((pos % count) + count) % count;
+}
+
+/** Shortest signed distance from `from` to `to` on a looping frame strip. */
+function frameDelta(from: number, to: number, count: number) {
+	let d = wrapFrame(to, count) - wrapFrame(from, count);
+	if (d > count / 2) d -= count;
+	if (d < -count / 2) d += count;
+	return d;
 }
 
 export function roomPlay(room: number) {
@@ -114,12 +146,26 @@ function wrapTime(seconds: number, duration: number) {
 	return ((seconds % duration) + duration) % duration;
 }
 
+function flushSeek(item: PlayState) {
+	const video = item.video;
+	if (!video || item.duration <= 0) return;
+	if (item.seekLock || video.seeking) return;
+	const t = item.pendingTime;
+	if (t == null) return;
+	if (Math.abs(video.currentTime - t) <= 0.5 / item.fps) {
+		item.pendingTime = null;
+		return;
+	}
+	item.seekLock = true;
+	video.currentTime = t;
+}
+
 function seekVideo(item: PlayState, pos: number) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
-	const t = wrapTime(pos / FPS, item.duration);
-	// Seek only when the target crosses a frame boundary (all-intra encode).
-	if (Math.abs(video.currentTime - t) > 1 / FPS) video.currentTime = t;
+	const frame = Math.round(pos);
+	item.pendingTime = wrapTime(frame / item.fps, item.duration);
+	flushSeek(item);
 }
 
 export function beginDrag(room: number) {
@@ -127,21 +173,36 @@ export function beginDrag(room: number) {
 	if (!item) return;
 	item.dragging = true;
 	item.vel = 0;
+	item.target = item.pos;
 	item.video?.pause();
+	const index = Math.round(wrapFrame(item.pos, item.count)) % item.count;
+	item.sequence.beginDrag(index);
 }
 
 export function scrub(room: number, pos: number) {
 	const item = play[room];
 	if (!item) return;
-	item.pos = pos;
-	seekVideo(item, pos);
+	if (!item.usingFrames) {
+		item.pos = pos;
+		item.target = pos;
+		seekVideo(item, pos);
+		return;
+	}
+	item.target = pos;
+	const gap = frameDelta(item.pos, item.target, item.count);
+	item.sequence.prefetch(
+		Math.round(wrapFrame(item.pos, item.count)) % item.count,
+		gap >= 0 ? 1 : -1,
+	);
 }
 
 export function releaseDrag(room: number, velocity: number) {
 	const item = play[room];
 	if (!item) return;
 	item.dragging = false;
+	// Keep walking to the last pointer target; flick only applies after we arrive.
 	item.vel = Math.max(-260, Math.min(260, velocity));
+	item.sequence.endDrag();
 }
 
 export function showCharacter(room: number, frame: number) {
@@ -149,8 +210,9 @@ export function showCharacter(room: number, frame: number) {
 	if (!item) return;
 	item.dragging = false;
 	item.pos = frame;
-	item.vel = FPS;
-	seekVideo(item, frame);
+	item.target = frame;
+	item.vel = item.fps;
+	if (!item.usingFrames) seekVideo(item, frame);
 }
 
 function nearestRoom(cameraX: number) {
@@ -195,6 +257,12 @@ export function FramePlane({
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<MeshBasicMaterial>(null);
 	const mapRef = useRef<VideoTexture | null>(null);
+	const frameMapRef = useRef<CanvasTexture | null>(null);
+	const frameCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+	const drawnRef = useRef<ImageBitmap | null>(null);
+	const lastIndexRef = useRef(0);
+	const directionRef = useRef(1);
+	const aspectSetRef = useRef(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
 	const onFirstFrameRef = useRef(onFirstFrame);
@@ -225,6 +293,19 @@ export function FramePlane({
 		map.wrapT = ClampToEdgeWrapping;
 		mapRef.current = map;
 
+		const canvas = document.createElement("canvas");
+		const frameMap = new CanvasTexture(canvas);
+		frameMap.colorSpace = SRGBColorSpace;
+		frameMap.minFilter = LinearFilter;
+		frameMap.magFilter = LinearFilter;
+		frameMap.generateMipmaps = false;
+		frameMap.wrapS = ClampToEdgeWrapping;
+		frameMap.wrapT = ClampToEdgeWrapping;
+		frameMapRef.current = frameMap;
+		frameCtxRef.current = canvas.getContext("2d", { alpha: false });
+		drawnRef.current = null;
+		aspectSetRef.current = false;
+
 		const material = materialRef.current;
 		if (material) {
 			material.map = map;
@@ -234,7 +315,7 @@ export function FramePlane({
 		const onMeta = () => {
 			if (item) {
 				item.duration = Number.isFinite(video.duration) ? video.duration : 0;
-				item.pos = video.currentTime * FPS;
+				item.pos = video.currentTime * item.fps;
 			}
 			if (video.videoWidth > 0 && video.videoHeight > 0) {
 				setAspect(video.videoWidth / video.videoHeight);
@@ -252,22 +333,52 @@ export function FramePlane({
 			announce();
 		};
 
+		const onSeeked = () => {
+			if (item) {
+				item.seekLock = false;
+				flushSeek(item);
+			}
+			map.needsUpdate = true;
+		};
+
 		video.addEventListener("loadedmetadata", onMeta);
 		video.addEventListener("loadeddata", onReady);
 		video.addEventListener("canplay", onReady);
+		video.addEventListener("seeked", onSeeked);
 		if (video.readyState >= 1) onMeta();
 		if (video.readyState >= 2) onReady();
 		const readyFallback = window.setTimeout(announce, 2500);
 
+		const sequence = item?.sequence;
+		if (sequence) {
+			sequence.onFirstFrame = announce;
+			if (room === 0) sequence.load();
+		}
+
 		return () => {
 			window.clearTimeout(readyFallback);
+			if (sequence) {
+				sequence.onFirstFrame = null;
+				sequence.release();
+			}
+			if (item) item.usingFrames = false;
+			frameMapRef.current = null;
+			frameCtxRef.current = null;
+			drawnRef.current = null;
+			if (material?.map === frameMap) material.map = null;
+			frameMap.dispose();
 			video.removeEventListener("loadedmetadata", onMeta);
 			video.removeEventListener("loadeddata", onReady);
 			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("seeked", onSeeked);
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
 			if (item?.video === video) item.video = null;
+			if (item) {
+				item.pendingTime = null;
+				item.seekLock = false;
+			}
 			videoRef.current = null;
 			mapRef.current = null;
 			if (material?.map === map) material.map = null;
@@ -277,19 +388,20 @@ export function FramePlane({
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
+		const frameMap = frameMapRef.current;
 		const mesh = meshRef.current;
 		const video = videoRef.current;
 		const item = play[room];
 		const material = materialRef.current;
-		if (map && material && material.map !== map) {
-			material.map = map;
-			material.needsUpdate = true;
-		}
-		if (!map || !mesh || !video || !item) return;
+		if (!map || !mesh || !video || !item || !material) return;
+		const sequence = item.sequence;
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
-		if (focused || near) ensurePreload(video);
+		if (focused || near) sequence.load();
+		else if (room !== 0) sequence.release();
+		if (!focused) sequence.trim();
+		if (focused && !sequence.ready) ensurePreload(video);
 
 		mesh.visible = focused;
 		if (mesh.geometry !== geometry) mesh.geometry = geometry;
@@ -297,12 +409,86 @@ export function FramePlane({
 
 		if (!focused) {
 			if (!video.paused) video.pause();
+			if (item.usingFrames) {
+				item.usingFrames = false;
+				drawnRef.current = null;
+			}
 			return;
+		}
+
+		if (sequence.ready && frameMap) {
+			if (!item.usingFrames) {
+				if (item.duration > 0 && video.readyState >= 1) {
+					item.pos = video.currentTime * item.fps;
+					item.target = item.pos;
+				}
+				item.pendingTime = null;
+				item.usingFrames = true;
+			}
+			if (!video.paused) video.pause();
+
+			const gap = frameDelta(item.pos, item.target, item.count);
+			const catchingUp = Math.abs(gap) >= 0.5;
+
+			if (item.dragging || catchingUp) {
+				// Walk one displayed frame at a time so every pose is seen.
+				const step = Math.sign(gap);
+				const next = Math.round(wrapFrame(item.pos + step, item.count)) % item.count;
+				sequence.prefetch(next, step);
+				if (sequence.has(next)) {
+					item.pos = next;
+					directionRef.current = step;
+				}
+			} else if (!item.dragging) {
+				if (reduceMotionCached) {
+					item.vel = 0;
+				} else {
+					item.vel += (item.fps - item.vel) * (1 - Math.exp(-delta * 2.2));
+					item.pos = wrapFrame(item.pos + item.vel * delta, item.count);
+					item.target = item.pos;
+				}
+			}
+
+			const index = Math.round(wrapFrame(item.pos, item.count)) % item.count;
+			if (index !== lastIndexRef.current) {
+				directionRef.current = frameDelta(lastIndexRef.current, index, item.count) >= 0 ? 1 : -1;
+				lastIndexRef.current = index;
+			}
+			sequence.prefetch(index, directionRef.current);
+
+			const bitmap = sequence.frame(index, item.dragging || catchingUp);
+			const ctx = frameCtxRef.current;
+			if (bitmap && ctx && bitmap !== drawnRef.current) {
+				const canvas = ctx.canvas;
+				if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+					canvas.width = bitmap.width;
+					canvas.height = bitmap.height;
+					if (!aspectSetRef.current) {
+						aspectSetRef.current = true;
+						setAspect(bitmap.width / bitmap.height);
+					}
+				}
+				ctx.drawImage(bitmap, 0, 0);
+				frameMap.needsUpdate = true;
+				drawnRef.current = bitmap;
+			}
+
+			const shown = drawnRef.current ? frameMap : map;
+			if (material.map !== shown) {
+				material.map = shown;
+				material.needsUpdate = true;
+			}
+			return;
+		}
+
+		if (material.map !== map) {
+			material.map = map;
+			material.needsUpdate = true;
 		}
 
 		if (item.dragging) {
 			if (!video.paused) video.pause();
-			map.needsUpdate = true;
+			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
 
@@ -313,22 +499,22 @@ export function FramePlane({
 			return;
 		}
 
-		const coasting = Math.abs(item.vel - FPS) > 8;
+		const coasting = Math.abs(item.vel - item.fps) > 8;
 		if (coasting) {
 			if (!video.paused) video.pause();
-			item.vel += (FPS - item.vel) * (1 - Math.exp(-delta * 2.2));
+			item.vel += (item.fps - item.vel) * (1 - Math.exp(-delta * 2.2));
 			item.pos += item.vel * delta;
 			if (item.duration > 0) {
-				item.pos = wrapTime(item.pos / FPS, item.duration) * FPS;
+				item.pos = wrapTime(item.pos / item.fps, item.duration) * item.fps;
 			}
 			seekVideo(item, item.pos);
-			map.needsUpdate = true;
+			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
 
-		item.vel = FPS;
+		item.vel = item.fps;
 		if (video.paused) void video.play().catch(() => { });
-		if (item.duration > 0) item.pos = video.currentTime * FPS;
+		if (item.duration > 0) item.pos = video.currentTime * item.fps;
 	});
 
 	return (
