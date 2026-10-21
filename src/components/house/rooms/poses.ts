@@ -37,7 +37,7 @@ export function roomPoses(x: number): {
 		interior: {
 			px: x,
 			py: 1.9,
-			pz: -0.42,
+			pz: -1.16,
 			tx: x,
 			ty: 1.9,
 			tz: -4.6,

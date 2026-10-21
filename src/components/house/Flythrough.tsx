@@ -499,7 +499,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     >
       <Canvas
         frameloop={frameloop}
-        camera={{ position: [0, 1.9, -0.42], fov: 72, near: 0.1, far: 80 }}
+        camera={{ position: [0, 1.9, -1.16], fov: 72, near: 0.1, far: 80 }}
         dpr={dpr}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}

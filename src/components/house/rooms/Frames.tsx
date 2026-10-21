@@ -33,7 +33,7 @@ const OPENING_HEIGHT = 2.5;
 const WINDOW_Z = 0.35;
 /** Facade opening — the camera crosses this on the way in. */
 const FACADE_Z = 0.12;
-const INTERIOR_Z = -0.42;
+const INTERIOR_Z = -1.16;
 /** Camera-to-plate gap at the interior stop, where the shot already fills. */
 const INTERIOR_DIST = INTERIOR_Z - PLANE_Z;
 /** Closest the plate may come: nearer than this crops the shot inside the FOV. */
