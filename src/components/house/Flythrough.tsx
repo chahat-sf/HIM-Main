@@ -5,6 +5,7 @@ import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { CHARACTERS } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
+import guideStyles from "./DragGuide.module.css";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
 import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
@@ -29,6 +30,24 @@ const OUTSIDE_LEVEL = 0.5;
 const OUTSIDE_FADE = 2.8;
 const MOBILE_WINDOW = "(max-width: 768px)";
 const SWIPE_THRESHOLD = 48;
+const DRAG_GUIDE_KEY = "house-drag-guide";
+const DRAG_GUIDE_THRESHOLD = 24;
+
+function dragGuideSeen() {
+  try {
+    return sessionStorage.getItem(DRAG_GUIDE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDragGuideSeen() {
+  try {
+    sessionStorage.setItem(DRAG_GUIDE_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+}
 
 type Cue = { offset: number; duration: number; gain?: number };
 
@@ -86,10 +105,11 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % OUTFIT_COUNT));
-  const [hint, setHint] = useState(false);
+  const [dragGuide, setDragGuide] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [interactMode, setInteractModeState] = useState(false);
   const interactModeRef = useRef(false);
+  const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
   const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
@@ -116,7 +136,15 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     indexRef.current = index;
     commandRef.current = command;
     interactModeRef.current = interactMode;
-  }, [mode, index, command, interactMode]);
+    dragGuideRef.current = dragGuide;
+  }, [mode, index, command, interactMode, dragGuide]);
+
+  function dismissDragGuide() {
+    if (!dragGuideRef.current) return;
+    dragGuideRef.current = false;
+    setDragGuide(false);
+    markDragGuideSeen();
+  }
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_WINDOW);
@@ -357,7 +385,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     setInteractMode(false, indexRef.current);
     interactModeRef.current = false;
     setInteractModeState(false);
-    setHint(false);
+    setDragGuide(false);
+    dragGuideRef.current = false;
     setDragging(false);
     dragRef.current = null;
     setMode("exiting");
@@ -371,8 +400,13 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     setInteractMode(next, indexRef.current);
     interactModeRef.current = next;
     setInteractModeState(next);
-    setHint(next);
-    if (!next) {
+    if (next) {
+      const show = !dragGuideSeen();
+      dragGuideRef.current = show;
+      setDragGuide(show);
+    } else {
+      setDragGuide(false);
+      dragGuideRef.current = false;
       setDragging(false);
       dragRef.current = null;
     }
@@ -402,7 +436,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       setInteractMode(false, indexRef.current);
       interactModeRef.current = false;
       setInteractModeState(false);
-      setHint(false);
+      setDragGuide(false);
+      dragGuideRef.current = false;
       setMode("interior");
       return;
     }
@@ -446,7 +481,6 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (modeRef.current !== "interior" || !CHARACTERS[character] || character >= OUTFIT_COUNT) return;
     const room = indexRef.current;
     setPicked((current) => current.map((value, i) => (i === room ? character : value)));
-    setHint(false);
     window.setTimeout(() => {
       showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
     }, 260);
@@ -489,13 +523,15 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     beginDrag(indexRef.current);
     dragRef.current = { id: event.pointerId, x: event.clientX, p0: item.pos, lt: performance.now(), v: 0 };
     setDragging(true);
-    setHint(false);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
+    if (dragGuideRef.current && Math.abs(event.clientX - drag.x) >= DRAG_GUIDE_THRESHOLD) {
+      dismissDragGuide();
+    }
     const span = Math.min(900, Math.max(320, window.innerWidth * 0.8));
     const target = drag.p0 + (drag.x - event.clientX) * (frameCount(indexRef.current) / span);
     const now = performance.now();
@@ -649,11 +685,29 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           </button>
         )}
 
-        <div className={`${styles.hint} ${hint && interactMode ? styles.show : ""}`}>
-          <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
-          Drag to rotate
-          <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>
-        </div>
+        {dragGuide && interactMode && (
+          <div className={guideStyles.guide} role="status" aria-live="polite">
+            <div className={guideStyles.cue} aria-hidden>
+              <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
+              <div className={guideStyles.scrub}>
+                <span className={guideStyles.scrubDot} />
+              </div>
+              <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>
+            </div>
+            <p className={guideStyles.copy}>Drag left or right to spin</p>
+            <button
+              type="button"
+              className={guideStyles.gotIt}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                dismissDragGuide();
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
       </div>
 
       {!embedded && (
