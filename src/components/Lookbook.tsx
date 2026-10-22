@@ -268,18 +268,18 @@ export default function Lookbook() {
           object-position: center;
         }
 
-        @media (hover: hover) and (min-width: 641px) {
-          .lookbook-image:hover {
-            z-index: 5;
-          }
+        // @media (hover: hover) and (min-width: 641px) {
+        //   .lookbook-image:hover {
+        //     z-index: 5;
+        //   }
 
-          .lookbook-image:hover .lookbook-image-reveal {
-            height: 133.34cqw;
-          }
+        //   .lookbook-image:hover .lookbook-image-reveal {
+        //     height: 133.34cqw;
+        //   }
 
-          .lookbook-image:hover .lookbook-image-frame {
-            margin-top: 0;
-          }
+        //   .lookbook-image:hover .lookbook-image-frame {
+        //     margin-top: 0;
+        //   }
         }
 
         /* STORY CONTENT */
@@ -291,7 +291,7 @@ export default function Lookbook() {
         }
 
         .lookbook-category {
-          margin: 0 0 9px;
+          margin: 12 0 9px;
           color: rgba(244, 238, 229, 0.45);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 10px;
@@ -335,12 +335,12 @@ export default function Lookbook() {
         .lookbook-read-more {
           background: none;
           border: 0;
-          padding: 0;
+          padding-bottom: 12;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          margin-top: 12px;
+          margin-top: 16px;
           color: rgba(244, 238, 229, 0.85);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 9px;

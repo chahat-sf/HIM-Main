@@ -1,11 +1,14 @@
 "use client";
 
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
@@ -49,29 +52,177 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-// ─── Static product data (in a real app this comes from params/API) ─
-const PRODUCT = {
-  name: "Athletic Zip Hoodie",
-  price: "45,000.00",
+// ─── Product catalogue — keyed by slug ──────────────────────────────
+type ProductEntry = {
+  name: string;
+  price: string;
+  description: string;
+  colors: { name: string; hex: string }[];
+  sizes: string[];
+  images: string[];
+  details: string;
+  sizeFit: string;
+  shipping: string;
+};
+
+const DEFAULT_COLORS = [
+  { name: "Heather Grey", hex: "#a3a3a3" },
+  { name: "Burgundy",     hex: "#7a1420" },
+];
+const DEFAULT_SIZES   = ["XS", "S", "M", "L", "XL", "XXL"];
+const DEFAULT_DETAILS = "100% premium cotton. Brushed inner lining. Full-length zip with branded puller. Ribbed cuffs and hem. Machine washable at 30°C.";
+const DEFAULT_SIZEFIT = "True to size. Model is 6\'1\" wearing size M. Relaxed through the chest and shoulders with a slightly tapered hem.";
+const DEFAULT_SHIP    = "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.";
+
+const PRODUCTS_DB: Record<string, ProductEntry> = {
+  /* ── Original slugs (1–6) ── */
+  "textured-thermal-white": {
+    name: "Athletic Zip Hoodie",
+    price: "45,000.00",
+    description: "A refined take on the everyday essential. Cut from our signature brushed-cotton blend, this hoodie pairs relaxed structure with purposeful detailing — zip placket, tonal stitching, and a fit that works as hard as you do.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: ["/products/pdp-hero.jpg", "/products/man-image-1.webp", "/products/man-image-2.webp"],
+    details: DEFAULT_DETAILS,
+    sizeFit: DEFAULT_SIZEFIT,
+    shipping: DEFAULT_SHIP,
+  },
+  "textured-thermal-white-2": {
+    name: "Textured Thermal – White",
+    price: "16,000.00",
+    description: "Lightweight and breathable, this thermal is engineered for all-day ease. The open-knit texture gives it structure without weight.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: ["/products/item-4.webp"],
+    details: DEFAULT_DETAILS,
+    sizeFit: DEFAULT_SIZEFIT,
+    shipping: DEFAULT_SHIP,
+  },
+  "textured-thermal-white-3": {
+    name: "Textured Thermal – White",
+    price: "16,000.00",
+    description: "Lightweight and breathable, this thermal is engineered for all-day ease. The open-knit texture gives it structure without weight.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: ["/products/item-4.webp"],
+    details: DEFAULT_DETAILS,
+    sizeFit: DEFAULT_SIZEFIT,
+    shipping: DEFAULT_SHIP,
+  },
+  /* ── Bestseller slugs (7–12) — each uses its own carousel image ── */
+ "textured-thermal-white-7": {
+  name: "THE ATTACHÉ",
+  price: "38,000.00",
   description:
-    "A refined take on the everyday essential. Cut from our signature brushed-cotton blend, this hoodie pairs relaxed structure with purposeful detailing — zip placket, tonal stitching, and a fit that works as hard as you do.",
-  colors: [
-    { name: "Heather Grey", hex: "#a3a3a3" },
-    { name: "Burgundy", hex: "#7a1420" },
-  ],
-  sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+    "Well travelled. Never out of place. A dark double-breasted tailored blazer inspired by travel, worldly sophistication, and sharp personal style.",
+  colors: DEFAULT_COLORS,
+  sizes: DEFAULT_SIZES,
   images: [
-    "/products/pdp-hero.jpg",
-    "/products/man-image-1.webp",
-    "/products/man-image-2.webp",
+    "/products/man-image-100.webp",
+    "/products/inner-images/man-image-100-1.webp",
+    "/products/inner-images/man-image-100-2.jpg",
   ],
   details:
-    "100% premium cotton. Brushed inner lining. Full-length zip with branded puller. Ribbed cuffs and hem. Machine washable at 30°C.",
+    "Dark double-breasted tailored blazer. Terry rayon fabric: 65% polyester, 35% viscose. Dry clean only.",
   sizeFit:
-    "True to size. Model is 6'1\" wearing size M. Relaxed through the chest and shoulders with a slightly tapered hem.",
-  shipping:
-    "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.",
+    "A sharp, tailored silhouette designed for a refined and sophisticated look.",
+  shipping: DEFAULT_SHIP,
+},
+  "textured-thermal-white-8": {
+  name: "THE EXCEPTION",
+  price: "36,000.00",
+  description:
+    "Tailoring, outside the rulebook. A double-breasted tailored denim suit that challenges convention, combining the casual character of denim with the refined structure of formal tailoring.",
+  colors: DEFAULT_COLORS,
+  sizes: DEFAULT_SIZES,
+  images: [
+    "/bestseller/bs-image-2.webp",
+    "/products/inner-images/man-image-101-1.webp",
+    "/products/inner-images/man-image-101-2.webp",
+    "/products/inner-images/man-image-101-3.webp",
+  ],
+  details:
+    "10 oz denim fabric. 65% cotton, 33% polyester, 2% Lycra. Double-breasted tailored denim suit.",
+  sizeFit:
+    "A structured double-breasted silhouette that blends denim's relaxed character with formal tailoring.",
+  shipping: DEFAULT_SHIP,
+},
+"textured-thermal-white-9": {
+  name: "THE LAST WORD",
+  price: "42,000.00",
+  description:
+    "A black evening tuxedo for the man who doesn't need to compete for attention. His appearance makes the final statement. Some statements are made in silence.",
+  colors: DEFAULT_COLORS,
+  sizes: DEFAULT_SIZES,
+  images: [
+    "/bestseller/bs-image-3.webp",
+    "/products/inner-images/man-image-102-1.webp",
+    "/products/inner-images/man-image-102-2.webp",
+    "/products/inner-images/man-image-102-3.webp",
+  ],
+  details:
+    "Black evening tuxedo. Fabric: 70% all-weather Merino wool, 30% polyester.",
+  sizeFit:
+    "A refined evening silhouette designed to make a statement through understated authority.",
+  shipping: DEFAULT_SHIP,
+},
+  "textured-thermal-white-10": {
+  name: "THE ARCHIVIST",
+  price: "44,000.00",
+  description:
+    "Some things never belonged to just one era. A houndstooth wool overcoat inspired by historical taste, a carefully assembled wardrobe, and an appreciation for enduring design.",
+  colors: DEFAULT_COLORS,
+  sizes: DEFAULT_SIZES,
+  images: [
+    "/products/man-image-103.webp",
+    "/products/inner-images/man-image-103-1.jpg",
+    "/products/inner-images/man-image-103-2.jpg",
+    "/products/inner-images/man-image-103-3.webp",
+    "/products/inner-images/man-image-103-4.webp",
+  ],
+  details:
+    "Houndstooth wool overcoat. Fabric: 80% wool, 20% polyamide. Dry clean only.",
+  sizeFit:
+    "A timeless overcoat silhouette designed for a refined, heritage-inspired look.",
+  shipping: DEFAULT_SHIP,
+},
+"textured-thermal-white-11": {
+  name: "THE COMPOSURE",
+  price: "52,000.00",
+  description:
+    "Presence without performance. A black cotton-velvet structured jacket defined by sharp lines and understated sophistication, designed for the man who remains controlled and self-assured.",
+  colors: DEFAULT_COLORS,
+  sizes: DEFAULT_SIZES,
+  images: [
+    "/bestseller/bs-image-5.webp",
+    "/products/inner-images/man-image-104-1.webp",
+    "/products/inner-images/man-image-104-2.webp",
+    "/products/inner-images/man-image-104-3.webp",
+  ],
+  details:
+    "Black cotton-velvet structured jacket. Fabric: cotton velvet; exact fibre percentages not yet supplied.",
+  sizeFit:
+    "A structured silhouette with a sharp, understated profile.",
+  shipping: DEFAULT_SHIP,
+},
+  "textured-thermal-white-12": {
+    name: "Midnight Slim Blazer II",
+    price: "36,000.00",
+    description: "A second colourway of our bestselling slim blazer — same peak lapel Italian wool construction, new season palette.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      "/bestseller/bs-image-2.webp",
+      "/bestseller/bs-image-2.webp",
+      "/bestseller/bs-image-2.webp",
+    ],
+    details: "Italian wool. Peak lapels. Single-button fastening. Satin lining. Dry clean only.",
+    sizeFit: "Slim fit. Model is 6\'0\" wearing size M. True to size.",
+    shipping: DEFAULT_SHIP,
+  },
 };
+
+const FALLBACK_PRODUCT: ProductEntry = PRODUCTS_DB["textured-thermal-white"]!;
 
 // ─── Scroll focus: which crop of the hero each right-column beat shows ─
 // x / y are the focal point in % of the image box; tuned for pdp-hero.jpg.
@@ -132,9 +283,9 @@ const DUMMY_BLOCKS = [
 ];
 
 const RELATED = [
-  { slug: "textured-thermal-white", name: "Textured Thermal - White", price: "16,000", image: "/products/item-4.webp", rating: 4.8, color: "#111" },
-  { slug: "textured-thermal-white-2", name: "Textured Thermal - White", price: "16,000", image: "/products/item-4.webp", rating: 4.8, color: "#111" },
-  { slug: "textured-thermal-white-3", name: "Textured Thermal - White", price: "16,000", image: "/products/item-4.webp", rating: 4.8, color: "#111" },
+  { slug: "textured-thermal-white-7",  name: "The Attaché",           price: "38,000", image: "/products/man-image-100.webp", rating: 4.8, color: "#111" },
+  { slug: "textured-thermal-white-8",  name: "The Exception",         price: "36,000", image: "/products/man-image-101.webp", rating: 4.9, color: "#111" },
+  { slug: "textured-thermal-white-9",  name: "The Last Word",         price: "42,000", image: "/products/man-image-102.webp", rating: 4.7, color: "#111" },
 ];
 
 // ─── Accordion row ───────────────────────────────────────────────────
@@ -160,12 +311,26 @@ function Accordion({ label, focus, children }: { label: string; focus?: string; 
 
 // ─── Page ─────────────────────────────────────────────────────────────
 export default function ProductDetailPage() {
+  const params = useParams();
+  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const PRODUCT = PRODUCTS_DB[slug] ?? FALLBACK_PRODUCT;
+
   const [selectedColor, setSelectedColor] = useState(PRODUCT.colors[0].name);
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
+
+  // Reset per-product state whenever the slug changes
+  useEffect(() => {
+    setSelectedColor(PRODUCT.colors[0].name);
+    setSelectedSize("");
+    setActiveImg(0);
+    setAdded(false);
+    setFocusId("intro");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   useEffect(() => {
     const root = rightRef.current;
@@ -217,33 +382,104 @@ export default function ProductDetailPage() {
 
           {/* ── LEFT: IMAGE PANEL ──────────────────────── */}
           <div className="pdp-left">
-            <div className="pdp-main-img">
-              <div
-                className="pdp-main-img-focus"
-                style={{ transform: focusTransform(FOCUS[focusId] ?? FOCUS.intro) }}
-              >
+            <div className="pdp-left-inner">
+              {/* Vertical thumbnail strip — desktop only */}
+              <div className="pdp-thumbs" role="listbox" aria-label="Product images">
                 {PRODUCT.images.map((src, i) => (
-                  <Image
+                  <button
                     key={src}
-                    src={src}
-                    alt={i === activeImg ? PRODUCT.name : ""}
-                    fill
-                    priority={i === 0}
-                    quality={90}
-                    sizes="(max-width: 1280px) 50vw, 40vw"
-                    className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
-                  />
+                    type="button"
+                    role="option"
+                    aria-selected={activeImg === i}
+                    aria-label={`View image ${i + 1}`}
+                    className={`pdp-thumb${activeImg === i ? " active" : ""}`}
+                    onClick={() => setActiveImg(i)}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      quality={60}
+                      sizes="80px"
+                      className="object-cover object-center"
+                    />
+                  </button>
                 ))}
               </div>
 
-              <div className="pdp-rotate" role="group" aria-label="Rotate product view">
-                <button type="button" onClick={() => rotate(-1)} aria-label="Rotate left">
-                  <RotateIcon direction="left" />
-                </button>
-                <span aria-live="polite">{angle}°</span>
-                <button type="button" onClick={() => rotate(1)} aria-label="Rotate right">
-                  <RotateIcon direction="right" />
-                </button>
+              {/* Main hero image */}
+              <div className="pdp-main-img">
+                <div
+                  className="pdp-main-img-focus"
+                  style={{ transform: focusTransform(FOCUS[focusId] ?? FOCUS.intro) }}
+                >
+                  {PRODUCT.images.map((src, i) => (
+                    <Image
+                      key={src}
+                      src={src}
+                      alt={i === activeImg ? PRODUCT.name : ""}
+                      fill
+                      priority={i === 0}
+                      quality={90}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 36vw"
+                      className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Mobile prev/next arrows */}
+                {imageCount > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="pdp-mob-arrow pdp-mob-arrow--prev"
+                      onClick={() => rotate(-1)}
+                      aria-label="Previous image"
+                    >
+                      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                        <path d="M7 1L1 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="pdp-mob-arrow pdp-mob-arrow--next"
+                      onClick={() => rotate(1)}
+                      aria-label="Next image"
+                    >
+                      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                        <path d="M1 1L7 7L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                {/* Mobile dot indicators */}
+                {imageCount > 1 && (
+                  <div className="pdp-mob-dots" role="tablist" aria-label="Image indicators">
+                    {PRODUCT.images.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeImg === i}
+                        aria-label={`Go to image ${i + 1}`}
+                        className={`pdp-mob-dot${activeImg === i ? " active" : ""}`}
+                        onClick={() => setActiveImg(i)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Desktop rotate control */}
+                <div className="pdp-rotate" role="group" aria-label="Rotate product view">
+                  <button type="button" onClick={() => rotate(-1)} aria-label="Rotate left">
+                    <RotateIcon direction="left" />
+                  </button>
+                  <span aria-live="polite">{angle}°</span>
+                  <button type="button" onClick={() => rotate(1)} aria-label="Rotate right">
+                    <RotateIcon direction="right" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -388,13 +624,66 @@ export default function ProductDetailPage() {
           animation: pdp-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
+        .pdp-left-inner {
+          display: flex;
+          flex-direction: row;
+          height: calc(100svh - var(--pdp-nav-h));
+        }
+
+        /* ── Thumbnail strip ── */
+        .pdp-thumbs {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 12px 10px;
+          overflow-y: auto;
+          scrollbar-width: none;
+          background: #fff;
+          flex-shrink: 0;
+          width: 72px;
+        }
+
+        .pdp-thumbs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .pdp-thumb {
+          position: relative;
+          width: 52px;
+          height: 64px;
+          flex-shrink: 0;
+          padding: 0;
+          border: 1px solid transparent;
+          background: #e9e6e1;
+          cursor: pointer;
+          transition: border-color 200ms ease;
+          overflow: hidden;
+        }
+
+        .pdp-thumb:hover {
+          border-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .pdp-thumb.active {
+          border-color: var(--pdp-ink);
+        }
+
         .pdp-main-img {
           position: relative;
-          width: 100%;
-          height: calc(100svh - var(--pdp-nav-h));
-          min-height: calc(100svh - var(--pdp-nav-h));
+          flex: 1;
+          height: 100%;
           overflow: hidden;
           background: #e9e6e1;
+        }
+
+        /* ── Mobile arrows (hidden on desktop) ── */
+        .pdp-mob-arrow {
+          display: none;
+        }
+
+        /* ── Mobile dot indicators (hidden on desktop) ── */
+        .pdp-mob-dots {
+          display: none;
         }
 
         .pdp-main-img-focus {
@@ -722,7 +1011,10 @@ export default function ProductDetailPage() {
           .pdp-accordion-panel,
           .pdp-accordion-body,
           .pdp-accordion-trigger svg,
-          .pdp-add-btn {
+          .pdp-add-btn,
+          .pdp-thumb,
+          .pdp-mob-arrow,
+          .pdp-mob-dot {
             animation: none !important;
             transition: none !important;
           }
@@ -871,11 +1163,141 @@ export default function ProductDetailPage() {
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
           .pdp-main {
-            --pdp-nav-h: 96px; /* fixed bar + mobile link row */
+            --pdp-nav-h: 56px;
+          }
+
+          /* Single column — image on top, info below */
+          .pdp-columns {
+            display: block;
+          }
+
+          /* Left panel is no longer sticky on mobile */
+          .pdp-left {
+            position: relative;
+            top: 0;
+          }
+
+          .pdp-left-inner {
+            flex-direction: column;
+            height: auto;
+          }
+
+          /* Hide vertical thumb strip on mobile */
+          .pdp-thumbs {
+            display: none;
+          }
+
+          /* Hero takes full width, square-ish aspect */
+          .pdp-main-img {
+            width: 100%;
+            height: 0;
+            padding-bottom: 100%;
+            flex: none;
+          }
+
+          /* Hide desktop rotate control on mobile */
+          .pdp-rotate {
+            display: none;
+          }
+
+          /* Show mobile prev/next arrows */
+          .pdp-mob-arrow {
+            display: grid;
+            place-items: center;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: #111;
+            cursor: pointer;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+            backdrop-filter: blur(4px);
+            transition: background 150ms ease;
+          }
+
+          .pdp-mob-arrow:hover {
+            background: #fff;
+          }
+
+          .pdp-mob-arrow--prev {
+            left: 14px;
+          }
+
+          .pdp-mob-arrow--next {
+            right: 14px;
+          }
+
+          /* Show dot indicators */
+          .pdp-mob-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            position: absolute;
+            bottom: 14px;
+            left: 0;
+            right: 0;
+            z-index: 3;
+          }
+
+          .pdp-mob-dot {
+            width: 20px;
+            height: 2px;
+            padding: 0;
+            border: none;
+            border-radius: 1px;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background 200ms ease, width 200ms ease;
+          }
+
+          .pdp-mob-dot.active {
+            background: var(--pdp-ink);
+            width: 28px;
+          }
+
+          /* Right panel becomes full-width below the image */
+          .pdp-right {
+            padding: 24px 16px 64px;
+          }
+
+          .pdp-title {
+            font-size: 24px;
+          }
+
+          .pdp-divider {
+            margin: 20px 0 24px;
+          }
+
+          .pdp-accordions {
+            margin-top: 24px;
+          }
+
+          .pdp-accordion-trigger {
+            height: 52px;
+            font-size: 16px;
+          }
+
+          .pdp-related {
+            margin-top: 48px;
+          }
+
+          .pdp-related-title {
+            font-size: 17px;
+          }
+
+          .pdp-related-grid {
+            gap: 10px;
           }
         }
 
-        @media (max-width: 1280px) {
+        @media (min-width: 769px) and (max-width: 1280px) {
           .pdp-main {
             --u: 0.8px;
           }
@@ -886,6 +1308,16 @@ export default function ProductDetailPage() {
 
           .pdp-rotate {
             top: 16px;
+          }
+
+          .pdp-thumbs {
+            width: 60px;
+            padding: 10px 8px;
+          }
+
+          .pdp-thumb {
+            width: 44px;
+            height: 54px;
           }
 
           .pdp-right {
