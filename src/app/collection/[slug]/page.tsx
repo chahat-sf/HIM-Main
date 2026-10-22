@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
+import { getProduct } from "@/lib/products";
 import { useEffect, useRef, useState } from "react";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
@@ -48,30 +50,6 @@ function Stars({ rating }: { rating: number }) {
     </span>
   );
 }
-
-// ─── Static product data (in a real app this comes from params/API) ─
-const PRODUCT = {
-  name: "Athletic Zip Hoodie",
-  price: "45,000.00",
-  description:
-    "A refined take on the everyday essential. Cut from our signature brushed-cotton blend, this hoodie pairs relaxed structure with purposeful detailing — zip placket, tonal stitching, and a fit that works as hard as you do.",
-  colors: [
-    { name: "Heather Grey", hex: "#a3a3a3" },
-    { name: "Burgundy", hex: "#7a1420" },
-  ],
-  sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  images: [
-    "/products/pdp-hero.jpg",
-    "/products/man-image-1.webp",
-    "/products/man-image-2.webp",
-  ],
-  details:
-    "100% premium cotton. Brushed inner lining. Full-length zip with branded puller. Ribbed cuffs and hem. Machine washable at 30°C.",
-  sizeFit:
-    "True to size. Model is 6'1\" wearing size M. Relaxed through the chest and shoulders with a slightly tapered hem.",
-  shipping:
-    "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.",
-};
 
 // ─── Scroll focus: which crop of the hero each right-column beat shows ─
 // x / y are the focal point in % of the image box; tuned for pdp-hero.jpg.
@@ -159,7 +137,7 @@ function Accordion({ label, focus, children }: { label: string; focus?: string; 
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────
-export default function ProductDetailPage() {
+function ProductDetailPage({ product: PRODUCT }: { product: ReturnType<typeof getProduct> }) {
   const [selectedColor, setSelectedColor] = useState(PRODUCT.colors[0].name);
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImg, setActiveImg] = useState(0);
@@ -926,4 +904,11 @@ export default function ProductDetailPage() {
       `}</style>
     </>
   );
+}
+
+export default function ProductDetailRoute() {
+  const params = useParams<{ slug: string }>();
+  const slug = typeof params?.slug === "string" ? params.slug : "athletic-zip-hoodie";
+  const product = getProduct(slug);
+  return <ProductDetailPage key={product.slug} product={product} />;
 }

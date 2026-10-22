@@ -3,8 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { CHARACTERS } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
+import { CHARACTERS } from "./characters";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
 import DragGuide from "./DragGuide";
@@ -254,26 +254,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         .catch(() => undefined);
     }
     load("/house/sounds.mp4", sprite);
-    fetch("/house/oudoor%20bg%20sound%202.mp4")
-      .then((response) => response.arrayBuffer())
-      .then((data) => ctx.decodeAudioData(data))
-      .then((buffer) => {
-        if (cancel) return;
-        const gain = ctx.createGain();
-        const inside = modeRef.current === "interior" || modeRef.current === "entering";
-        gain.gain.value = inside ? 0 : proximityRef.current * OUTSIDE_LEVEL;
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        source.start(0);
-        outsideGain.current = gain;
-        outsideSource.current = source;
-        // Start immediately when the browser allows autoplay. A later click still resumes if this is blocked.
-        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
-      })
-      .catch(() => undefined);
+    // Outdoor ambient is deferred until exterior mode (see effect below).
     return () => {
       cancel = true;
       sprite.current = null;
@@ -285,6 +266,37 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       if (!embedded) document.body.style.overflow = previous;
     };
   }, [embedded]);
+
+  // Load outdoor loop only when the user is (or was) outside — skip wasted decode in interior-only boot.
+  useEffect(() => {
+    if (mode !== "exterior" && mode !== "moving" && mode !== "exiting") return;
+    if (outsideSource.current) return;
+    const ctx = audioCtx.current;
+    if (!ctx) return;
+    let cancel = false;
+    fetch("/house/outdoor-ambient.mp4")
+      .then((response) => response.arrayBuffer())
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        if (cancel || outsideSource.current) return;
+        const gain = ctx.createGain();
+        const outside = modeRef.current === "exterior" || modeRef.current === "moving";
+        gain.gain.value = outside ? proximityRef.current * OUTSIDE_LEVEL : 0;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(0);
+        outsideGain.current = gain;
+        outsideSource.current = source;
+        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
+  }, [mode]);
 
   useEffect(() => {
     if (!embedded) {
@@ -353,6 +365,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     window.addEventListener("pointerdown", unlock, capture);
     window.addEventListener("keydown", unlock, capture);
     window.addEventListener("touchstart", unlock, capture);
+    window.addEventListener("him-start", unlock);
     return () => {
       applyAmbientRef.current = () => { };
       window.removeEventListener("scroll", onScroll);
@@ -360,6 +373,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       window.removeEventListener("pointerdown", unlock, capture);
       window.removeEventListener("keydown", unlock, capture);
       window.removeEventListener("touchstart", unlock, capture);
+      window.removeEventListener("him-start", unlock);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [embedded]);

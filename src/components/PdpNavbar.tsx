@@ -5,16 +5,16 @@ import Image from "next/image";
 import styles from "./PdpNavbar.module.css";
 
 const leftLinks = [
-  { label: "JEANS", href: "/jeans" },
-  { label: "SHIRTS", href: "/shirts" },
-  { label: "TSHIRTS", href: "/tshirts" },
-  { label: "LOOKBOOK", href: "/lookbook" },
+  { label: "JEANS", href: "/collection" },
+  { label: "SHIRTS", href: "/collection" },
+  { label: "TSHIRTS", href: "/collection" },
+  { label: "LOOKBOOK", href: "/collection" },
   { label: "HOUSE", href: "/house" },
 ];
 
 const rightLinks = [
-  { label: "BRAND", href: "/brand" },
-  { label: "REWARDS", href: "/rewards" },
+  { label: "BRAND", href: "/" },
+  { label: "REWARDS", href: "/" },
 ];
 
 function SearchIcon() {
@@ -66,7 +66,7 @@ export default function PdpNavbar() {
       <div className={styles.row}>
         <ul className={`${styles.links} ${styles.desktopLinks}`}>
           {leftLinks.map((link) => (
-            <li key={link.href}>
+            <li key={link.label}>
               <NavLink {...link} />
             </li>
           ))}
@@ -86,23 +86,23 @@ export default function PdpNavbar() {
         <div className={styles.right}>
           <ul className={`${styles.links} ${styles.desktopLinks}`}>
             {rightLinks.map((link) => (
-              <li key={link.href}>
+              <li key={link.label}>
                 <NavLink {...link} />
               </li>
             ))}
           </ul>
 
           <div className={styles.icons}>
-            <Link href="/search" aria-label="Search" className={styles.icon}>
+            <Link href="/collection" aria-label="Search" className={styles.icon}>
               <SearchIcon />
             </Link>
-            <Link href="/wishlist" aria-label="Wishlist" className={styles.icon}>
+            <Link href="/collection" aria-label="Wishlist" className={styles.icon}>
               <WishlistIcon />
             </Link>
-            <Link href="/account" aria-label="Account" className={styles.icon}>
+            <Link href="/collection" aria-label="Account" className={styles.icon}>
               <UserIcon />
             </Link>
-            <Link href="/bag" aria-label="Shopping bag" className={styles.icon}>
+            <Link href="/collection" aria-label="Shopping bag" className={styles.icon}>
               <BagIcon />
             </Link>
           </div>
@@ -111,7 +111,7 @@ export default function PdpNavbar() {
 
       <ul className={styles.mobileLinks}>
         {[...leftLinks, ...rightLinks].map((link) => (
-          <li key={link.href}>
+          <li key={link.label}>
             <NavLink {...link} />
           </li>
         ))}

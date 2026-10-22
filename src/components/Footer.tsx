@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const footerLinks = [
   "REWARDS",
@@ -31,14 +32,14 @@ export default function Footer() {
       {/* TOP BAR */}
       <div className="him-footer-top">
         <div className="him-footer-logo">
-  <Image
-    src="/homepage/him-logo.webp"
-    alt="HIM"
-    width={100}
-    height={35}
-    className="him-footer-logo-img"
-  />
-</div>
+          <Image
+            src="/homepage/him-logo.webp"
+            alt="HIM"
+            width={100}
+            height={35}
+            className="him-footer-logo-img"
+          />
+        </div>
 
         <div className="newsletter-copy">
           <span>SIGN UP TO OUR NEWSLETTER</span>
@@ -72,9 +73,9 @@ export default function Footer() {
 
           <div className="footer-links-grid">
             {footerLinks.map((link) => (
-              <a href="#" key={link}>
+              <Link href="/collection" key={link}>
                 {link}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -83,9 +84,9 @@ export default function Footer() {
           <div className="footer-vertical-title">SOCIALS</div>
 
           <div className="footer-column-links">
-            <a href="#">INSTAGRAM</a>
-            <a href="#">TIKTOK</a>
-            <a href="#">YOUTUBE</a>
+            <span>INSTAGRAM</span>
+            <span>TIKTOK</span>
+            <span>YOUTUBE</span>
           </div>
         </div>
 

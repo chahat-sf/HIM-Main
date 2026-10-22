@@ -1,6 +1,6 @@
 import HomeGate from "@/components/HomeGate";
 import HeroSection from "@/components/HeroSection";
-import Flythrough from "@/components/house/Flythrough";
+import FlythroughLazy from "@/components/house/FlythroughLazy";
 import ProductsSection from "@/components/ProductsSection";
 import Lookbook from "@/components/Lookbook";
 import Footer from "@/components/Footer";
@@ -10,7 +10,7 @@ export default function Home() {
     <HomeGate>
       <main>
         <HeroSection />
-        <Flythrough embedded />
+        <FlythroughLazy embedded />
         <ProductsSection />
         <Lookbook />
         <Footer />

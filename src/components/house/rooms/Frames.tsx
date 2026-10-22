@@ -190,6 +190,8 @@ function seekVideo(item: PlayState, pos: number) {
 	flushSeek(item);
 }
 
+let lodGeneration = 0;
+
 function applyLod(item: PlayState, mode: LodMode) {
 	if (item.lodMode === mode) return;
 
@@ -214,11 +216,13 @@ function applyLod(item: PlayState, mode: LodMode) {
 
 	const video = item.video;
 	if (video) {
+		const gen = ++lodGeneration;
 		video.pause();
 		video.src = LOD[mode].video;
 		video.load();
 		const onMeta = () => {
 			video.removeEventListener("loadedmetadata", onMeta);
+			if (gen !== lodGeneration) return;
 			item.duration = Number.isFinite(video.duration) ? video.duration : 0;
 			seekVideo(item, item.pos);
 			if (mode === "idle") {
@@ -232,8 +236,9 @@ function applyLod(item: PlayState, mode: LodMode) {
 	}
 
 	if (mode === "interact") {
+		const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
 		item.sequence.load();
-		item.sequence.decodeAll();
+		item.sequence.warm(index);
 	}
 }
 
@@ -478,11 +483,10 @@ export function FramePlane({
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
-		// Only the 1k interact LOD loads/decodes WebPs. Idle is video-only.
+		// Only the 1k interact LOD loads/decodes WebPs (ring cache). Idle is video-only.
 		if (interact && (focused || near)) sequence.load();
-		if (interact && focused) sequence.decodeAll();
 		else if (interact) sequence.trim();
-		if (focused && interact && !sequence.fullyDecoded) ensurePreload(video);
+		if (focused && interact) ensurePreload(video);
 
 		mesh.visible = focused;
 		if (mesh.geometry !== geometry) mesh.geometry = geometry;
@@ -497,52 +501,44 @@ export function FramePlane({
 			return;
 		}
 
-		// Video carries the plate until every native frame is decoded in memory.
-		if (interact && sequence.fullyDecoded && frameMap) {
-			if (!item.usingFrames) {
-				if (item.duration > 0 && video.readyState >= 1) {
-					item.pos = video.currentTime * item.fps;
-					item.target = item.pos;
-				}
-				item.pendingTime = null;
-				item.usingFrames = true;
-			}
-			if (!video.paused) video.pause();
-
-			// Interact: freeze unless dragging. No auto-spin.
-			if (!item.dragging) {
-				item.vel = 0;
-			}
+		// Interact: prefer ring bitmap when available, else video seek.
+		if (interact && frameMap) {
+			if (!item.dragging) item.vel = 0;
 
 			const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
 			if (index !== lastIndexRef.current) {
 				directionRef.current = frameDelta(lastIndexRef.current, index, item.count) >= 0 ? 1 : -1;
 				lastIndexRef.current = index;
 			}
+			sequence.prefetch(index, directionRef.current);
 
 			const bitmap = sequence.frame(index);
 			const ctx = frameCtxRef.current;
-			if (bitmap && ctx && bitmap !== drawnRef.current) {
-				const canvas = ctx.canvas;
-				if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
-					canvas.width = bitmap.width;
-					canvas.height = bitmap.height;
-					if (!aspectSetRef.current) {
-						aspectSetRef.current = true;
-						setAspect(bitmap.width / bitmap.height);
+			if (bitmap && ctx) {
+				if (!video.paused) video.pause();
+				item.usingFrames = true;
+				item.pendingTime = null;
+				if (bitmap !== drawnRef.current) {
+					const canvas = ctx.canvas;
+					if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+						canvas.width = bitmap.width;
+						canvas.height = bitmap.height;
+						if (!aspectSetRef.current) {
+							aspectSetRef.current = true;
+							setAspect(bitmap.width / bitmap.height);
+						}
 					}
+					ctx.drawImage(bitmap, 0, 0);
+					frameMap.needsUpdate = true;
+					drawnRef.current = bitmap;
 				}
-				ctx.drawImage(bitmap, 0, 0);
-				frameMap.needsUpdate = true;
-				drawnRef.current = bitmap;
+				if (material.map !== frameMap) {
+					material.map = frameMap;
+					material.needsUpdate = true;
+				}
+				return;
 			}
-
-			const shown = drawnRef.current ? frameMap : map;
-			if (material.map !== shown) {
-				material.map = shown;
-				material.needsUpdate = true;
-			}
-			return;
+			item.usingFrames = false;
 		}
 
 		if (material.map !== map) {

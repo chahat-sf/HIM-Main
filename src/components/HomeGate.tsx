@@ -108,6 +108,15 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 		return () => window.clearTimeout(timer);
 	}, [pageReady, revealed]);
 
+	// Soft-lock guard: if house Suspense/KTX2 never resolves, still unlock the gate.
+	useEffect(() => {
+		if (houseReady || started) return;
+		const timer = window.setTimeout(() => {
+			setHouseReady(true);
+		}, 8000);
+		return () => window.clearTimeout(timer);
+	}, [houseReady, started]);
+
 	useEffect(() => {
 		if (started) return;
 		const html = document.documentElement;
@@ -217,7 +226,10 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 						aria-busy={!revealed}
 						aria-label={revealed ? "welcome to the HIM world" : `Loading ${displayPct}%`}
 						onClick={() => {
-							if (revealed) setStarted(true);
+							if (!revealed) return;
+							setStarted(true);
+							// Unlock house AudioContext on the same user gesture.
+							window.dispatchEvent(new Event("him-start"));
 						}}
 					>
 						{!revealed && (

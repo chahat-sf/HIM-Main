@@ -16,16 +16,16 @@ const LINK_SPACING = "1.5px";
 // ─── Navigation ─────────────────────────────────────────────────────────────
 
 const leftLinks = [
-  { label: "JEANS", href: "/jeans" },
-  { label: "SHIRTS", href: "/shirts" },
-  { label: "TSHIRTS", href: "/tshirts" },
-  { label: "LOOKBOOK", href: "/lookbook" },
+  { label: "JEANS", href: "/collection" },
+  { label: "SHIRTS", href: "/collection" },
+  { label: "TSHIRTS", href: "/collection" },
+  { label: "LOOKBOOK", href: "/collection" },
   { label: "HOUSE", href: "/house" },
 ];
 
 const rightLinks = [
-  { label: "BRAND", href: "/brand" },
-  { label: "REWARDS", href: "/rewards" },
+  { label: "BRAND", href: "/" },
+  { label: "REWARDS", href: "/" },
 ];
 
 // ─── Icons ─────────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ export default function Navbar() {
           style={{ gap: "24px" }}
         >
           {leftLinks.map((link) => (
-            <li key={link.href}>
+            <li key={link.label}>
               <NavLink {...link} />
             </li>
           ))}
@@ -165,7 +165,7 @@ export default function Navbar() {
             style={{ gap: "24px" }}
           >
             {rightLinks.map((link) => (
-              <li key={link.href}>
+              <li key={link.label}>
                 <NavLink {...link} />
               </li>
             ))}
@@ -177,7 +177,7 @@ export default function Navbar() {
             style={{ color: LINK_COLOR }}
           >
             <Link
-              href="/search"
+              href="/collection"
               aria-label="Search"
               className="transition-colors duration-200 hover:text-white"
             >
@@ -185,7 +185,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/wishlist"
+              href="/collection"
               aria-label="Wishlist"
               className="transition-colors duration-200 hover:text-white"
             >
@@ -193,7 +193,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/account"
+              href="/collection"
               aria-label="Account"
               className="transition-colors duration-200 hover:text-white"
             >
@@ -201,7 +201,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/bag"
+              href="/collection"
               aria-label="Shopping bag"
               className="transition-colors duration-200 hover:text-white"
             >
@@ -214,7 +214,7 @@ export default function Navbar() {
       {/* PHONE LINKS ROW — hidden on desktop */}
       <ul className="him-nav-mobile-links list-none m-0 p-0">
         {[...leftLinks, ...rightLinks].map((link) => (
-          <li key={link.href}>
+          <li key={link.label}>
             <NavLink {...link} />
           </li>
         ))}
