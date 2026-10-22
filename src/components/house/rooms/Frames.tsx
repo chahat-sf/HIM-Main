@@ -22,7 +22,7 @@ type LodMode = "idle" | "interact";
 
 /** Idle = 2k auto-spin (video only). Interact = 1k drag scrub. */
 const LOD = {
-	idle: { video: "/house/window-2.mp4?v=1022b", asset: 1 },
+	idle: { video: "/house/window-2.mp4?v=1022c", asset: 1 },
 	interact: { video: "/house/window-1.mp4?v=1022a", asset: 0 },
 } as const;
 
@@ -193,7 +193,7 @@ function seekVideo(item: PlayState, pos: number) {
 function applyLod(item: PlayState, mode: LodMode) {
 	if (item.lodMode === mode) return;
 
-	// Map angle across LODs with different frame counts (144@16 vs 61@12).
+	// Map angle across LODs with different frame counts (idle 4K vs interact 1k).
 	const progress = item.count > 0 ? wrapFrame(item.pos, item.count) / item.count : 0;
 	item.dragging = false;
 	item.lodMode = mode;

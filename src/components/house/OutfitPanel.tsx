@@ -115,15 +115,17 @@ export default function OutfitPanel({
       return;
     }
 
-    // Keep full width until the panels finish leaving.
+    // Keep full width until the panels finish leaving. Launcher is absolute
+    // over the panel top, so fading it in does not grow the stack height.
     setMinimized(false);
     gsap.set(panels, { display: "flex", pointerEvents: "none" });
-    gsap.set(launcher, { pointerEvents: "none" });
+    gsap.set(launcher, { autoAlpha: 0, y: 0, scale: 0.96, pointerEvents: "none" });
 
     const tl = gsap.timeline({
       defaults: { ease: "power2.in" },
       onComplete: () => {
         gsap.set(panels, { display: "none", autoAlpha: 0 });
+        gsap.set(launcher, { autoAlpha: 1, y: 0, scale: 1, pointerEvents: "auto" });
         setMinimized(true);
         tweenRef.current = null;
       },
@@ -134,27 +136,27 @@ export default function OutfitPanel({
       panelCards,
       {
         autoAlpha: 0,
-        y: 12,
-        scale: 0.96,
+        y: 8,
+        scale: 0.98,
         duration,
-        stagger: reduce ? 0 : 0.05,
+        stagger: reduce ? 0 : 0.04,
         ease: "power2.in",
       },
       0,
     );
-    tl.to(panels, { autoAlpha: 0, duration: duration * 0.75, ease: "power2.in" }, 0.04);
-    tl.fromTo(
+    tl.to(panels, { autoAlpha: 0, duration: duration * 0.85, ease: "power2.in" }, 0);
+    // Bring launcher in only after panels are mostly gone — same top-left spot.
+    tl.to(
       launcher,
-      { autoAlpha: 0, y: 10, scale: 0.92 },
       {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: reduce ? 0.01 : 0.34,
+        duration: reduce ? 0.01 : 0.28,
         ease: "power2.out",
         pointerEvents: "auto",
       },
-      reduce ? 0 : 0.14,
+      reduce ? 0 : duration * 0.55,
     );
   };
 

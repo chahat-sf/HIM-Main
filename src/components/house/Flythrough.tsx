@@ -416,6 +416,9 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // Rotate/drag mode: ignore room/window navigation keys (use Auto to leave).
+      if (interactModeRef.current) return;
+
       if (event.key === "Enter" || event.key === "ArrowUp") {
         event.preventDefault();
         enter(indexRef.current);
@@ -423,16 +426,6 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       }
       if (event.key === "Escape" || event.key === "ArrowDown") {
         event.preventDefault();
-        // Interact hides chrome — Escape restores it before leaving the room.
-        if (modeRef.current === "interior" && interactModeRef.current) {
-          setInteractMode(false, indexRef.current);
-          interactModeRef.current = false;
-          setInteractModeState(false);
-          setHint(false);
-          setDragging(false);
-          dragRef.current = null;
-          return;
-        }
         exit();
         return;
       }
@@ -615,40 +608,45 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
                 showOutfits={ROOMS.length > 1}
               />
             </div>
-            <button
-              type="button"
-              className={styles.rotateBtn}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                toggleInteract();
-              }}
-              aria-label="Enable drag rotate"
-              aria-pressed={false}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M21 12a9 9 0 1 1-3.2-6.9" />
-                <path d="M21 3v6h-6" />
-              </svg>
-              <span>Rotate</span>
-            </button>
-            <button
-              type="button"
-              className={styles.changeRoomBtn}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                exit();
-              }}
-              aria-label="Change room"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 14L4 9l5-5" />
-                <path d="M4 9h12.5M20 20v-7a4 4 0 0 0-4-4H4" />
-              </svg>
-              <span>Change Room</span>
-            </button>
+            {ROOMS.length > 1 && (
+              <button
+                type="button"
+                className={styles.changeRoomBtn}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  exit();
+                }}
+                aria-label="Change room"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 14L4 9l5-5" />
+                  <path d="M4 9h12.5M20 20v-7a4 4 0 0 0-4-4H4" />
+                </svg>
+                <span>Change Room</span>
+              </button>
+            )}
           </>
+        )}
+
+        {mode === "interior" && (
+          <button
+            type="button"
+            className={`${styles.rotateBtn}${interactMode ? ` ${styles.rotateBtnActive}` : ""}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleInteract();
+            }}
+            aria-label={interactMode ? "Return to auto spin" : "Enable drag rotate"}
+            aria-pressed={interactMode}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-3.2-6.9" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            <span>{interactMode ? "Auto" : "Rotate"}</span>
+          </button>
         )}
 
         <div className={`${styles.hint} ${hint && interactMode ? styles.show : ""}`}>

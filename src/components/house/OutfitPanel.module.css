@@ -1,4 +1,5 @@
 .stack {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -160,6 +161,11 @@
 .launcher {
   all: unset;
   box-sizing: border-box;
+  /* Overlay the panel top during collapse so it doesn't push layout / jump. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -176,6 +182,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: background 0.2s ease;
   visibility: hidden;
+}
+
+.stack.minimized .launcher {
+  position: relative;
+  top: auto;
+  left: auto;
 }
 
 .launcher:hover {

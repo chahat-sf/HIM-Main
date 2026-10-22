@@ -352,6 +352,8 @@
 }
 
 .castPanel {
+  top: clamp(72px, 14vh, 140px);
+  translate: 0 0;
   align-items: stretch;
   width: clamp(168px, 22vw, 220px);
 }
