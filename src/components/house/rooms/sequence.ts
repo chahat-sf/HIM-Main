@@ -12,7 +12,7 @@ const DRAG_DECODE_CONCURRENCY = 12;
 const CACHE_LIMIT = 64;
 const PREFETCH_AHEAD = 32;
 const PREFETCH_BEHIND = 8;
-const FRAME_VERSION = 2;
+const FRAME_VERSION = 3;
 /** How far to look for a stand-in while the full set is still decoding. */
 const NEAREST_RANGE = 12;
 

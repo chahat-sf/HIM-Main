@@ -3,10 +3,11 @@
 import { Canvas } from "@react-three/fiber";
 import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { CHARACTERS, CharacterWheel } from "../ScrollSection";
+import { CHARACTERS } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
+import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { useHomeLoad } from "../HomeGate";
@@ -76,8 +77,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [sliding, setSliding] = useState(false);
   const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
-  const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % CHARACTERS.length));
-  const [nameSwap, setNameSwap] = useState(false);
+  const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % OUTFIT_COUNT));
   const [hint, setHint] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [ready, setReady] = useState(false);
@@ -399,18 +399,16 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       }
       if (modeRef.current !== "interior") return;
       const n = Number.parseInt(event.key, 10);
-      if (n >= 1 && n <= CHARACTERS.length) chooseCharacter(n - 1);
+      if (n >= 1 && n <= OUTFIT_COUNT) chooseCharacter(n - 1);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   function chooseCharacter(character: number) {
-    if (modeRef.current !== "interior" || !CHARACTERS[character]) return;
+    if (modeRef.current !== "interior" || !CHARACTERS[character] || character >= OUTFIT_COUNT) return;
     const room = indexRef.current;
     setPicked((current) => current.map((value, i) => (i === room ? character : value)));
-    setNameSwap(true);
-    window.setTimeout(() => setNameSwap(false), 220);
     setHint(false);
     window.setTimeout(() => {
       showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
@@ -499,7 +497,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     >
       <Canvas
         frameloop={frameloop}
-        camera={{ position: [0, 1.9, -1.16], fov: 72, near: 0.1, far: 80 }}
+        camera={{ position: [0, 1.9, 0.05], fov: 72, near: 0.1, far: 80 }}
         dpr={dpr}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
@@ -566,11 +564,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         {mode === "interior" && (
           <>
             <div className={styles.castScrim} />
-            <div className={styles.cast} data-cast>
-              <CharacterWheel selected={picked[index] ?? 0} onSelect={chooseCharacter} />
-              <div className={`${styles.wheelName} ${nameSwap ? styles.swap : ""}`} aria-live="polite">
-                {CHARACTERS[picked[index] ?? 0]?.name}
-              </div>
+            <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
+              <OutfitPanel selected={picked[index] ?? 0} onSelect={chooseCharacter} />
             </div>
           </>
         )}

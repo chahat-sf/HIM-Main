@@ -16,9 +16,9 @@ import { BAY, ROOMS } from "./poses";
 import { FrameSequence, SEQUENCES } from "./sequence";
 
 const DEFAULT_FPS = 24;
-const DEFAULT_ASPECT = 5084 / 2160;
+const DEFAULT_ASPECT = 2520 / 1080;
 
-const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1021g`);
+const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1022a`);
 
 /**
  * Picture uses the proven interior fit height. Mesh is larger so the window
@@ -33,7 +33,7 @@ const OPENING_HEIGHT = 2.5;
 const WINDOW_Z = 0.35;
 /** Facade opening — the camera crosses this on the way in. */
 const FACADE_Z = 0.12;
-const INTERIOR_Z = -1.16;
+const INTERIOR_Z = 0.05;
 /** Camera-to-plate gap at the interior stop, where the shot already fills. */
 const INTERIOR_DIST = INTERIOR_Z - PLANE_Z;
 /** Closest the plate may come: nearer than this crops the shot inside the FOV. */

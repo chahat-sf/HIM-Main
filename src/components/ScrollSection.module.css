@@ -351,6 +351,11 @@
   width: var(--wheel);
 }
 
+.castPanel {
+  align-items: stretch;
+  width: clamp(168px, 22vw, 220px);
+}
+
 .wheel {
   display: block;
   width: var(--wheel);
@@ -564,6 +569,10 @@
     translate: 0 0;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
     gap: 2px;
+  }
+
+  .castPanel {
+    width: min(200px, 56vw);
   }
 
   .wheelName {

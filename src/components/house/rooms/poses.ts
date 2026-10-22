@@ -18,7 +18,7 @@ export type RoomDef = {
 	x: number;
 };
 
-export const ROOM_COUNT = 13;
+export const ROOM_COUNT = 2;
 
 export const ROOMS: RoomDef[] = Array.from({ length: ROOM_COUNT }, (_, i) => ({
 	id: `room-${i + 1}`,
@@ -37,7 +37,7 @@ export function roomPoses(x: number): {
 		interior: {
 			px: x,
 			py: 1.9,
-			pz: -1.16,
+			pz: 0.05,
 			tx: x,
 			ty: 1.9,
 			tz: -4.6,
