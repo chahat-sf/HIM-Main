@@ -36,12 +36,12 @@ const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
 
 // NOTE: swap the image paths below for your real bestseller images.
 const products = [
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-4.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-6.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-8.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-4.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-6.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/products/item-8.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
+  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
 ];
 
 const CARD_GAP = 16;
