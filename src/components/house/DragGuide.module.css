@@ -1,0 +1,311 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 96px);
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 42% 48% at 50% 46%,
+      transparent 0%,
+      transparent 42%,
+      rgba(8, 4, 2, 0.18) 68%,
+      rgba(8, 4, 2, 0.55) 100%);
+  opacity: 0;
+  animation: fadeIn 480ms ease forwards;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(280px, calc(100vw - 40px));
+  padding: 22px 22px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 172, 106, 0.4);
+  background: rgba(14, 8, 5, 0.88);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 226, 172, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: rgba(244, 231, 204, 0.94);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  animation: cardIn 520ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
+}
+
+.layer.leaving .vignette {
+  animation: fadeOut 280ms ease forwards;
+}
+
+.layer.leaving .card {
+  animation: cardOut 280ms ease forwards;
+}
+
+.stage {
+  position: relative;
+  width: 148px;
+  height: 64px;
+  margin: 2px 0 4px;
+}
+
+.track {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(214, 172, 106, 0.45) 20%,
+      rgba(214, 172, 106, 0.45) 80%,
+      transparent);
+}
+
+.hand {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -10px 0 0 -18px;
+  color: rgba(255, 226, 172, 0.95);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.55));
+  animation: handDrag 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.hand svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -4px 0 0 -9px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 226, 172, 0.55);
+  opacity: 0;
+  animation: ripple 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.arrows {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+  pointer-events: none;
+}
+
+.arrows span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: rgba(214, 172, 106, 0.75);
+  animation: arrowPulse 1.8s ease-in-out infinite;
+}
+
+.arrows span:last-child {
+  animation-delay: 0.9s;
+}
+
+.arrows svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kicker {
+  margin: 0;
+  font: 600 10px / 1 var(--sans, system-ui, sans-serif);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(214, 172, 106, 0.8);
+}
+
+.copy {
+  margin: 0;
+  max-width: 220px;
+  font: 500 14px / 1.35 var(--sans, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+}
+
+.gotIt {
+  all: unset;
+  box-sizing: border-box;
+  pointer-events: auto;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 172, 106, 0.5);
+  font: 500 11px / 1 var(--sans, system-ui, sans-serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(244, 231, 204, 0.92);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.gotIt:hover {
+  background: rgba(28, 16, 10, 0.9);
+  border-color: rgba(255, 226, 172, 0.85);
+  transform: translateY(-1px);
+}
+
+.gotIt:active {
+  transform: none;
+}
+
+.gotIt:focus-visible {
+  outline: 2px solid rgba(255, 226, 172, 0.7);
+  outline-offset: 2px;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cardIn {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cardOut {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes handDrag {
+
+  0%,
+  100% {
+    transform: translateX(-28px);
+  }
+
+  50% {
+    transform: translateX(28px);
+  }
+}
+
+@keyframes ripple {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.7);
+  }
+
+  20% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: translateX(28px) scale(1.35);
+  }
+
+  80% {
+    opacity: 0;
+  }
+}
+
+@keyframes arrowPulse {
+
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .vignette,
+  .card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .layer.leaving .vignette,
+  .layer.leaving .card {
+    animation: none;
+    opacity: 0;
+  }
+
+  .hand,
+  .ripple,
+  .arrows span {
+    animation: none;
+  }
+
+  .hand {
+    transform: none;
+  }
+
+  .ripple {
+    opacity: 0.4;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .layer {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
+
+  .card {
+    padding: 18px 18px 14px;
+  }
+
+  .copy {
+    font-size: 13px;
+  }
+}

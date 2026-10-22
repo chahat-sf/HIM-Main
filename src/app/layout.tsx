@@ -1,31 +1,55 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import "./globals.css";
 
+const spaceMono = Space_Mono({
+	subsets: ["latin"],
+	weight: ["400", "700"],
+	variable: "--font-nav",
+	display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+	subsets: ["latin"],
+	weight: ["500", "600"],
+	style: ["normal", "italic"],
+	variable: "--font-room-serif",
+	display: "swap",
+});
+
+const jost = Jost({
+	subsets: ["latin"],
+	weight: ["300", "400"],
+	variable: "--font-room-sans",
+	display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "HIM",
-  description: "HIM — Luxury Menswear",
+	title: {
+		default: "HIM",
+		template: "%s — HIM",
+	},
+	description: "HIM — Luxury Menswear",
+	openGraph: {
+		title: "HIM",
+		description: "HIM — Luxury Menswear",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "HIM",
+		description: "HIM — Luxury Menswear",
+	},
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-        <style dangerouslySetInnerHTML={{__html: `
-          :root {
-            --font-nav: 'Space Mono', monospace;
-            --font-room-serif: 'Cormorant Garamond', serif;
-            --font-room-sans: 'Jost', sans-serif;
-          }
-        `}} />
-      </head>
-      <body>{children}</body>
-    </html>
-  );
+	return (
+		<html lang="en" className={`${spaceMono.variable} ${cormorant.variable} ${jost.variable}`}>
+			<body className="font-sans antialiased">{children}</body>
+		</html>
+	);
 }

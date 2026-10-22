@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 const lookbooks = [
@@ -105,9 +106,8 @@ export default function Lookbook() {
               <h2>{lookbook.title}</h2>
 
               <p
-                className={`lookbook-description${
-                  open[lookbook.title] ? " is-open" : ""
-                }`}
+                className={`lookbook-description${open[lookbook.title] ? " is-open" : ""
+                  }`}
               >
                 {lookbook.description}
               </p>
@@ -155,10 +155,10 @@ export default function Lookbook() {
               movement and a more considered tomorrow.
             </p>
 
-            <a href="#" className="summer-feature-link">
+            <Link href="/collection" className="summer-feature-link">
               <span>OUR BRAND</span>
               <Arrow />
-            </a>
+            </Link>
           </div>
         </div>
       </section>

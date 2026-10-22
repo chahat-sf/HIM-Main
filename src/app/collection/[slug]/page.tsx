@@ -1,14 +1,12 @@
 "use client";
 
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
@@ -1359,3 +1357,5 @@ export default function ProductDetailPage() {
     </>
   );
 }
+
+

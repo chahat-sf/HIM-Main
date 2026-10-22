@@ -18,7 +18,7 @@ export type RoomDef = {
 	x: number;
 };
 
-export const ROOM_COUNT = 2;
+export const ROOM_COUNT = 1;
 
 export const ROOMS: RoomDef[] = Array.from({ length: ROOM_COUNT }, (_, i) => ({
 	id: `room-${i + 1}`,

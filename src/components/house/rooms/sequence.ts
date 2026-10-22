@@ -6,15 +6,14 @@ export const SEQUENCES: SequenceInfo[] = manifest;
 
 const FETCH_CONCURRENCY = 8;
 const DECODE_CONCURRENCY = 4;
-const DECODE_ALL_CONCURRENCY = 8;
-const DRAG_DECODE_CONCURRENCY = 12;
-/** Ring size while warming a room that is not yet fully decoded. */
-const CACHE_LIMIT = 64;
-const PREFETCH_AHEAD = 32;
-const PREFETCH_BEHIND = 8;
+const DRAG_DECODE_CONCURRENCY = 8;
+/** Hard cap on decoded ImageBitmaps — avoids ~664MB full-set decode. */
+const CACHE_LIMIT = 16;
+const PREFETCH_AHEAD = 10;
+const PREFETCH_BEHIND = 4;
 const FRAME_VERSION = 3;
-/** How far to look for a stand-in while the full set is still decoding. */
-const NEAREST_RANGE = 12;
+/** How far to look for a stand-in while the ring is still warming. */
+const NEAREST_RANGE = 8;
 
 const framePath = (room: number, i: number) =>
 	`/house/frames/window-${room + 1}/frame_${String(i + 1).padStart(4, "0")}.webp?v=${FRAME_VERSION}`;
@@ -28,11 +27,12 @@ export class FrameSequence {
 	private blobs: (Blob | null)[];
 	private bitmaps = new Map<number, ImageBitmap>();
 	private decoding = new Map<number, Promise<void>>();
+	/** Successful blob fetches. */
 	private settled = 0;
+	/** Fetch attempts finished (success or failure). */
+	private fetchDone = 0;
 	private token = 0;
 	private loading = false;
-	private decodingAll = false;
-	private holdAll = false;
 	private center = 0;
 	private cacheLimit = CACHE_LIMIT;
 	private decodeLimit = DECODE_CONCURRENCY;
@@ -45,14 +45,17 @@ export class FrameSequence {
 		this.blobs = Array(info.count).fill(null);
 	}
 
-	/** Every frame blob is fetched (decode may still be in progress). */
+	/** Every frame fetch has finished (some blobs may be missing on error). */
 	get ready() {
-		return this.settled === this.count && this.blobs[0] !== null;
+		return this.fetchDone === this.count;
 	}
 
-	/** Every frame is decoded at native resolution and held in memory. */
+	/**
+	 * Full-set decode is intentionally disabled (memory). Prefer ring + video fallback.
+	 * Kept for call-site compatibility — always false.
+	 */
 	get fullyDecoded() {
-		return this.count > 0 && this.bitmaps.size === this.count;
+		return false;
 	}
 
 	get decoded() {
@@ -60,8 +63,8 @@ export class FrameSequence {
 	}
 
 	load() {
-		if (this.loading || this.settled === this.count) {
-			if (this.settled === this.count) this.decodeAll();
+		if (this.loading || this.fetchDone === this.count) {
+			if (this.fetchDone === this.count) this.warm(this.center);
 			return;
 		}
 		this.loading = true;
@@ -72,18 +75,24 @@ export class FrameSequence {
 			while (token === this.token) {
 				const i = next++;
 				if (i >= this.count) return;
-				if (this.blobs[i]) continue;
+				if (this.blobs[i]) {
+					this.fetchDone++;
+					this.settled++;
+					continue;
+				}
 				try {
 					const res = await fetch(framePath(this.room, i));
 					if (!res.ok) throw new Error(String(res.status));
 					const blob = await res.blob();
 					if (token !== this.token) return;
 					this.blobs[i] = blob;
+					this.settled++;
 					if (i === 0) void this.decode(0);
 				} catch {
 					if (token !== this.token) return;
+					// Failed fetches do not increment settled — only fetchDone.
 				}
-				this.settled++;
+				this.fetchDone++;
 			}
 		};
 
@@ -91,44 +100,23 @@ export class FrameSequence {
 			() => {
 				if (token !== this.token) return;
 				this.loading = false;
-				this.decodeAll();
+				this.warm(this.center);
 			},
 		);
 	}
 
-	/**
-	 * Decode every fetched blob at native resolution and keep the full set.
-	 * Safe to call repeatedly after trim() while blobs remain.
-	 */
+	/** Warm a ring of frames around `center` — never holds the full set. */
 	decodeAll() {
-		if (this.fullyDecoded || this.settled !== this.count) return;
-		this.holdAll = true;
-		this.cacheLimit = this.count;
-		this.decodeLimit = DECODE_ALL_CONCURRENCY;
-		if (this.decodingAll) return;
-		this.decodingAll = true;
-		const token = this.token;
-		let next = 0;
+		this.warm(this.center);
+	}
 
-		const worker = async () => {
-			while (token === this.token && this.holdAll) {
-				const i = next++;
-				if (i >= this.count) return;
-				await this.decode(i);
-			}
-		};
-
-		void Promise.all(
-			Array.from({ length: DECODE_ALL_CONCURRENCY }, worker),
-		).then(() => {
-			if (token === this.token) this.decodingAll = false;
-		});
+	warm(index: number) {
+		this.prefetch(index, 1);
 	}
 
 	/** Raise decode budget and warm frames around the scrub point. */
 	beginDrag(index: number) {
 		this.dragging = true;
-		if (this.fullyDecoded) return;
 		this.decodeLimit = DRAG_DECODE_CONCURRENCY;
 		this.prefetch(index, 1);
 		this.prefetch(index, -1);
@@ -136,25 +124,23 @@ export class FrameSequence {
 
 	endDrag() {
 		this.dragging = false;
-		if (this.holdAll) this.decodeLimit = DECODE_ALL_CONCURRENCY;
-		else this.decodeLimit = DECODE_CONCURRENCY;
+		this.decodeLimit = DECODE_CONCURRENCY;
 	}
 
 	/** Decode around `index`, biased in the direction the frames are moving. */
 	prefetch(index: number, direction: number) {
-		if (this.fullyDecoded) return;
-		this.center = index;
+		this.center = this.wrap(index);
 		const forward = direction >= 0 ? 1 : -1;
 		const ahead = Math.min(
 			PREFETCH_AHEAD,
-			Math.max(8, this.cacheLimit - PREFETCH_BEHIND - 1),
+			Math.max(4, this.cacheLimit - PREFETCH_BEHIND - 1),
 		);
-		void this.decode(index);
+		void this.decode(this.center);
 		for (let k = 1; k <= ahead; k++) {
 			if (this.decoding.size >= this.decodeLimit) return;
-			void this.decode(this.wrap(index + forward * k));
+			void this.decode(this.wrap(this.center + forward * k));
 			if (k <= PREFETCH_BEHIND)
-				void this.decode(this.wrap(index - forward * k));
+				void this.decode(this.wrap(this.center - forward * k));
 		}
 	}
 
@@ -163,14 +149,13 @@ export class FrameSequence {
 	}
 
 	/**
-	 * Exact frame when the full set is decoded. During warm-up, fall back to
-	 * the nearest ready neighbour so the plate never goes blank.
+	 * Exact frame when present in the ring. Otherwise nearest ready neighbour
+	 * so the plate rarely goes blank while scrubbing.
 	 */
 	frame(index: number) {
 		const i = this.wrap(index);
 		const hit = this.bitmaps.get(i);
 		if (hit) return hit;
-		if (this.fullyDecoded) return null;
 		for (let k = 1; k <= NEAREST_RANGE; k++) {
 			const a = this.bitmaps.get(this.wrap(i - k));
 			if (a) return a;
@@ -180,13 +165,13 @@ export class FrameSequence {
 		return null;
 	}
 
-	/** Drop decoded frames but keep downloaded data for a quick return. */
+	/** Drop decoded frames but keep downloaded blobs. Bumps token to cancel in-flight decode. */
 	trim() {
+		this.token++;
+		this.decoding.clear();
 		for (const bitmap of this.bitmaps.values()) bitmap.close();
 		this.bitmaps.clear();
 		this.dragging = false;
-		this.holdAll = false;
-		this.decodingAll = false;
 		this.cacheLimit = CACHE_LIMIT;
 		this.decodeLimit = DECODE_CONCURRENCY;
 	}
@@ -194,11 +179,10 @@ export class FrameSequence {
 	release() {
 		this.token++;
 		this.loading = false;
-		this.decodingAll = false;
 		this.trim();
-		this.decoding.clear();
 		this.blobs.fill(null);
 		this.settled = 0;
+		this.fetchDone = 0;
 	}
 
 	private wrap(i: number) {
@@ -212,7 +196,6 @@ export class FrameSequence {
 		const blob = this.blobs[i];
 		if (!blob) return Promise.resolve();
 		const token = this.token;
-		// Native resolution only — no resize (quality is non-negotiable).
 		const job = createImageBitmap(blob)
 			.then((bitmap) => {
 				this.decoding.delete(i);
@@ -221,7 +204,7 @@ export class FrameSequence {
 					return;
 				}
 				this.bitmaps.set(i, bitmap);
-				if (!this.holdAll) this.evict();
+				this.evict();
 				if (i === 0) this.onFirstFrame?.();
 			})
 			.catch(() => {
@@ -243,6 +226,7 @@ export class FrameSequence {
 					farthest = key;
 				}
 			}
+			if (farthest < 0) break;
 			this.bitmaps.get(farthest)?.close();
 			this.bitmaps.delete(farthest);
 		}

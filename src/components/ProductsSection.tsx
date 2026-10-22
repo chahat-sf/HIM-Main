@@ -184,16 +184,22 @@ function ExistingProductsGrid() {
         className="bestsellers-scroller"
         style={{
           display: "flex",
+          alignItems: "flex-start",
           gap: `${CARD_GAP}px`,
           overflowX: "auto",
+          overflowY: "hidden",
+          overscrollBehaviorX: "contain",
           scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x",
+          paddingBottom: "2px",
         }}
       >
         {products.map((product, index) => (
           <article
             key={`${product.slug}-${index}`}
             className="bestsellers-card group relative"
-            style={{ flex: "0 0 auto", scrollSnapAlign: "start" }}
+            style={{ flex: "0 0 auto", scrollSnapAlign: "start", overflow: "visible" }}
           >
             {/* IMAGE — click goes to PDP */}
             <Link
@@ -336,10 +342,13 @@ function ExistingProductsGrid() {
         }
         .bestsellers-scroller::-webkit-scrollbar {
           display: none;
+          width: 0;
+          height: 0;
         }
         /* ~3.3 cards visible on desktop so the 4th peeks in, like Figma */
         .bestsellers-card {
           width: calc((100% - ${CARD_GAP * 3}px) / 3.3);
+          min-width: 0;
         }
         @media (max-width: 1024px) {
           .bestsellers-card {

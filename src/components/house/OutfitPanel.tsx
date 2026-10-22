@@ -23,10 +23,13 @@ export default function OutfitPanel({
   selected,
   onSelect,
   outfits = DEFAULT_OUTFITS,
+  showOutfits = true,
 }: {
   selected: number;
   onSelect: (index: number) => void;
   outfits?: string[];
+  /** Outfit list only when multiple windows; single-window shows stats alone. */
+  showOutfits?: boolean;
 }) {
   const items = outfits.slice(0, OUTFIT_COUNT);
   /** Layout flag — only true after the exit tween finishes. */
@@ -112,15 +115,17 @@ export default function OutfitPanel({
       return;
     }
 
-    // Keep full width until the panels finish leaving.
+    // Keep full width until the panels finish leaving. Launcher is absolute
+    // over the panel top, so fading it in does not grow the stack height.
     setMinimized(false);
     gsap.set(panels, { display: "flex", pointerEvents: "none" });
-    gsap.set(launcher, { pointerEvents: "none" });
+    gsap.set(launcher, { autoAlpha: 0, y: 0, scale: 0.96, pointerEvents: "none" });
 
     const tl = gsap.timeline({
       defaults: { ease: "power2.in" },
       onComplete: () => {
         gsap.set(panels, { display: "none", autoAlpha: 0 });
+        gsap.set(launcher, { autoAlpha: 1, y: 0, scale: 1, pointerEvents: "auto" });
         setMinimized(true);
         tweenRef.current = null;
       },
@@ -131,27 +136,27 @@ export default function OutfitPanel({
       panelCards,
       {
         autoAlpha: 0,
-        y: 12,
-        scale: 0.96,
+        y: 8,
+        scale: 0.98,
         duration,
-        stagger: reduce ? 0 : 0.05,
+        stagger: reduce ? 0 : 0.04,
         ease: "power2.in",
       },
       0,
     );
-    tl.to(panels, { autoAlpha: 0, duration: duration * 0.75, ease: "power2.in" }, 0.04);
-    tl.fromTo(
+    tl.to(panels, { autoAlpha: 0, duration: duration * 0.85, ease: "power2.in" }, 0);
+    // Bring launcher in only after panels are mostly gone — same top-left spot.
+    tl.to(
       launcher,
-      { autoAlpha: 0, y: 10, scale: 0.92 },
       {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: reduce ? 0.01 : 0.34,
+        duration: reduce ? 0.01 : 0.28,
         ease: "power2.out",
         pointerEvents: "auto",
       },
-      reduce ? 0 : 0.14,
+      reduce ? 0 : duration * 0.55,
     );
   };
 
@@ -203,6 +208,8 @@ export default function OutfitPanel({
   });
 
   const label = items[selected] ?? items[0] ?? "Outfit";
+  const launcherTitle = showOutfits ? "Outfit" : "Stats";
+  const launcherValue = showOutfits ? label : "Details";
 
   return (
     <div
@@ -212,49 +219,75 @@ export default function OutfitPanel({
       data-minimized={minimized ? "true" : "false"}
     >
       <div ref={panelsRef} className={styles.panels}>
-        <section className={styles.panel} data-panel aria-label="Outfit">
-          <div className={styles.titleRow}>
-            <h2 className={styles.title}>Outfit</h2>
-            <button
-              type="button"
-              className={styles.minimize}
-              aria-expanded={!minimized}
-              aria-label="Hide outfit panel"
-              onClick={collapse}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  d="M18 15l-6-6-6 6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <ul className={styles.list} role="listbox" aria-label="Choose outfit">
-            {items.map((name, i) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  className={styles.option}
-                  role="option"
-                  aria-selected={selected === i}
-                  aria-pressed={selected === i}
-                  onClick={() => onSelect(i)}
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                  {name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {showOutfits && (
+          <section className={styles.panel} data-panel aria-label="Outfit">
+            <div className={styles.titleRow}>
+              <h2 className={styles.title}>Outfit</h2>
+              <button
+                type="button"
+                className={styles.minimize}
+                aria-expanded={!minimized}
+                aria-label="Hide outfit panel"
+                onClick={collapse}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    d="M18 15l-6-6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <ul className={styles.list} role="listbox" aria-label="Choose outfit">
+              {items.map((name, i) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    className={styles.option}
+                    role="option"
+                    aria-selected={selected === i}
+                    aria-pressed={selected === i}
+                    onClick={() => onSelect(i)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className={styles.panel} data-panel aria-label="Stats">
+          {!showOutfits && (
+            <div className={styles.titleRow}>
+              <h2 className={styles.title}>Stats</h2>
+              <button
+                type="button"
+                className={styles.minimize}
+                aria-expanded={!minimized}
+                aria-label="Hide stats panel"
+                onClick={collapse}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    d="M18 15l-6-6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
           <div className={styles.stats}>
             {STATS.map((stat, index) => (
               <div key={stat.label} className={styles.statRow}>
@@ -286,12 +319,12 @@ export default function OutfitPanel({
         type="button"
         className={styles.launcher}
         aria-expanded={!minimized}
-        aria-label={`Show outfit panel (${label})`}
+        aria-label={`Show ${launcherTitle.toLowerCase()} panel`}
         onClick={expand}
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <span className={styles.launcherTitle}>Outfit</span>
-        <span className={styles.launcherValue}>{label}</span>
+        <span className={styles.launcherTitle}>{launcherTitle}</span>
+        <span className={styles.launcherValue}>{launcherValue}</span>
         <svg className={styles.chevron} width="14" height="14" viewBox="0 0 24 24" aria-hidden>
           <path
             d="M6 9l6 6 6-6"

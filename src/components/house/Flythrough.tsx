@@ -3,15 +3,24 @@
 import { Canvas } from "@react-three/fiber";
 import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { CHARACTERS } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
+import { CHARACTERS } from "./characters";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
+import DragGuide from "./DragGuide";
 import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { useHomeLoad } from "../HomeGate";
-import { beginDrag, frameCount, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
+import {
+  beginDrag,
+  frameCount,
+  releaseDrag,
+  roomPlay,
+  scrub,
+  setInteractMode,
+  showCharacter,
+} from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
 type Mode = "exterior" | "entering" | "interior" | "exiting" | "moving";
@@ -21,6 +30,24 @@ const OUTSIDE_LEVEL = 0.5;
 const OUTSIDE_FADE = 2.8;
 const MOBILE_WINDOW = "(max-width: 768px)";
 const SWIPE_THRESHOLD = 48;
+const DRAG_GUIDE_KEY = "house-drag-guide";
+const DRAG_GUIDE_THRESHOLD = 24;
+
+function dragGuideSeen() {
+  try {
+    return sessionStorage.getItem(DRAG_GUIDE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDragGuideSeen() {
+  try {
+    sessionStorage.setItem(DRAG_GUIDE_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+}
 
 type Cue = { offset: number; duration: number; gain?: number };
 
@@ -78,8 +105,11 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % OUTFIT_COUNT));
-  const [hint, setHint] = useState(true);
+  const [dragGuide, setDragGuide] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [interactMode, setInteractModeState] = useState(false);
+  const interactModeRef = useRef(false);
+  const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
   const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
@@ -105,7 +135,16 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     modeRef.current = mode;
     indexRef.current = index;
     commandRef.current = command;
-  }, [mode, index, command]);
+    interactModeRef.current = interactMode;
+    dragGuideRef.current = dragGuide;
+  }, [mode, index, command, interactMode, dragGuide]);
+
+  function dismissDragGuide() {
+    if (!dragGuideRef.current) return;
+    dragGuideRef.current = false;
+    setDragGuide(false);
+    markDragGuideSeen();
+  }
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_WINDOW);
@@ -215,26 +254,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         .catch(() => undefined);
     }
     load("/house/sounds.mp4", sprite);
-    fetch("/house/oudoor%20bg%20sound%202.mp4")
-      .then((response) => response.arrayBuffer())
-      .then((data) => ctx.decodeAudioData(data))
-      .then((buffer) => {
-        if (cancel) return;
-        const gain = ctx.createGain();
-        const inside = modeRef.current === "interior" || modeRef.current === "entering";
-        gain.gain.value = inside ? 0 : proximityRef.current * OUTSIDE_LEVEL;
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        source.start(0);
-        outsideGain.current = gain;
-        outsideSource.current = source;
-        // Start immediately when the browser allows autoplay. A later click still resumes if this is blocked.
-        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
-      })
-      .catch(() => undefined);
+    // Outdoor ambient is deferred until exterior mode (see effect below).
     return () => {
       cancel = true;
       sprite.current = null;
@@ -246,6 +266,37 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       if (!embedded) document.body.style.overflow = previous;
     };
   }, [embedded]);
+
+  // Load outdoor loop only when the user is (or was) outside — skip wasted decode in interior-only boot.
+  useEffect(() => {
+    if (mode !== "exterior" && mode !== "moving" && mode !== "exiting") return;
+    if (outsideSource.current) return;
+    const ctx = audioCtx.current;
+    if (!ctx) return;
+    let cancel = false;
+    fetch("/house/outdoor-ambient.mp4")
+      .then((response) => response.arrayBuffer())
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        if (cancel || outsideSource.current) return;
+        const gain = ctx.createGain();
+        const outside = modeRef.current === "exterior" || modeRef.current === "moving";
+        gain.gain.value = outside ? proximityRef.current * OUTSIDE_LEVEL : 0;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(0);
+        outsideGain.current = gain;
+        outsideSource.current = source;
+        void ctx.resume().then(() => applyAmbientRef.current()).catch(() => undefined);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
+  }, [mode]);
 
   useEffect(() => {
     if (!embedded) {
@@ -314,6 +365,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     window.addEventListener("pointerdown", unlock, capture);
     window.addEventListener("keydown", unlock, capture);
     window.addEventListener("touchstart", unlock, capture);
+    window.addEventListener("him-start", unlock);
     return () => {
       applyAmbientRef.current = () => { };
       window.removeEventListener("scroll", onScroll);
@@ -321,6 +373,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       window.removeEventListener("pointerdown", unlock, capture);
       window.removeEventListener("keydown", unlock, capture);
       window.removeEventListener("touchstart", unlock, capture);
+      window.removeEventListener("him-start", unlock);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [embedded]);
@@ -342,9 +395,35 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (modeRef.current !== "interior") return;
     modeRef.current = "exiting";
     token.current += 1;
+    // Re-enter always starts on 2k idle auto-spin.
+    setInteractMode(false, indexRef.current);
+    interactModeRef.current = false;
+    setInteractModeState(false);
+    setDragGuide(false);
+    dragGuideRef.current = false;
+    setDragging(false);
+    dragRef.current = null;
     setMode("exiting");
     setCommand({ token: token.current, kind: "exit", index: indexRef.current });
     fadeGain(audioCtx.current, outsideGain.current, proximityRef.current * OUTSIDE_LEVEL);
+  }
+
+  function toggleInteract() {
+    if (modeRef.current !== "interior") return;
+    const next = !interactModeRef.current;
+    setInteractMode(next, indexRef.current);
+    interactModeRef.current = next;
+    setInteractModeState(next);
+    if (next) {
+      const show = !dragGuideSeen();
+      dragGuideRef.current = show;
+      setDragGuide(show);
+    } else {
+      setDragGuide(false);
+      dragGuideRef.current = false;
+      setDragging(false);
+      dragRef.current = null;
+    }
   }
 
   function slide(to: number) {
@@ -368,7 +447,11 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (!current) return;
     if (current.kind === "enter") {
       modeRef.current = "interior";
-      setHint(true);
+      setInteractMode(false, indexRef.current);
+      interactModeRef.current = false;
+      setInteractModeState(false);
+      setDragGuide(false);
+      dragGuideRef.current = false;
       setMode("interior");
       return;
     }
@@ -382,6 +465,9 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // Rotate/drag mode: ignore room/window navigation keys (use Auto to leave).
+      if (interactModeRef.current) return;
+
       if (event.key === "Enter" || event.key === "ArrowUp") {
         event.preventDefault();
         enter(indexRef.current);
@@ -397,7 +483,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         slide(indexRef.current + (event.key === "ArrowRight" ? 1 : -1));
         return;
       }
-      if (modeRef.current !== "interior") return;
+      if (modeRef.current !== "interior" || ROOMS.length <= 1) return;
       const n = Number.parseInt(event.key, 10);
       if (n >= 1 && n <= OUTFIT_COUNT) chooseCharacter(n - 1);
     }
@@ -409,7 +495,6 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (modeRef.current !== "interior" || !CHARACTERS[character] || character >= OUTFIT_COUNT) return;
     const room = indexRef.current;
     setPicked((current) => current.map((value, i) => (i === room ? character : value)));
-    setHint(false);
     window.setTimeout(() => {
       showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
     }, 260);
@@ -445,20 +530,22 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (modeRef.current !== "interior") return;
+    if (modeRef.current !== "interior" || !interactModeRef.current) return;
     if ((event.target as Element).closest("button, [data-cast]")) return;
     const item = roomPlay(indexRef.current);
     if (!item) return;
     beginDrag(indexRef.current);
     dragRef.current = { id: event.pointerId, x: event.clientX, p0: item.pos, lt: performance.now(), v: 0 };
     setDragging(true);
-    setHint(false);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
+    if (dragGuideRef.current && Math.abs(event.clientX - drag.x) >= DRAG_GUIDE_THRESHOLD) {
+      dismissDragGuide();
+    }
     const span = Math.min(900, Math.max(320, window.innerWidth * 0.8));
     const target = drag.p0 + (drag.x - event.clientX) * (frameCount(indexRef.current) / span);
     const now = performance.now();
@@ -483,7 +570,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     <Root
       ref={rootRef}
       id={embedded ? "house" : undefined}
-      className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
+      className="relative h-dvh w-full overflow-hidden bg-[#1a120c] text-white"
       aria-busy={!ready}
       style={{ touchAction: embedded ? "pan-y" : "none" }}
       onPointerDownCapture={(event) => {
@@ -502,8 +589,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
-        <color attach="background" args={["#c5d0dc"]} />
-        <fog attach="fog" args={["#c5d0dc", 22, 48]} />
+        <color attach="background" args={["#1a120c"]} />
+        <fog attach="fog" args={["#1a120c", 22, 48]} />
         <CameraController
           command={command}
           onComplete={onComplete}
@@ -561,37 +648,58 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           Miniature open window model by PK
         </p> */}
 
-        {mode === "interior" && (
+        {mode === "interior" && !interactMode && (
           <>
             <div className={styles.castScrim} />
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
-              <OutfitPanel selected={picked[index] ?? 0} onSelect={chooseCharacter} />
+              <OutfitPanel
+                selected={picked[index] ?? 0}
+                onSelect={chooseCharacter}
+                showOutfits={ROOMS.length > 1}
+              />
             </div>
+            {ROOMS.length > 1 && (
+              <button
+                type="button"
+                className={styles.changeRoomBtn}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  exit();
+                }}
+                aria-label="Change room"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 14L4 9l5-5" />
+                  <path d="M4 9h12.5M20 20v-7a4 4 0 0 0-4-4H4" />
+                </svg>
+                <span>Change Room</span>
+              </button>
+            )}
           </>
         )}
 
-        <button
-          type="button"
-          className={styles.changeRoomBtn}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            exit();
-          }}
-          aria-label="Change room"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 14L4 9l5-5" />
-            <path d="M4 9h12.5M20 20v-7a4 4 0 0 0-4-4H4" />
-          </svg>
-          <span>Change Room</span>
-        </button>
+        {mode === "interior" && (
+          <button
+            type="button"
+            className={`${styles.rotateBtn}${interactMode ? ` ${styles.rotateBtnActive}` : ""}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleInteract();
+            }}
+            aria-label={interactMode ? "Return to auto spin" : "Enable drag rotate"}
+            aria-pressed={interactMode}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-3.2-6.9" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            <span>{interactMode ? "Auto" : "Rotate"}</span>
+          </button>
+        )}
 
-        <div className={`${styles.hint} ${hint ? styles.show : ""}`}>
-          <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
-          Drag to rotate
-          <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>
-        </div>
+        <DragGuide visible={dragGuide && interactMode} onDismiss={dismissDragGuide} />
       </div>
 
       {!embedded && (
@@ -603,7 +711,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             zIndex: 40,
             display: "grid",
             placeItems: "center",
-            background: "#c5d0dc",
+            background: "#1a120c",
             opacity: ready ? 0 : 1,
             pointerEvents: ready ? "none" : "auto",
             transition: "opacity 0.45s ease",
