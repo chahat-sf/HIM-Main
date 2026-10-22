@@ -356,6 +356,10 @@
   width: clamp(168px, 22vw, 220px);
 }
 
+.castPanel:has([data-minimized="true"]) {
+  width: auto;
+}
+
 .wheel {
   display: block;
   width: var(--wheel);
@@ -573,6 +577,14 @@
 
   .castPanel {
     width: min(200px, 56vw);
+  }
+
+  .castPanel:has([data-minimized="true"]) {
+    width: auto;
+  }
+
+  .root:has([data-minimized="true"]) .castScrim {
+    height: 110px;
   }
 
   .wheelName {
