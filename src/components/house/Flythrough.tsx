@@ -5,9 +5,9 @@ import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { CHARACTERS } from "../ScrollSection";
 import styles from "../ScrollSection.module.css";
-import guideStyles from "./DragGuide.module.css";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
+import DragGuide from "./DragGuide";
 import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
@@ -685,29 +685,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           </button>
         )}
 
-        {dragGuide && interactMode && (
-          <div className={guideStyles.guide} role="status" aria-live="polite">
-            <div className={guideStyles.cue} aria-hidden>
-              <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
-              <div className={guideStyles.scrub}>
-                <span className={guideStyles.scrubDot} />
-              </div>
-              <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>
-            </div>
-            <p className={guideStyles.copy}>Drag left or right to spin</p>
-            <button
-              type="button"
-              className={guideStyles.gotIt}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                dismissDragGuide();
-              }}
-            >
-              Got it
-            </button>
-          </div>
-        )}
+        <DragGuide visible={dragGuide && interactMode} onDismiss={dismissDragGuide} />
       </div>
 
       {!embedded && (
