@@ -556,7 +556,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     <Root
       ref={rootRef}
       id={embedded ? "house" : undefined}
-      className="relative h-dvh w-full overflow-hidden bg-[#c5d0dc] text-white"
+      className="relative h-dvh w-full overflow-hidden bg-[#1a120c] text-white"
       aria-busy={!ready}
       style={{ touchAction: embedded ? "pan-y" : "none" }}
       onPointerDownCapture={(event) => {
@@ -575,8 +575,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         gl={{ antialias: true, toneMapping: NoToneMapping }}
         style={{ width: "100%", height: "100%", display: "block" }}
       >
-        <color attach="background" args={["#c5d0dc"]} />
-        <fog attach="fog" args={["#c5d0dc", 22, 48]} />
+        <color attach="background" args={["#1a120c"]} />
+        <fog attach="fog" args={["#1a120c", 22, 48]} />
         <CameraController
           command={command}
           onComplete={onComplete}
@@ -697,7 +697,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             zIndex: 40,
             display: "grid",
             placeItems: "center",
-            background: "#c5d0dc",
+            background: "#1a120c",
             opacity: ready ? 0 : 1,
             pointerEvents: ready ? "none" : "auto",
             transition: "opacity 0.45s ease",

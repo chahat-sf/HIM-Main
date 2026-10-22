@@ -191,8 +191,12 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 			{children}
 			<div
 				aria-hidden={started}
-				className={`fixed inset-0 z-100 flex flex-col items-center justify-center bg-black transition-opacity duration-700 ${started ? "opacity-0 pointer-events-none" : "opacity-100"
+				className={`fixed inset-0 z-100 flex flex-col items-center justify-center transition-opacity duration-700 ${started ? "opacity-0 pointer-events-none" : "opacity-100"
 					}`}
+				style={{
+					background:
+						"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
+				}}
 			>
 				<div
 					ref={magneticZoneRef}
@@ -238,34 +242,48 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 			</div>
 			<style jsx global>{`
 				.magnetic-btn {
+					--him-ivory: rgba(244, 231, 204, 0.94);
+					--him-gold: rgba(214, 172, 106, 0.55);
+					--him-gold-strong: rgba(255, 226, 172, 0.9);
+					--him-ink: #0f0805;
+					--him-surface: rgba(14, 8, 5, 0.88);
+
 					position: relative;
 					display: inline-flex;
 					align-items: center;
 					justify-content: center;
 					margin: 0;
 					padding: 22px 42px;
-					border: 1px solid rgba(255, 255, 255, 0.35);
+					border: 1px solid var(--him-gold);
 					border-radius: 999px;
-					background: transparent;
-					color: #fff;
-					font-size: 18px;
+					background: var(--him-surface);
+					color: var(--him-ivory);
+					font-family: var(--font-room-sans), system-ui, sans-serif;
+					font-size: 15px;
 					font-weight: 500;
-					letter-spacing: 0.08em;
+					letter-spacing: 0.1em;
 					text-transform: uppercase;
 					overflow: hidden;
 					/* scaleX progress breaks overflow+radius clipping; clip-path keeps the pill. */
 					clip-path: inset(0 round 999px);
 					isolation: isolate;
+					-webkit-backdrop-filter: blur(12px);
+					backdrop-filter: blur(12px);
+					box-shadow:
+						0 16px 40px rgba(0, 0, 0, 0.55),
+						inset 0 1px 0 rgba(255, 226, 172, 0.08);
 					transition:
 						border-color 0.3s ease,
 						color 0.3s ease,
+						background 0.3s ease,
+						box-shadow 0.3s ease,
 						padding 0.55s cubic-bezier(0.22, 0.7, 0.18, 1);
 				}
 
 				.magnetic-btn--loading {
 					cursor: default;
 					pointer-events: none;
-					padding: 11px 42px;
+					padding: 12px 42px;
 				}
 
 				.magnetic-btn--ready {
@@ -279,17 +297,22 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 					position: absolute;
 					inset: 0;
 					border-radius: inherit;
-					background: #fff;
 					z-index: 1;
 					pointer-events: none;
 				}
 
 				.magnetic-btn__progress {
+					background: linear-gradient(
+						90deg,
+						rgba(214, 172, 106, 0.92),
+						rgba(255, 226, 172, 0.95)
+					);
 					transform-origin: left center;
 					will-change: transform;
 				}
 
 				.magnetic-btn__hover {
+					background: var(--him-gold-strong);
 					transform: scaleY(0);
 					transform-origin: bottom;
 					transition: transform 0.4s ease;
@@ -300,8 +323,12 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 				}
 
 				.magnetic-btn--ready:hover {
-					color: #0f0f0f;
-					border-color: #fff;
+					color: var(--him-ink);
+					border-color: var(--him-gold-strong);
+					box-shadow:
+						0 18px 44px rgba(0, 0, 0, 0.6),
+						0 0 24px rgba(214, 172, 106, 0.22),
+						inset 0 1px 0 rgba(255, 226, 172, 0.2);
 				}
 
 				.magnetic-btn--ready:hover .magnetic-btn__hover {
@@ -328,8 +355,15 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 				}
 
 				.magnetic-btn--loading .magnetic-btn__label {
-					color: #fff;
+					color: var(--him-ivory);
 					mix-blend-mode: difference;
+				}
+
+				@media (prefers-reduced-motion: reduce) {
+					.magnetic-btn,
+					.magnetic-btn__hover {
+						transition-duration: 0.01ms;
+					}
 				}
 			`}</style>
 		</HomeLoadContext.Provider>

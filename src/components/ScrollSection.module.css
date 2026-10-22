@@ -352,7 +352,8 @@
 }
 
 .castPanel {
-  top: clamp(72px, 14vh, 140px);
+  top: calc(env(safe-area-inset-top, 0px) + clamp(20px, 4vh, 40px));
+  bottom: auto;
   translate: 0 0;
   align-items: stretch;
   width: clamp(168px, 22vw, 220px);
@@ -562,22 +563,25 @@
   }
 
   .castScrim {
-    top: auto;
+    top: 0;
+    bottom: auto;
     width: auto;
-    height: 250px;
+    height: 220px;
     right: 0;
-    background: linear-gradient(0deg, rgba(8, 4, 2, 0.82) 0%, rgba(8, 4, 2, 0.45) 55%, transparent 100%);
+    background: linear-gradient(180deg, rgba(8, 4, 2, 0.82) 0%, rgba(8, 4, 2, 0.45) 55%, transparent 100%);
   }
 
   .cast {
     left: calc(env(safe-area-inset-left, 0px) + 14px);
-    top: auto;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    bottom: auto;
     translate: 0 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
     gap: 2px;
   }
 
   .castPanel {
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    bottom: auto;
     width: min(200px, 56vw);
   }
 
@@ -586,7 +590,7 @@
   }
 
   .root:has([data-minimized="true"]) .castScrim {
-    height: 110px;
+    height: 100px;
   }
 
   .wheelName {
