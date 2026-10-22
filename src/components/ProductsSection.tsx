@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
 // Shared black <-> white scroll-turn colors
@@ -32,16 +33,16 @@ function lerpColor(hexA: string, hexB: string, t: number): string {
    BESTSELLERS CAROUSEL (matches Figma)
 ===================================================================== */
 
-const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
+const SWATCHES = ["#a3a3a3", "#7a1420"]; // Heather Grey, Burgundy — same colours as the product page
 
-// NOTE: swap the image paths below for your real bestseller images.
+// Names / prices match the product pages (PRODUCTS_DB in /collection/[slug]/page.tsx)
 const products = [
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
-  { name: "Textured Crew T-Shirt", color: "Amber", price: "₹2,499", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-7",  name: "THE ATTACHÉ",                   color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-8",  name: "THE EXCEPTION",                 color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-9",  name: "THE LAST WORD",                 color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST",                 color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-11", name: "THE COMPOSURE",                 color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II",       color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
 ];
 
 const CARD_GAP = 16;
@@ -196,61 +197,75 @@ function ExistingProductsGrid() {
       >
         {products.map((product, index) => (
           <article
-            key={`${product.name}-${index}`}
+            key={`${product.slug}-${index}`}
             className="bestsellers-card group relative"
             style={{ flex: "0 0 auto", scrollSnapAlign: "start", overflow: "visible" }}
           >
-            {/* IMAGE */}
-            <div
-              className="relative w-full overflow-hidden"
-              style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
+            {/* IMAGE — click goes to PDP */}
+            <Link
+              href={`/collection/${product.slug}`}
+              style={{ display: "block", textDecoration: "none" }}
+              tabIndex={-1}
+              aria-hidden="true"
             >
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                priority={index < 2}
-                quality={80}
-                sizes="(max-width: 768px) 70vw, 28vw"
-                className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.025]"
-              />
-
-              {/* WISHLIST — plain icon, no circle */}
-              <button
-                type="button"
-                aria-label={`Add ${product.name} to wishlist`}
-                className="absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
-                style={{
-                  right: "10px",
-                  top: "10px",
-                  width: "20px",
-                  height: "20px",
-                  padding: 0,
-                  border: 0,
-                  background: "transparent",
-                  color: "#3a3a3a",
-                  cursor: "pointer",
-                }}
+              <div
+                className="relative w-full overflow-hidden"
+                style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
               >
-                <HeartIcon />
-              </button>
-            </div>
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  priority={index < 3}
+                  quality={95}
+                  sizes="(max-width: 768px) 70vw, 28vw"
+                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                />
+
+                {/* WISHLIST — plain icon, no circle */}
+                <button
+                  type="button"
+                  aria-label={`Add ${product.name} to wishlist`}
+                  className="absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
+                  style={{
+                    right: "10px",
+                    top: "10px",
+                    width: "20px",
+                    height: "20px",
+                    padding: 0,
+                    border: 0,
+                    background: "transparent",
+                    color: "#3a3a3a",
+                    cursor: "pointer",
+                    zIndex: 2,
+                  }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <HeartIcon />
+                </button>
+              </div>
+            </Link>
 
             {/* PRODUCT INFO */}
             <div style={{ paddingTop: "10px", color: "var(--fg)" }}>
               <div className="flex items-start justify-between" style={{ gap: "8px" }}>
                 <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      lineHeight: 1.3,
-                    }}
+                  <Link
+                    href={`/collection/${product.slug}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
                   >
-                    {product.name}
-                  </p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontFamily: "Inter, Arial, Helvetica, sans-serif",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {product.name}
+                    </p>
+                  </Link>
 
                   <p
                     style={{
@@ -283,9 +298,9 @@ function ExistingProductsGrid() {
                 </div>
 
                 {/* BAG BUTTON */}
-                <button
-                  type="button"
-                  aria-label={`Add ${product.name} to bag`}
+                <Link
+                  href={`/collection/${product.slug}`}
+                  aria-label={`View ${product.name}`}
                   className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                   style={{
                     width: "20px",
@@ -295,13 +310,12 @@ function ExistingProductsGrid() {
                     border: "1px solid var(--fg)",
                     background: "transparent",
                     color: "var(--fg)",
-                    cursor: "pointer",
                     flex: "0 0 auto",
                     opacity: 0.8,
                   }}
                 >
                   <BagIcon />
-                </button>
+                </Link>
               </div>
 
               {/* PRICE */}
@@ -361,7 +375,12 @@ interface CollageImage {
   aspectRatio: string;
   offsetTop: string;
   priority?: boolean;
+  zoom?: number; // optional: overrides the default zoom for one image
 }
+
+const COLLAGE_ZOOM = 1.12;     // crops the white border (1.0 = no crop, raise it if white still shows)
+const COLLAGE_GAP = 6;         // px between images (was 8)
+const DESKTOP_COLUMNS = 4;     // set to 3 for much bigger images on desktop
 
 const ROW_MOTION = [
   { duration: "10s", delay: "-2s", magnitude: "46px" },
@@ -374,14 +393,14 @@ const ROW_MOTION = [
 
 const COLLAGE_IMAGES: CollageImage[] = [
   {
-    src: "/products/man-image-1.webp",
+    src: "/products/man-image-100.webp",
     alt: "Man leaning out of a car window",
     aspectRatio: "3 / 4",
     offsetTop: "0px",
     priority: true,
   },
   {
-    src: "/products/man-image-2.webp",
+    src: "/products/man-image-101.webp",
     alt: "Man in a trucker cap",
     aspectRatio: "4 / 5",
     offsetTop: "96px",
@@ -395,25 +414,25 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/products/man-image-4.webp",
+    src: "/products/man-image-102.webp", // was man-image-109 (duplicate) — change if your file name differs
     alt: "Man in white outfit beside a car",
     aspectRatio: "3 / 4",
     offsetTop: "150px",
   },
   {
-    src: "/products/man-image-5.webp",
+    src: "/products/man-image-103.webp",
     alt: "Man on a red sofa",
     aspectRatio: "4 / 3",
     offsetTop: "24px",
   },
   {
-    src: "/products/man-image-6.webp",
+    src: "/products/man-image-104.webp",
     alt: "Man playing guitar reclined",
     aspectRatio: "3 / 4",
     offsetTop: "12px",
   },
   {
-    src: "/products/man-image-7.webp",
+    src: "/products/man-image-105.webp",
     alt: "Couple against a blue sky",
     aspectRatio: "2 / 3",
     offsetTop: "24px",
@@ -425,25 +444,25 @@ const COLLAGE_IMAGES: CollageImage[] = [
     offsetTop: "24px",
   },
   {
-    src: "/products/man-image-9.webp",
+    src: "/products/man-image-106.webp",
     alt: "Man against a stone wall",
     aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
-    src: "/products/man-image-10.webp",
+    src: "/products/man-image-107.webp",
     alt: "Wide leg trousers, man walking",
     aspectRatio: "2 / 3",
     offsetTop: "12px",
   },
   {
-    src: "/products/man-image-11.webp",
+    src: "/products/man-image-108.webp",
     alt: "Man in shirt on a motorbike",
     aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
-    src: "/products/man-image-12.webp",
+    src: "/products/man-image-109.webp",
     alt: "Close portrait with sunglasses",
     aspectRatio: "4 / 5",
     offsetTop: "24px",
@@ -451,7 +470,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
 ];
 
 function useResponsiveColumnCount() {
-  const [columns, setColumns] = useState(4);
+  const [columns, setColumns] = useState(DESKTOP_COLUMNS);
 
   useEffect(() => {
     const computeColumns = () => {
@@ -460,7 +479,7 @@ function useResponsiveColumnCount() {
       if (width < 640) return 2;
       if (width < 1024) return 3;
 
-      return 4;
+      return DESKTOP_COLUMNS;
     };
 
     const update = () => setColumns(computeColumns());
@@ -555,7 +574,7 @@ function EditorialCollage() {
       style={{
         backgroundColor: BG_DARK,
         minHeight: "120vh",
-        padding: "0 25px",
+        padding: "0 12px",
       }}
     >
       {/* TOP TYPOGRAPHY OVERLAY */}
@@ -567,24 +586,6 @@ function EditorialCollage() {
           pointerEvents: "none",
         }}
       >
-        {/* <span
-          style={{
-            display: "inline-block",
-            fontFamily:
-              "Arial, Helvetica, sans-serif",
-            fontSize: "10px",
-            fontWeight: 600,
-            letterSpacing: "1.4px",
-            color: TEXT_LIGHT,
-            textTransform: "uppercase",
-            border:
-              "1px solid rgba(244,238,227,0.5)",
-            padding: "3px 8px",
-          }}
-        >
-          Him World
-        </span> */}
-
         <h2
           style={{
             margin: "16px 0 0",
@@ -694,7 +695,7 @@ function EditorialCollage() {
       <div
         className="relative z-10 flex h-full w-full"
         style={{
-          gap: "8px",
+          gap: `${COLLAGE_GAP}px`,
           padding: "70px 0 40px",
         }}
       >
@@ -706,7 +707,7 @@ function EditorialCollage() {
             }}
             className="flex flex-1 flex-col"
             style={{
-              gap: "8px",
+              gap: `${COLLAGE_GAP}px`,
               willChange: "transform",
             }}
           >
@@ -720,7 +721,7 @@ function EditorialCollage() {
 
               return (
                 <div
-                  key={img.src}
+                  key={`${img.src}-${imgIndex}`}
                   className="collage-float relative w-full overflow-hidden"
                   style={
                     {
@@ -760,6 +761,10 @@ function EditorialCollage() {
                     quality={90}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover object-center"
+                    style={{
+                      transform: `scale(${img.zoom ?? COLLAGE_ZOOM})`,
+                      transformOrigin: "center center",
+                    }}
                   />
                 </div>
               );
@@ -812,7 +817,7 @@ function ProvisionsSection() {
       >
         {/* BACKGROUND IMAGE */}
         <Image
-          src="/products/red-man-image.webp"
+          src="/products/red-man-imagee.webp"
           alt="Him Provisions"
           fill
           priority={false}
