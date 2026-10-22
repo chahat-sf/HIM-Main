@@ -635,6 +635,7 @@
 }
 
 .changeRoomBtn,
+.rotateBtn,
 .nextBtn {
   position: absolute;
   z-index: 30;
@@ -673,6 +674,14 @@
   transform: translate(-50%, -10px);
 }
 
+.rotateBtn {
+  top: auto;
+  right: auto;
+  left: clamp(16px, 4vw, 48px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 45px);
+  transform: translateY(-10px);
+}
+
 .nextBtn {
   left: auto;
   right: clamp(24px, 5vw, 80px);
@@ -685,6 +694,20 @@
   opacity: 1;
   pointer-events: auto;
   transform: translate(-50%, 0);
+}
+
+.root[data-scene="character"] .rotateBtn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.rotateBtn.rotateBtnActive {
+  border-color: rgba(255, 226, 172, 0.85);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(var(--ember), 0.35),
+    inset 0 0 14px rgba(255, 190, 110, 0.2);
 }
 
 .root[data-scene="entry"] .nextBtn {
@@ -700,6 +723,7 @@
 }
 
 .changeRoomBtn:hover,
+.rotateBtn:hover,
 .nextBtn:hover {
   background: rgba(28, 16, 10, 0.9);
   border-color: rgba(255, 226, 172, 0.85);
@@ -714,9 +738,17 @@
   transform: translate(-50%, -2px);
 }
 
+.root[data-scene="character"] .rotateBtn:hover {
+  transform: translateY(-2px);
+}
+
 .changeRoomBtn:active,
 .nextBtn:active {
   transform: translate(-50%, 0);
+}
+
+.root[data-scene="character"] .rotateBtn:active {
+  transform: translateY(0);
 }
 
 .root.sliding .nextBtn {

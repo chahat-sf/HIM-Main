@@ -18,7 +18,13 @@ import { FrameSequence, SEQUENCES } from "./sequence";
 const DEFAULT_FPS = 24;
 const DEFAULT_ASPECT = 2520 / 1080;
 
-const ROOM_VIDEOS = ROOMS.map((_, i) => `/house/window-${i + 1}.mp4?v=1022a`);
+type LodMode = "idle" | "interact";
+
+/** Idle = 2k auto-spin (video only). Interact = 1k drag scrub. */
+const LOD = {
+	idle: { video: "/house/window-2.mp4?v=1022b", asset: 1 },
+	interact: { video: "/house/window-1.mp4?v=1022a", asset: 0 },
+} as const;
 
 /**
  * Picture uses the proven interior fit height. Mesh is larger so the window
@@ -101,10 +107,21 @@ type PlayState = {
 	seekLock: boolean;
 	sequence: FrameSequence;
 	usingFrames: boolean;
+	lodMode: LodMode;
 };
 
-const play: PlayState[] = ROOM_VIDEOS.map((_, i) => {
-	const info = SEQUENCES[i] ?? { count: 1, fps: DEFAULT_FPS };
+function lodInfo(mode: LodMode) {
+	const { asset } = LOD[mode];
+	return SEQUENCES[asset] ?? { count: 1, fps: DEFAULT_FPS };
+}
+
+function makeSequence(mode: LodMode) {
+	const { asset } = LOD[mode];
+	return new FrameSequence(asset, lodInfo(mode));
+}
+
+const play: PlayState[] = ROOMS.map(() => {
+	const info = lodInfo("idle");
 	return {
 		pos: 0,
 		target: 0,
@@ -116,13 +133,18 @@ const play: PlayState[] = ROOM_VIDEOS.map((_, i) => {
 		video: null,
 		pendingTime: null,
 		seekLock: false,
-		sequence: new FrameSequence(i, info),
+		sequence: makeSequence("idle"),
 		usingFrames: false,
+		lodMode: "idle" as LodMode,
 	};
 });
 
 export function frameCount(room: number) {
 	return Math.max(1, play[room]?.count ?? 1);
+}
+
+export function isInteractMode(room = 0) {
+	return play[room]?.lodMode === "interact";
 }
 
 function wrapFrame(pos: number, count: number) {
@@ -168,9 +190,63 @@ function seekVideo(item: PlayState, pos: number) {
 	flushSeek(item);
 }
 
-export function beginDrag(room: number) {
+function applyLod(item: PlayState, mode: LodMode) {
+	if (item.lodMode === mode) return;
+
+	// Map angle across LODs with different frame counts (144@16 vs 61@12).
+	const progress = item.count > 0 ? wrapFrame(item.pos, item.count) / item.count : 0;
+	item.dragging = false;
+	item.lodMode = mode;
+	item.usingFrames = false;
+	item.pendingTime = null;
+	item.seekLock = false;
+
+	const onFirstFrame = item.sequence.onFirstFrame;
+	item.sequence.release();
+	item.sequence = makeSequence(mode);
+	item.sequence.onFirstFrame = onFirstFrame;
+	const info = lodInfo(mode);
+	item.fps = info.fps;
+	item.count = info.count;
+	item.pos = progress * item.count;
+	item.target = item.pos;
+	item.vel = mode === "idle" ? item.fps : 0;
+
+	const video = item.video;
+	if (video) {
+		video.pause();
+		video.src = LOD[mode].video;
+		video.load();
+		const onMeta = () => {
+			video.removeEventListener("loadedmetadata", onMeta);
+			item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+			seekVideo(item, item.pos);
+			if (mode === "idle") {
+				void video.play().catch(() => { });
+			} else {
+				video.pause();
+			}
+		};
+		video.addEventListener("loadedmetadata", onMeta);
+		if (video.readyState >= 1) onMeta();
+	}
+
+	if (mode === "interact") {
+		item.sequence.load();
+		item.sequence.decodeAll();
+	}
+}
+
+/** Toggle 2k idle auto-spin vs 1k interactive drag. Room is always 0 with one bay. */
+export function setInteractMode(enabled: boolean, room = 0) {
 	const item = play[room];
 	if (!item) return;
+	applyLod(item, enabled ? "interact" : "idle");
+}
+
+export function beginDrag(room: number) {
+	const item = play[room];
+	if (!item || item.lodMode !== "interact") return;
 	item.dragging = true;
 	item.vel = 0;
 	item.target = item.pos;
@@ -181,7 +257,7 @@ export function beginDrag(room: number) {
 
 export function scrub(room: number, pos: number) {
 	const item = play[room];
-	if (!item) return;
+	if (!item || item.lodMode !== "interact") return;
 	const gap = frameDelta(item.pos, pos, item.count);
 	item.pos = pos;
 	item.target = pos;
@@ -197,12 +273,13 @@ export function scrub(room: number, pos: number) {
 	}
 }
 
-export function releaseDrag(room: number, velocity: number) {
+export function releaseDrag(room: number, _velocity: number) {
 	const item = play[room];
 	if (!item) return;
 	item.dragging = false;
 	item.pos = item.target;
-	item.vel = Math.max(-260, Math.min(260, velocity));
+	// Interact mode never auto-spins; freeze on release.
+	item.vel = item.lodMode === "interact" ? 0 : Math.max(-260, Math.min(260, _velocity));
 	item.sequence.endDrag();
 }
 
@@ -212,7 +289,7 @@ export function showCharacter(room: number, frame: number) {
 	item.dragging = false;
 	item.pos = frame;
 	item.target = frame;
-	item.vel = item.fps;
+	item.vel = item.lodMode === "idle" ? item.fps : 0;
 	if (!item.usingFrames) seekVideo(item, frame);
 }
 
@@ -278,11 +355,11 @@ export function FramePlane({
 	}, [geometry]);
 
 	useEffect(() => {
-		const src = ROOM_VIDEOS[room];
-		if (!src) return;
-		const video = makeVideo(src, room === 0 ? "auto" : "metadata");
-		videoRef.current = video;
 		const item = play[room];
+		const src = LOD[item?.lodMode ?? "idle"].video;
+		if (!src) return;
+		const video = makeVideo(src, "auto");
+		videoRef.current = video;
 		if (item) item.video = video;
 
 		const map = new VideoTexture(video);
@@ -350,19 +427,19 @@ export function FramePlane({
 		if (video.readyState >= 2) onReady();
 		const readyFallback = window.setTimeout(announce, 2500);
 
-		const sequence = item?.sequence;
-		if (sequence) {
-			sequence.onFirstFrame = announce;
-			if (room === 0) sequence.load();
+		if (item) {
+			item.sequence.onFirstFrame = announce;
+			// Idle stays video-only — do not fetch/decode WebPs until interact.
+			if (item.lodMode === "interact") item.sequence.load();
 		}
 
 		return () => {
 			window.clearTimeout(readyFallback);
-			if (sequence) {
-				sequence.onFirstFrame = null;
-				sequence.release();
+			if (item) {
+				item.sequence.onFirstFrame = null;
+				item.sequence.release();
+				item.usingFrames = false;
 			}
-			if (item) item.usingFrames = false;
 			frameMapRef.current = null;
 			frameCtxRef.current = null;
 			drawnRef.current = null;
@@ -396,15 +473,16 @@ export function FramePlane({
 		const material = materialRef.current;
 		if (!map || !mesh || !video || !item || !material) return;
 		const sequence = item.sequence;
+		const interact = item.lodMode === "interact";
+		if (drawnRef.current && !interact) drawnRef.current = null;
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
-		// Near rooms prefetch blobs; only the focused room holds a full decoded set.
-		if (focused || near) sequence.load();
-		else if (room !== 0) sequence.release();
-		if (focused) sequence.decodeAll();
-		else sequence.trim();
-		if (focused && !sequence.fullyDecoded) ensurePreload(video);
+		// Only the 1k interact LOD loads/decodes WebPs. Idle is video-only.
+		if (interact && (focused || near)) sequence.load();
+		if (interact && focused) sequence.decodeAll();
+		else if (interact) sequence.trim();
+		if (focused && interact && !sequence.fullyDecoded) ensurePreload(video);
 
 		mesh.visible = focused;
 		if (mesh.geometry !== geometry) mesh.geometry = geometry;
@@ -420,7 +498,7 @@ export function FramePlane({
 		}
 
 		// Video carries the plate until every native frame is decoded in memory.
-		if (sequence.fullyDecoded && frameMap) {
+		if (interact && sequence.fullyDecoded && frameMap) {
 			if (!item.usingFrames) {
 				if (item.duration > 0 && video.readyState >= 1) {
 					item.pos = video.currentTime * item.fps;
@@ -431,15 +509,9 @@ export function FramePlane({
 			}
 			if (!video.paused) video.pause();
 
-			// Drag already snaps pos 1:1 in scrub(); idle spin eases velocity here.
+			// Interact: freeze unless dragging. No auto-spin.
 			if (!item.dragging) {
-				if (reduceMotionCached) {
-					item.vel = 0;
-				} else {
-					item.vel += (item.fps - item.vel) * (1 - Math.exp(-delta * 2.2));
-					item.pos = wrapFrame(item.pos + item.vel * delta, item.count);
-					item.target = item.pos;
-				}
+				item.vel = 0;
 			}
 
 			const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
@@ -488,6 +560,15 @@ export function FramePlane({
 			if (!video.paused) video.pause();
 			item.vel = 0;
 			map.needsUpdate = true;
+			return;
+		}
+
+		// Interact before frames ready: hold still on video seek (no auto-spin).
+		if (interact) {
+			if (!video.paused) video.pause();
+			item.vel = 0;
+			seekVideo(item, item.pos);
+			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
 

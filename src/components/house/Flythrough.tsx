@@ -11,7 +11,15 @@ import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { useHomeLoad } from "../HomeGate";
-import { beginDrag, frameCount, releaseDrag, roomPlay, scrub, showCharacter } from "./rooms/Frames";
+import {
+  beginDrag,
+  frameCount,
+  releaseDrag,
+  roomPlay,
+  scrub,
+  setInteractMode,
+  showCharacter,
+} from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
 type Mode = "exterior" | "entering" | "interior" | "exiting" | "moving";
@@ -78,8 +86,10 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [mode, setMode] = useState<Mode>("interior");
   const [command, setCommand] = useState<CameraCommand | null>(null);
   const [picked, setPicked] = useState(() => ROOMS.map((_, i) => i % OUTFIT_COUNT));
-  const [hint, setHint] = useState(true);
+  const [hint, setHint] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [interactMode, setInteractModeState] = useState(false);
+  const interactModeRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
   const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
@@ -105,7 +115,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     modeRef.current = mode;
     indexRef.current = index;
     commandRef.current = command;
-  }, [mode, index, command]);
+    interactModeRef.current = interactMode;
+  }, [mode, index, command, interactMode]);
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_WINDOW);
@@ -342,9 +353,29 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (modeRef.current !== "interior") return;
     modeRef.current = "exiting";
     token.current += 1;
+    // Re-enter always starts on 2k idle auto-spin.
+    setInteractMode(false, indexRef.current);
+    interactModeRef.current = false;
+    setInteractModeState(false);
+    setHint(false);
+    setDragging(false);
+    dragRef.current = null;
     setMode("exiting");
     setCommand({ token: token.current, kind: "exit", index: indexRef.current });
     fadeGain(audioCtx.current, outsideGain.current, proximityRef.current * OUTSIDE_LEVEL);
+  }
+
+  function toggleInteract() {
+    if (modeRef.current !== "interior") return;
+    const next = !interactModeRef.current;
+    setInteractMode(next, indexRef.current);
+    interactModeRef.current = next;
+    setInteractModeState(next);
+    setHint(next);
+    if (!next) {
+      setDragging(false);
+      dragRef.current = null;
+    }
   }
 
   function slide(to: number) {
@@ -368,7 +399,10 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (!current) return;
     if (current.kind === "enter") {
       modeRef.current = "interior";
-      setHint(true);
+      setInteractMode(false, indexRef.current);
+      interactModeRef.current = false;
+      setInteractModeState(false);
+      setHint(false);
       setMode("interior");
       return;
     }
@@ -397,7 +431,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         slide(indexRef.current + (event.key === "ArrowRight" ? 1 : -1));
         return;
       }
-      if (modeRef.current !== "interior") return;
+      if (modeRef.current !== "interior" || ROOMS.length <= 1) return;
       const n = Number.parseInt(event.key, 10);
       if (n >= 1 && n <= OUTFIT_COUNT) chooseCharacter(n - 1);
     }
@@ -445,7 +479,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (modeRef.current !== "interior") return;
+    if (modeRef.current !== "interior" || !interactModeRef.current) return;
     if ((event.target as Element).closest("button, [data-cast]")) return;
     const item = roomPlay(indexRef.current);
     if (!item) return;
@@ -565,10 +599,32 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           <>
             <div className={styles.castScrim} />
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
-              <OutfitPanel selected={picked[index] ?? 0} onSelect={chooseCharacter} />
+              <OutfitPanel
+                selected={picked[index] ?? 0}
+                onSelect={chooseCharacter}
+                showOutfits={ROOMS.length > 1}
+              />
             </div>
           </>
         )}
+
+        <button
+          type="button"
+          className={`${styles.rotateBtn}${interactMode ? ` ${styles.rotateBtnActive}` : ""}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleInteract();
+          }}
+          aria-label={interactMode ? "Return to auto spin" : "Enable drag rotate"}
+          aria-pressed={interactMode}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M21 12a9 9 0 1 1-3.2-6.9" />
+            <path d="M21 3v6h-6" />
+          </svg>
+          <span>{interactMode ? "Auto" : "Rotate"}</span>
+        </button>
 
         <button
           type="button"
@@ -587,7 +643,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           <span>Change Room</span>
         </button>
 
-        <div className={`${styles.hint} ${hint ? styles.show : ""}`}>
+        <div className={`${styles.hint} ${hint && interactMode ? styles.show : ""}`}>
           <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6" /></svg>
           Drag to rotate
           <svg viewBox="0 0 24 24"><path d="M15 6l6 6-6 6" /></svg>

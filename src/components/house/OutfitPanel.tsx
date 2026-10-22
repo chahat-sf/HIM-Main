@@ -23,10 +23,13 @@ export default function OutfitPanel({
   selected,
   onSelect,
   outfits = DEFAULT_OUTFITS,
+  showOutfits = true,
 }: {
   selected: number;
   onSelect: (index: number) => void;
   outfits?: string[];
+  /** Outfit list only when multiple windows; single-window shows stats alone. */
+  showOutfits?: boolean;
 }) {
   const items = outfits.slice(0, OUTFIT_COUNT);
   /** Layout flag — only true after the exit tween finishes. */
@@ -203,6 +206,8 @@ export default function OutfitPanel({
   });
 
   const label = items[selected] ?? items[0] ?? "Outfit";
+  const launcherTitle = showOutfits ? "Outfit" : "Stats";
+  const launcherValue = showOutfits ? label : "Details";
 
   return (
     <div
@@ -212,49 +217,75 @@ export default function OutfitPanel({
       data-minimized={minimized ? "true" : "false"}
     >
       <div ref={panelsRef} className={styles.panels}>
-        <section className={styles.panel} data-panel aria-label="Outfit">
-          <div className={styles.titleRow}>
-            <h2 className={styles.title}>Outfit</h2>
-            <button
-              type="button"
-              className={styles.minimize}
-              aria-expanded={!minimized}
-              aria-label="Hide outfit panel"
-              onClick={collapse}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  d="M18 15l-6-6-6 6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <ul className={styles.list} role="listbox" aria-label="Choose outfit">
-            {items.map((name, i) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  className={styles.option}
-                  role="option"
-                  aria-selected={selected === i}
-                  aria-pressed={selected === i}
-                  onClick={() => onSelect(i)}
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                  {name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {showOutfits && (
+          <section className={styles.panel} data-panel aria-label="Outfit">
+            <div className={styles.titleRow}>
+              <h2 className={styles.title}>Outfit</h2>
+              <button
+                type="button"
+                className={styles.minimize}
+                aria-expanded={!minimized}
+                aria-label="Hide outfit panel"
+                onClick={collapse}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    d="M18 15l-6-6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <ul className={styles.list} role="listbox" aria-label="Choose outfit">
+              {items.map((name, i) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    className={styles.option}
+                    role="option"
+                    aria-selected={selected === i}
+                    aria-pressed={selected === i}
+                    onClick={() => onSelect(i)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className={styles.panel} data-panel aria-label="Stats">
+          {!showOutfits && (
+            <div className={styles.titleRow}>
+              <h2 className={styles.title}>Stats</h2>
+              <button
+                type="button"
+                className={styles.minimize}
+                aria-expanded={!minimized}
+                aria-label="Hide stats panel"
+                onClick={collapse}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    d="M18 15l-6-6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
           <div className={styles.stats}>
             {STATS.map((stat, index) => (
               <div key={stat.label} className={styles.statRow}>
@@ -286,12 +317,12 @@ export default function OutfitPanel({
         type="button"
         className={styles.launcher}
         aria-expanded={!minimized}
-        aria-label={`Show outfit panel (${label})`}
+        aria-label={`Show ${launcherTitle.toLowerCase()} panel`}
         onClick={expand}
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <span className={styles.launcherTitle}>Outfit</span>
-        <span className={styles.launcherValue}>{label}</span>
+        <span className={styles.launcherTitle}>{launcherTitle}</span>
+        <span className={styles.launcherValue}>{launcherValue}</span>
         <svg className={styles.chevron} width="14" height="14" viewBox="0 0 24 24" aria-hidden>
           <path
             d="M6 9l6 6 6-6"
