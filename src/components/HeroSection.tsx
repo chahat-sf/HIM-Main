@@ -376,6 +376,7 @@ export default function HeroSection() {
         .him-hero-label {
           display: block;
           margin-bottom: clamp(10px, 1.4vh, 16px);
+          margin-bottom: -3px;
           color: rgba(255, 255, 255, 0.7);
           font-family: Arial, Helvetica, sans-serif;
           font-size: clamp(8px, 0.6vw, 11px);
@@ -446,6 +447,7 @@ export default function HeroSection() {
           .him-hero-btn {
             height: 36px;
             font-size: 10px;
+            margin-top: 18px;
           }
         }
       `}</style>
