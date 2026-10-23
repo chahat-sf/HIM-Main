@@ -23,16 +23,13 @@ function Arrow() {
 }
 
 // ─── Product data ────────────────────────────────────────────────────
+// Import product data
+import productsData from "@/data/products.json";
+
 const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
 
-const PRODUCTS = [
-  { slug: "textured-thermal-white", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-2", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-3", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-4", name: "Textured Thermal – White", price: "₹16,000", category: "JEANS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-5", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-6", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-];
+// Use imported products
+const PRODUCTS = productsData;
 
 const FILTERS = ["ALL", "SHIRTS", "TSHIRTS", "JEANS"] as const;
 type Filter = (typeof FILTERS)[number];

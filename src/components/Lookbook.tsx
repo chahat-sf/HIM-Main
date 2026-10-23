@@ -64,21 +64,21 @@ export default function Lookbook() {
     <section className="lookbook-section">
       {/* STORIES HEADER */}
 
-      <div className="lookbook-header">
+      {/* <div className="lookbook-header">
         <div className="lookbook-header-title">STORIES</div>
 
         <a href="#lookbooks" className="lookbook-header-link">
           <span>VIEW ALL</span>
           <Arrow />
         </a>
-      </div>
+      </div> */}
 
       {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
 
-      <div id="lookbooks" className="lookbook-grid">
+      {/* <div id="lookbooks" className="lookbook-grid">
         {lookbooks.map((lookbook, index) => (
-          <article className="lookbook-card" key={lookbook.title}>
-            <div className="lookbook-image">
+          <article className="lookbook-card" key={lookbook.title}> */}
+      {/* <div className="lookbook-image">
               <div className="lookbook-image-reveal">
                 <div className="lookbook-image-frame">
                   <Image
@@ -92,8 +92,8 @@ export default function Lookbook() {
                   />
                 </div>
               </div>
-            </div>
-
+            </div> */}
+      {/* 
             <div className="lookbook-content">
               <p className="lookbook-category">
                 {index === 0
@@ -126,7 +126,7 @@ export default function Lookbook() {
             </div>
           </article>
         ))}
-      </div>
+      </div> */}
 
       {/* LOWER VIDEO FEATURE */}
 

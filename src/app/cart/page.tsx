@@ -34,8 +34,6 @@ type CartItem = {
   swatches: string[];
 };
 
-// ─── Mock cart data ───────────────────────────────────────────────────────────
-
 const INITIAL_CART: CartItem[] = [
   {
     id: "1",
@@ -68,7 +66,7 @@ const INITIAL_CART: CartItem[] = [
     price: 6960,
     qty: 1,
     image: "/products/man-image-102.webp",
-    swatches: ["#3a5aa8", "#111"],
+    swatches: ["#3a5aa8", "#111111"],
   },
 ];
 
@@ -193,7 +191,20 @@ function Stepper({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function SectionHeading({
+  title,
+  count,
+}: {
+  title: string;
+  count?: string;
+}) {
+  return (
+    <div className="cart-section-heading">
+      <p>{title}</p>
+      {count && <span>{count}</span>}
+    </div>
+  );
+}
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>(INITIAL_CART);
@@ -210,7 +221,9 @@ export default function CartPage() {
   };
 
   const removeItem = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((previous) =>
+      previous.filter((item) => item.id !== id)
+    );
   };
 
   const subtotal = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
@@ -310,6 +323,7 @@ export default function CartPage() {
                             />
                           ))}
                         </div>
+
                         <Stepper
                           qty={item.qty}
                           onMinus={() => updateQty(item.id, -1)}
@@ -344,12 +358,15 @@ export default function CartPage() {
                     <span>Add a note or gift message (optional)</span>
                     <span aria-hidden="true">{giftMsg ? "−" : "+"}</span>
                   </button>
+
                   {giftMsg && (
                     <div className="cart-gift-body">
                       <textarea
                         value={giftText}
-                        onChange={(e) => setGiftText(e.target.value)}
-                        placeholder="Write your message here…"
+                        onChange={(event) =>
+                          setGiftText(event.target.value)
+                        }
+                        placeholder="Write your message here..."
                         rows={3}
                       />
                     </div>
@@ -429,6 +446,7 @@ export default function CartPage() {
                 VIEW ALL
               </Link>
             </div>
+
             <div className="cart-recs-grid">
               {YOU_MAY_LIKE.map((item) => (
                 <Link
@@ -971,7 +989,8 @@ export default function CartPage() {
         /* ── Responsive ── */
         @media (max-width: 900px) {
           .cart-layout {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) 270px;
+            gap: 16px;
           }
           .cart-summary {
             position: static;

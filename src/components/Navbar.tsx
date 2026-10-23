@@ -19,16 +19,10 @@ const LINK_SPACING = "1.5px";
 // ─── Navigation ─────────────────────────────────────────────────────────────
 
 const leftLinks = [
-  { label: "JEANS", href: "/collection?category=JEANS" },
-  { label: "SHIRTS", href: "/collection?category=SHIRTS" },
-  { label: "TSHIRTS", href: "/collection?category=TSHIRTS" },
-  { label: "LOOKBOOK", href: "/collection" },
+  { label: "EXPLORE", href: "/collection" },
 ];
 
-const rightLinks = [
-  { label: "BRAND", href: "/" },
-  { label: "REWARDS", href: "/" },
-];
+const rightLinks: { label: string; href: string }[] = [];
 
 // ─── Search popup content (edit these) ──────────────────────────────────────
 
@@ -47,12 +41,12 @@ type SearchProduct = {
 
 // The first 4 show as "Popular products". Typing in the box filters all of them.
 const SEARCH_PRODUCTS: SearchProduct[] = [
-  { slug: "textured-thermal-white-7",  name: "Double-Breasted Blazer",        price: "₹38,000", image: "/bestseller/bs-image-1.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-8",  name: "Midnight Slim Blazer",          price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
-  { slug: "textured-thermal-white-9",  name: "Tailored Single-Breasted Coat", price: "₹42,000", image: "/bestseller/bs-image-3.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-10", name: "Velvet Trim Evening Jacket",    price: "₹44,000", image: "/bestseller/bs-image-4.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-11", name: "Heritage Overcoat",             price: "₹52,000", image: "/bestseller/bs-image-5.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II",       price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
+  { slug: "textured-thermal-white-7", name: "Double-Breasted Blazer", price: "₹38,000", image: "/bestseller/bs-image-1.webp", colors: [CREAM, TAN, INK] },
+  { slug: "textured-thermal-white-8", name: "Midnight Slim Blazer", price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
+  { slug: "textured-thermal-white-9", name: "Tailored Single-Breasted Coat", price: "₹42,000", image: "/bestseller/bs-image-3.webp", colors: [CREAM, TAN, INK] },
+  { slug: "textured-thermal-white-10", name: "Velvet Trim Evening Jacket", price: "₹44,000", image: "/bestseller/bs-image-4.webp", colors: [CREAM, TAN, INK] },
+  { slug: "textured-thermal-white-11", name: "Heritage Overcoat", price: "₹52,000", image: "/bestseller/bs-image-5.webp", colors: [CREAM, TAN, INK] },
+  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II", price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
 ];
 const POPULAR_COUNT = 4;
 
@@ -424,9 +418,9 @@ export default function Navbar() {
               <SearchIcon />
             </button>
 
-            <button type="button" aria-label="Wishlist" className="him-icon-btn">
+            {/* <button type="button" aria-label="Wishlist" className="him-icon-btn">
               <WishlistIcon />
-            </button>
+            </button>  */}
 
             <Link href="/account" aria-label="Account" className="him-icon-btn">
               <UserIcon />
