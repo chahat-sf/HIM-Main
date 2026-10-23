@@ -625,7 +625,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         style={{
           background: "transparent",
           pointerEvents: mode === "interior" ? "auto" : "none",
-          touchAction: mode === "interior" ? "none" : "pan-y",
+          touchAction: mode === "interior" && interactMode ? "none" : "pan-y",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
