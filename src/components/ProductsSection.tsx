@@ -9,6 +9,8 @@ const BG_DARK = "#0a0806";
 const BG_LIGHT = "#fafafa"; // matches Figma light background
 const TEXT_LIGHT = "#f7f3ea";
 const TEXT_DARK = "#111111";
+/** Same idea as hero SMOOTHING — eases scroll-turn so bg/fg don't hitch on raw scroll. */
+const TURN_SMOOTHING = 0.12;
 
 // Linear-interpolates between two hex colors by t (0–1).
 function lerpColor(hexA: string, hexB: string, t: number): string {
@@ -76,39 +78,65 @@ function ExistingProductsGrid() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll-turn: dark -> light. Text color is driven through --fg.
+  // Scroll-turn: dark -> light. Eased toward scroll target so the shift isn't stepped.
   useEffect(() => {
-    let frame = 0;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let target = 0;
+    let current = 0;
+    let raf = 0;
+    let lastT = 0;
 
-    const onScroll = () => {
-      if (frame) return;
-
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        const section = sectionRef.current;
-        if (!section) return;
-
-        const rect = section.getBoundingClientRect();
-        const viewportH = window.innerHeight || 1;
-
-        const turnStart = viewportH;
-        const turnEnd = viewportH * 0.3;
-        const turnProgress = (turnStart - rect.top) / (turnStart - turnEnd);
-        const t = Math.max(0, Math.min(1, turnProgress));
-
-        section.style.backgroundColor = lerpColor(BG_DARK, BG_LIGHT, t);
-        section.style.borderLeftColor = lerpColor("#000000", BG_LIGHT, t);
-        section.style.borderRightColor = lerpColor("#000000", BG_LIGHT, t);
-        section.style.setProperty("--fg", lerpColor(TEXT_LIGHT, TEXT_DARK, t));
-      });
+    const paint = (t: number) => {
+      const section = sectionRef.current;
+      if (!section) return;
+      section.style.backgroundColor = lerpColor(BG_DARK, BG_LIGHT, t);
+      section.style.borderLeftColor = lerpColor("#000000", BG_LIGHT, t);
+      section.style.borderRightColor = lerpColor("#000000", BG_LIGHT, t);
+      section.style.setProperty("--fg", lerpColor(TEXT_LIGHT, TEXT_DARK, t));
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+    const readTarget = () => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      const viewportH = window.innerHeight || 1;
+      const turnStart = viewportH;
+      const turnEnd = viewportH * 0.3;
+      const turnProgress = (turnStart - rect.top) / (turnStart - turnEnd);
+      target = Math.max(0, Math.min(1, turnProgress));
+    };
 
+    const tick = (now: number) => {
+      const dt = lastT ? Math.min((now - lastT) / 1000, 0.05) : 1 / 60;
+      lastT = now;
+      const diff = target - current;
+
+      if (reduceMotion || Math.abs(diff) < 0.001) {
+        current = target;
+        paint(current);
+        raf = 0;
+        lastT = 0;
+        return;
+      }
+
+      current += diff * (1 - Math.pow(1 - TURN_SMOOTHING, dt * 60));
+      paint(current);
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onScroll = () => {
+      readTarget();
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
+    readTarget();
+    current = target;
+    paint(current);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      if (frame) cancelAnimationFrame(frame);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 
