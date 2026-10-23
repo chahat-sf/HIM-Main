@@ -167,6 +167,78 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   }, [embedded]);
 
   useEffect(() => {
+    if (!embedded) return;
+    const html = document.documentElement;
+    const previousBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "smooth";
+
+    const coverageOf = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+      return { rect, vh, coverage: visible / vh };
+    };
+
+    // Armed only when fully off-screen; one snap per entry, then locked until off-screen again.
+    let armed = true;
+    const el0 = rootRef.current;
+    if (el0 && coverageOf(el0).coverage > 0) armed = false;
+
+    let idle = 0;
+    let snapping = false;
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let speed = 0;
+
+    const settle = () => {
+      const el = rootRef.current;
+      if (!el || snapping || !armed) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const { rect, vh, coverage } = coverageOf(el);
+      if (coverage <= 0) return;
+      // Already filling / aligned — consume the shot so we do not nudge again.
+      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
+        armed = false;
+        return;
+      }
+      // Only ease in when the house is partly on screen.
+      if (coverage < 0.28) return;
+      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
+      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
+      armed = false;
+      snapping = true;
+      window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
+      window.setTimeout(() => {
+        snapping = false;
+      }, 750);
+    };
+
+    const onScroll = () => {
+      const el = rootRef.current;
+      if (el && coverageOf(el).coverage <= 0) armed = true;
+
+      const now = performance.now();
+      const y = window.scrollY;
+      const dt = Math.max(1, now - lastT);
+      speed = Math.abs(y - lastY) / dt;
+      lastY = y;
+      lastT = now;
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        if (speed > 1.2) return;
+        settle();
+      }, 120);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      html.style.scrollBehavior = previousBehavior;
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(idle);
+    };
+  }, [embedded]);
+
+  useEffect(() => {
     const previous = document.body.style.overflow;
     if (!embedded) document.body.style.overflow = "hidden";
     const ctx = new AudioContext();
