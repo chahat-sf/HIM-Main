@@ -39,12 +39,12 @@ const SWATCHES = ["#a3a3a3", "#7a1420"]; // Heather Grey, Burgundy — same colo
 
 // Names / prices match the product pages (PRODUCTS_DB in /collection/[slug]/page.tsx)
 const products = [
-  { slug: "textured-thermal-white-7", name: "THE ATTACHÉ", color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-8", name: "THE EXCEPTION", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-9", name: "THE NOCTURE", color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-6.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST", color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-11", name: "THE COMPOSURE", color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-12", name: "THE LAST WORD", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-7", name: "THE ATTACHÉ", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-8", name: "THE EXCEPTION", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-9", name: "THE NOCTURE", price: "₹42,000", image: "/bestseller/bs-image-6.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-11", name: "THE COMPOSURE", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-12", name: "THE LAST WORD", price: "₹36,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
 ];
 
 const CARD_GAP = 16;
@@ -295,7 +295,7 @@ function ExistingProductsGrid() {
                     </p>
                   </Link>
 
-                  <p
+                  {/* <p
                     style={{
                       margin: "2px 0 0",
                       fontFamily: "Inter, Arial, Helvetica, sans-serif",
@@ -305,7 +305,7 @@ function ExistingProductsGrid() {
                     }}
                   >
                     + {product.color}
-                  </p>
+                  </p> */}
 
                   {/* SWATCHES */}
                   <div className="flex items-center" style={{ gap: "4px", marginTop: "6px" }}>
@@ -435,7 +435,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/products/dice-image-3.webp",
+    src: "/products/inner-images/man-image-106-3.webp",
     alt: "Dice and a matchbook on a table",
     aspectRatio: "1 / 1",
     offsetTop: "0px",
@@ -466,7 +466,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
     offsetTop: "24px",
   },
   {
-    src: "/products/billboard-image-8.webp",
+    src: "/products/inner-images/man-image-105-2.webp",
     alt: "Roadside billboard sign reading him",
     aspectRatio: "4 / 5",
     offsetTop: "24px",

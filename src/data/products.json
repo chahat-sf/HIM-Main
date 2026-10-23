@@ -1,0 +1,158 @@
+[
+  {
+    "slug": "textured-thermal-white-9",
+    "name": "THE NOCTURNE",
+    "title": "Black Embellished Velvet Jacket",
+    "fabric": "Premium Korean velvet",
+    "description": "Black Embellished Velvet Jacket combines a rich black finish with intricate embellishments, creating an elegant, understated statement inspired by the mystery and sophistication of midnight.",
+    "marketingLine": "For the hours that belong to him.",
+    "alternatives": [
+      "The Velvet Hour",
+      "The Nightfall",
+      "The Midnight Affair"
+    ],
+    "details": [
+      "Premium Korean velvet",
+      "Rich black colour",
+      "Intricate embellishment detailing",
+      "Soft, refined texture",
+      "Elegant, sophisticated finish",
+      "Designed for a polished evening look",
+      "A balance of midnight mystery and timeless elegance"
+    ],
+    "category": "JACKETS",
+    "image": "/products/inner-images/man-image-102-1.webp",
+    "price": "₹0",
+    "swatches": []
+  },
+  {
+    "slug": "textured-thermal-white-12",
+    "name": "THE LAST WORD",
+    "title": "Black Evening Tuxedo",
+    "fabric": "All-weather Merino wool blend",
+    "description": "The Black Evening Tuxedo embodies understated authority and timeless sophistication. Defined by its sharp tailoring and sleek black finish, it makes a lasting impression without demanding attention.",
+    "marketingLine": "Some statements are made in silence.",
+    "alternatives": [
+      "The Final Act",
+      "The Black Chapter",
+      "The Authority"
+    ],
+    "details": [
+      "Premium all-weather Merino wool blend",
+      "Sharp, structured tailoring",
+      "Classic black finish",
+      "Refined eveningwear silhouette",
+      "Clean, sophisticated detailing",
+      "Designed for a polished, commanding appearance",
+      "Timeless style with understated elegance"
+    ],
+    "category": "SUITS",
+    "image": "/products/inner-images/man-image-106-1.webp",
+    "price": "₹0",
+    "swatches": []
+  },
+  {
+    "slug": "textured-thermal-white-11",
+    "name": "THE COMPOSURE",
+    "title": "Black Cotton-Velvet Structured Jacket",
+    "fabric": "Cotton velvet",
+    "description": "The Black Cotton-Velvet Structured Jacket embodies quiet confidence and understated authority. Its sharp silhouette and deep black finish create a sophisticated look that speaks through presence, not performance.",
+    "marketingLine": "Presence without performance.",
+    "alternatives": [
+      "The Sentinel",
+      "The Stillness",
+      "The Quiet Authority"
+    ],
+    "details": [
+      "Premium cotton velvet",
+      "Refined, textured finish",
+      "Structured silhouette",
+      "Classic black colour",
+      "Sharp, understated design",
+      "Tailored for a polished appearance",
+      "A balance of quiet confidence and modern sophistication"
+    ],
+    "category": "JACKETS",
+    "image": "/products/inner-images/man-image-104-3.webp",
+    "price": "₹0",
+    "swatches": []
+  },
+  {
+    "slug": "textured-thermal-white-10",
+    "name": "THE ARCHIVIST",
+    "title": "Houndstooth Wool Overcoat",
+    "fabric": "Wool blend",
+    "description": "The Houndstooth Wool Overcoat blends heritage-inspired tailoring with timeless sophistication. Its distinctive pattern and refined silhouette reflect a sense of history, character and enduring style.",
+    "marketingLine": "Some things never belonged to just one era.",
+    "alternatives": [
+      "The Heirloom",
+      "The Collector",
+      "The Heritage"
+    ],
+    "details": [
+      "Premium wool blend",
+      "Classic houndstooth pattern",
+      "Refined, structured silhouette",
+      "Heritage-inspired design",
+      "Rich, timeless colour palette",
+      "Tailored for a polished appearance",
+      "A blend of traditional elegance and modern sophistication"
+    ],
+    "category": "OUTERWEAR",
+    "image": "/products/man-image-101.webp",
+    "price": "₹0",
+    "swatches": []
+  },
+  {
+    "slug": "textured-thermal-white-8",
+    "name": "THE EXCEPTION",
+    "title": "Double-Breasted Tailored Denim Suit",
+    "fabric": "Premium 10 oz denim with cotton blend and stretch",
+    "description": "The Double-Breasted Tailored Denim Suit redefines traditional tailoring by pairing the familiar character of denim with a sharp, formal silhouette. A contemporary statement for those who prefer style beyond convention.",
+    "marketingLine": "Tailoring, outside the rulebook.",
+    "alternatives": [
+      "The Maverick",
+      "The Renegade",
+      "The Unconventional"
+    ],
+    "details": [
+      "Premium 10 oz denim",
+      "Cotton-rich blended fabric",
+      "Added stretch for flexibility",
+      "Double-breasted design",
+      "Structured, tailored silhouette",
+      "Classic denim character with a formal finish",
+      "A modern interpretation of conventional suiting"
+    ],
+    "category": "SUITS",
+    "image": "/products/man-image-109.webp",
+    "price": "₹0",
+    "swatches": []
+  },
+  {
+    "slug": "textured-thermal-white-7",
+    "name": "THE ATTACHÉ",
+    "title": "Dark Double-Breasted Tailored Blazer",
+    "fabric": "Terry rayon blend",
+    "description": "The Dark Double-Breasted Tailored Blazer combines refined tailoring with a commanding silhouette. Its dark finish and double-breasted design create a polished look inspired by worldly sophistication and timeless elegance.",
+    "marketingLine": "Well travelled. Never out of place.",
+    "alternatives": [
+      "The Correspondent",
+      "The Statesman",
+      "The Consul"
+    ],
+    "details": [
+      "Terry rayon blend",
+      "Dark, refined finish",
+      "Double-breasted design",
+      "Structured, tailored silhouette",
+      "Classic formal styling",
+      "Sharp and sophisticated detailing",
+      "A polished look inspired by modern diplomacy and timeless elegance"
+    ],
+    "category": "BLAZERS",
+    "image": "/products/inner-images/man-image-100-2.jpg",
+    "price": "₹0",
+    "swatches": []
+  }
+]

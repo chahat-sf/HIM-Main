@@ -65,12 +65,12 @@ type ProductEntry = {
 
 const DEFAULT_COLORS = [
   { name: "Heather Grey", hex: "#a3a3a3" },
-  { name: "Burgundy",     hex: "#7a1420" },
+  { name: "Burgundy", hex: "#7a1420" },
 ];
-const DEFAULT_SIZES   = ["XS", "S", "M", "L", "XL", "XXL"];
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const DEFAULT_DETAILS = "100% premium cotton. Brushed inner lining. Full-length zip with branded puller. Ribbed cuffs and hem. Machine washable at 30°C.";
 const DEFAULT_SIZEFIT = "True to size. Model is 6\'1\" wearing size M. Relaxed through the chest and shoulders with a slightly tapered hem.";
-const DEFAULT_SHIP    = "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.";
+const DEFAULT_SHIP = "Free standard shipping on orders above ₹3,000. Express delivery available at checkout. Hassle-free 30-day returns.";
 
 const PRODUCTS_DB: Record<string, ProductEntry> = {
   /* ── Original slugs (1–6) ── */
@@ -108,101 +108,101 @@ const PRODUCTS_DB: Record<string, ProductEntry> = {
     shipping: DEFAULT_SHIP,
   },
   /* ── Bestseller slugs (7–12) — each uses its own carousel image ── */
- "textured-thermal-white-7": {
-  name: "THE ATTACHÉ",
-  price: "38,000.00",
-  description:
-    "Well travelled. Never out of place. A dark double-breasted tailored blazer inspired by travel, worldly sophistication, and sharp personal style.",
-  colors: DEFAULT_COLORS,
-  sizes: DEFAULT_SIZES,
-  images: [
-    "/products/man-image-100.webp",
-    "/products/inner-images/man-image-100-1.webp",
-    "/products/inner-images/man-image-100-2.jpg",
-  ],
-  details:
-    "Dark double-breasted tailored blazer. Terry rayon fabric: 65% polyester, 35% viscose. Dry clean only.",
-  sizeFit:
-    "A sharp, tailored silhouette designed for a refined and sophisticated look.",
-  shipping: DEFAULT_SHIP,
-},
+  "textured-thermal-white-7": {
+    name: "THE ATTACHÉ",
+    price: "38,000.00",
+    description:
+      "Well travelled. Never out of place. A dark double-breasted tailored blazer inspired by travel, worldly sophistication, and sharp personal style.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      "/products/man-image-100.webp",
+      "/products/inner-images/man-image-100-1.webp",
+      "/products/inner-images/man-image-100-2.jpg",
+    ],
+    details:
+      "Dark double-breasted tailored blazer. Terry rayon fabric: 65% polyester, 35% viscose. Dry clean only.",
+    sizeFit:
+      "A sharp, tailored silhouette designed for a refined and sophisticated look.",
+    shipping: DEFAULT_SHIP,
+  },
   "textured-thermal-white-8": {
-  name: "THE EXCEPTION",
-  price: "36,000.00",
-  description:
-    "Tailoring, outside the rulebook. A double-breasted tailored denim suit that challenges convention, combining the casual character of denim with the refined structure of formal tailoring.",
-  colors: DEFAULT_COLORS,
-  sizes: DEFAULT_SIZES,
-  images: [
-    "/bestseller/bs-image-2.webp",
-    "/products/inner-images/man-image-101-1.webp",
-    "/products/inner-images/man-image-101-2.webp",
-    "/products/inner-images/man-image-101-3.webp",
-  ],
-  details:
-    "10 oz denim fabric. 65% cotton, 33% polyester, 2% Lycra. Double-breasted tailored denim suit.",
-  sizeFit:
-    "A structured double-breasted silhouette that blends denim's relaxed character with formal tailoring.",
-  shipping: DEFAULT_SHIP,
-},
-"textured-thermal-white-9": {
-  name: "THE NOCTURNE",
-  price: "42,000.00",
-  description:
-    "A black evening tuxedo for the man who doesn't need to compete for attention. His appearance makes the final statement. Some statements are made in silence.",
-  colors: DEFAULT_COLORS,
-  sizes: DEFAULT_SIZES,
-  images: [
-    "/bestseller/bs-image-3.webp",
-    "/products/inner-images/man-image-102-1.webp",
-    "/products/inner-images/man-image-102-2.webp",
-    "/products/inner-images/man-image-102-3.webp",
-  ],
-  details:
-    "Black evening tuxedo. Fabric: 70% all-weather Merino wool, 30% polyester.",
-  sizeFit:
-    "A refined evening silhouette designed to make a statement through understated authority.",
-  shipping: DEFAULT_SHIP,
-},
+    name: "THE EXCEPTION",
+    price: "36,000.00",
+    description:
+      "Tailoring, outside the rulebook. A double-breasted tailored denim suit that challenges convention, combining the casual character of denim with the refined structure of formal tailoring.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      "/bestseller/bs-image-2.webp",
+      "/products/inner-images/man-image-101-1.webp",
+      "/products/inner-images/man-image-101-2.webp",
+      "/products/inner-images/man-image-101-3.webp",
+    ],
+    details:
+      "10 oz denim fabric. 65% cotton, 33% polyester, 2% Lycra. Double-breasted tailored denim suit.",
+    sizeFit:
+      "A structured double-breasted silhouette that blends denim's relaxed character with formal tailoring.",
+    shipping: DEFAULT_SHIP,
+  },
+  "textured-thermal-white-9": {
+    name: "THE NOCTURNE",
+    price: "42,000.00",
+    description:
+      "A black evening tuxedo for the man who doesn't need to compete for attention. His appearance makes the final statement. Some statements are made in silence.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      // "/bestseller/bs-image-3.webp",
+      "/products/inner-images/man-image-102-1.webp",
+      "/products/inner-images/man-image-102-2.webp",
+      "/products/inner-images/man-image-102-3.webp",
+    ],
+    details:
+      "Black evening tuxedo. Fabric: 70% all-weather Merino wool, 30% polyester.",
+    sizeFit:
+      "A refined evening silhouette designed to make a statement through understated authority.",
+    shipping: DEFAULT_SHIP,
+  },
   "textured-thermal-white-10": {
-  name: "THE ARCHIVIST",
-  price: "44,000.00",
-  description:
-    "Some things never belonged to just one era. A houndstooth wool overcoat inspired by historical taste, a carefully assembled wardrobe, and an appreciation for enduring design.",
-  colors: DEFAULT_COLORS,
-  sizes: DEFAULT_SIZES,
-  images: [
-    "/products/man-image-103.webp",
-    "/products/inner-images/man-image-103-1.jpg",
-    "/products/inner-images/man-image-103-2.jpg",
-    "/products/inner-images/man-image-103-3.webp",
-    "/products/inner-images/man-image-103-4.webp",
-  ],
-  details:
-    "Houndstooth wool overcoat. Fabric: 80% wool, 20% polyamide. Dry clean only.",
-  sizeFit:
-    "A timeless overcoat silhouette designed for a refined, heritage-inspired look.",
-  shipping: DEFAULT_SHIP,
-},
-"textured-thermal-white-11": {
-  name: "THE COMPOSURE",
-  price: "52,000.00",
-  description:
-    "Presence without performance. A black cotton-velvet structured jacket defined by sharp lines and understated sophistication, designed for the man who remains controlled and self-assured.",
-  colors: DEFAULT_COLORS,
-  sizes: DEFAULT_SIZES,
-  images: [
-    "/bestseller/bs-image-5.webp",
-    "/products/inner-images/man-image-104-1.webp",
-    "/products/inner-images/man-image-104-2.webp",
-    "/products/inner-images/man-image-104-3.webp",
-  ],
-  details:
-    "Black cotton-velvet structured jacket. Fabric: cotton velvet; exact fibre percentages not yet supplied.",
-  sizeFit:
-    "A structured silhouette with a sharp, understated profile.",
-  shipping: DEFAULT_SHIP,
-},
+    name: "THE ARCHIVIST",
+    price: "44,000.00",
+    description:
+      "Some things never belonged to just one era. A houndstooth wool overcoat inspired by historical taste, a carefully assembled wardrobe, and an appreciation for enduring design.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      "/products/man-image-103.webp",
+      "/products/inner-images/man-image-103-1.jpg",
+      "/products/inner-images/man-image-103-2.jpg",
+      "/products/inner-images/man-image-103-3.webp",
+      "/products/inner-images/man-image-103-4.webp",
+    ],
+    details:
+      "Houndstooth wool overcoat. Fabric: 80% wool, 20% polyamide. Dry clean only.",
+    sizeFit:
+      "A timeless overcoat silhouette designed for a refined, heritage-inspired look.",
+    shipping: DEFAULT_SHIP,
+  },
+  "textured-thermal-white-11": {
+    name: "THE COMPOSURE",
+    price: "52,000.00",
+    description:
+      "Presence without performance. A black cotton-velvet structured jacket defined by sharp lines and understated sophistication, designed for the man who remains controlled and self-assured.",
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    images: [
+      "/bestseller/bs-image-5.webp",
+      "/products/inner-images/man-image-104-1.webp",
+      "/products/inner-images/man-image-104-2.webp",
+      "/products/inner-images/man-image-104-3.webp",
+    ],
+    details:
+      "Black cotton-velvet structured jacket. Fabric: cotton velvet; exact fibre percentages not yet supplied.",
+    sizeFit:
+      "A structured silhouette with a sharp, understated profile.",
+    shipping: DEFAULT_SHIP,
+  },
   "textured-thermal-white-12": {
     name: "THE LAST WORD",
     price: "36,000.00",
@@ -210,10 +210,10 @@ const PRODUCTS_DB: Record<string, ProductEntry> = {
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     images: [
-      "/bestseller/bs-image-6.webp",
-      "/products/inner-images/man-image-105-1.webp",
-      "/products/inner-images/man-image-105-2.webp",
-      "/products/inner-images/man-image-105-3.webp",
+      // "/bestseller/bs-image-6.webp",
+      "/products/inner-images/man-image-106-3.webp",
+      "/products/inner-images/man-image-106-2.webp",
+      "/products/inner-images/man-image-106-1.webp",
     ],
     details: "Italian wool. Peak lapels. Single-button fastening. Satin lining. Dry clean only.",
     sizeFit: "Slim fit. Model is 6\'0\" wearing size M. True to size.",
@@ -282,9 +282,9 @@ const DUMMY_BLOCKS = [
 ];
 
 const RELATED = [
-  { slug: "textured-thermal-white-7",  name: "The Attaché",           price: "38,000", image: "/products/man-image-100.webp", rating: 4.8, color: "#111" },
-  { slug: "textured-thermal-white-8",  name: "The Exception",         price: "36,000", image: "/products/man-image-101.webp", rating: 4.9, color: "#111" },
-  { slug: "textured-thermal-white-9",  name: "The NOCTURNE",          price: "42,000", image: "/bestseller/bs-image-3.webp", rating: 4.7, color: "#111" },
+  { slug: "textured-thermal-white-7", name: "The Attaché", price: "38,000", image: "/products/man-image-100.webp", rating: 4.8, color: "#111" },
+  { slug: "textured-thermal-white-8", name: "The Exception", price: "36,000", image: "/products/man-image-109.webp", rating: 4.9, color: "#111" },
+  { slug: "textured-thermal-white-9", name: "The NOCTURNE", price: "42,000", image: "/bestseller/bs-image-3.webp", rating: 4.7, color: "#111" },
 ];
 
 // ─── Accordion row ───────────────────────────────────────────────────
@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
     setActiveImg(0);
     setAdded(false);
     setFocusId("intro");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   useEffect(() => {
@@ -436,7 +436,7 @@ export default function ProductDetailPage() {
                       aria-label="Previous image"
                     >
                       <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-                        <path d="M7 1L1 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M7 1L1 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
                     <button
@@ -446,7 +446,7 @@ export default function ProductDetailPage() {
                       aria-label="Next image"
                     >
                       <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-                        <path d="M1 1L7 7L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1 1L7 7L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
                   </>
