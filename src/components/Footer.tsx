@@ -10,11 +10,10 @@ const footerLinks = [
   "REVIEWS",
   "CONTACT",
   "ACCOUNT",
-  "RETURNS POLICY",
+  "RETURN POLICY",
   "CAREERS",
   "HELP CENTER",
-  "RETURNS PORTAL",
-  "FLAGSHIP STORE",
+  "RETURN PORTAL",
   "SUPPORT",
 ];
 

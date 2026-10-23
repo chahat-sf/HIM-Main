@@ -146,7 +146,7 @@ const PRODUCTS_DB: Record<string, ProductEntry> = {
   shipping: DEFAULT_SHIP,
 },
 "textured-thermal-white-9": {
-  name: "THE LAST WORD",
+  name: "THE NOCTURNE",
   price: "42,000.00",
   description:
     "A black evening tuxedo for the man who doesn't need to compete for attention. His appearance makes the final statement. Some statements are made in silence.",
@@ -204,15 +204,16 @@ const PRODUCTS_DB: Record<string, ProductEntry> = {
   shipping: DEFAULT_SHIP,
 },
   "textured-thermal-white-12": {
-    name: "Midnight Slim Blazer II",
+    name: "THE LAST WORD",
     price: "36,000.00",
     description: "A second colourway of our bestselling slim blazer — same peak lapel Italian wool construction, new season palette.",
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     images: [
-      "/bestseller/bs-image-2.webp",
-      "/bestseller/bs-image-2.webp",
-      "/bestseller/bs-image-2.webp",
+      "/bestseller/bs-image-6.webp",
+      "/products/inner-images/man-image-105-1.webp",
+      "/products/inner-images/man-image-105-2.webp",
+      "/products/inner-images/man-image-105-3.webp",
     ],
     details: "Italian wool. Peak lapels. Single-button fastening. Satin lining. Dry clean only.",
     sizeFit: "Slim fit. Model is 6\'0\" wearing size M. True to size.",
@@ -283,7 +284,7 @@ const DUMMY_BLOCKS = [
 const RELATED = [
   { slug: "textured-thermal-white-7",  name: "The Attaché",           price: "38,000", image: "/products/man-image-100.webp", rating: 4.8, color: "#111" },
   { slug: "textured-thermal-white-8",  name: "The Exception",         price: "36,000", image: "/products/man-image-101.webp", rating: 4.9, color: "#111" },
-  { slug: "textured-thermal-white-9",  name: "The Last Word",         price: "42,000", image: "/products/man-image-102.webp", rating: 4.7, color: "#111" },
+  { slug: "textured-thermal-white-9",  name: "The NOCTURNE",          price: "42,000", image: "/bestseller/bs-image-3.webp", rating: 4.7, color: "#111" },
 ];
 
 // ─── Accordion row ───────────────────────────────────────────────────
@@ -550,7 +551,7 @@ export default function ProductDetailPage() {
             {/* ── MORE WAYS TO WEAR IT ───────────────── */}
             <section className="pdp-related" aria-labelledby="pdp-related-title" data-pdp-focus="related">
               <div className="pdp-related-header">
-                <h2 id="pdp-related-title" className="pdp-related-title">More ways to wear it</h2>
+                <h2 id="pdp-related-title" className="pdp-related-title">Style it your way</h2>
                 <Link href="/collection" className="pdp-view-all">VIEW ALL</Link>
               </div>
 

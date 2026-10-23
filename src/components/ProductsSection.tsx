@@ -37,12 +37,12 @@ const SWATCHES = ["#a3a3a3", "#7a1420"]; // Heather Grey, Burgundy — same colo
 
 // Names / prices match the product pages (PRODUCTS_DB in /collection/[slug]/page.tsx)
 const products = [
-  { slug: "textured-thermal-white-7",  name: "THE ATTACHÉ",                   color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-8",  name: "THE EXCEPTION",                 color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-9",  name: "THE LAST WORD",                 color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST",                 color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-11", name: "THE COMPOSURE",                 color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II",       color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-7", name: "THE ATTACHÉ", color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-8", name: "THE EXCEPTION", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-9", name: "THE NOCTURE", color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-6.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST", color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-11", name: "THE COMPOSURE", color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-12", name: "THE LAST WORD", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
 ];
 
 const CARD_GAP = 16;
@@ -591,7 +591,7 @@ function EditorialCollage() {
             margin: "16px 0 0",
             color: "var(--Janna, var(--color-grey-90-2, #F4ECD8))",
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(30px, 7vw, 125px)",
+            fontSize: "clamp(30px, 5vw, 120px)",
             fontStyle: "normal",
             fontWeight: 300,
             lineHeight: 0.5,
@@ -599,7 +599,7 @@ function EditorialCollage() {
             textTransform: "uppercase",
           }}
         >
-          Too Loud
+          Made for the man
         </h2>
       </div>
       <div
@@ -678,7 +678,7 @@ function EditorialCollage() {
             margin: "16px 0 0",
             color: "var(--Janna, var(--color-grey-90-2, #F4ECD8))",
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(30px, 7vw, 125px)",
+            fontSize: "clamp(30px, 5vw, 120px)",
             fontStyle: "normal",
             fontWeight: 300,
             lineHeight: 0.5,
@@ -686,7 +686,7 @@ function EditorialCollage() {
             textTransform: "uppercase",
           }}
         >
-          To Stay Still
+          Who stands out
         </h2>
       </div>
 
@@ -894,7 +894,7 @@ function ProvisionsSection() {
                 margin: "18px 0 0",
                 color: "rgba(255,255,255,0.8)",
                 fontFamily: '"Segoe UI", sans-serif',
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: 300,
                 lineHeight: "22px",
               }}
