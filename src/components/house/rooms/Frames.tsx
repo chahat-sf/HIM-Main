@@ -180,10 +180,17 @@ function wrapTime(seconds: number, duration: number) {
 	return ((seconds % duration) + duration) % duration;
 }
 
+/** Seeking while the file is still buffering aborts/restarts the media GET (request storm). */
+function canSeek(video: HTMLVideoElement) {
+	if (video.readyState >= 3) return true;
+	return video.readyState >= 2 && video.seekable.length > 0;
+}
+
 function flushSeek(item: PlayState) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
 	if (item.seekLock || video.seeking) return;
+	if (!canSeek(video)) return;
 	const t = item.pendingTime;
 	if (t == null) return;
 	if (Math.abs(video.currentTime - t) <= 0.5 / item.fps) {
@@ -264,11 +271,13 @@ function waitInteractVideoReady(item: PlayState, gen: number): Promise<boolean> 
 
 	return new Promise((resolve) => {
 		let settled = false;
+		let seekStarted = false;
 		const finish = (ok: boolean) => {
 			if (settled) return;
 			settled = true;
 			video.removeEventListener("loadeddata", onReady);
 			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("canplaythrough", onReady);
 			video.removeEventListener("seeked", onSeeked);
 			window.clearTimeout(timeout);
 			resolve(ok);
@@ -289,17 +298,18 @@ function waitInteractVideoReady(item: PlayState, gen: number): Promise<boolean> 
 				finish(false);
 				return;
 			}
-			if (video.readyState < 2) return;
 			item.duration = Number.isFinite(video.duration) ? video.duration : 0;
-			if (item.duration <= 0) return;
+			if (item.duration <= 0 || !canSeek(video)) return;
 
 			const t = wrapTime(Math.round(item.pos) / item.fps, item.duration);
-			if (Math.abs(video.currentTime - t) <= 0.05 && !video.seeking && video.readyState >= 2) {
+			if (Math.abs(video.currentTime - t) <= 0.05 && !video.seeking) {
 				finish(true);
 				return;
 			}
 
-			video.removeEventListener("seeked", onSeeked);
+			// One seek only — repeated canplay must not restart the media GET.
+			if (seekStarted) return;
+			seekStarted = true;
 			video.addEventListener("seeked", onSeeked);
 			item.seekLock = true;
 			item.pendingTime = t;
@@ -313,7 +323,8 @@ function waitInteractVideoReady(item: PlayState, gen: number): Promise<boolean> 
 		const onReady = () => trySeek();
 		video.addEventListener("loadeddata", onReady);
 		video.addEventListener("canplay", onReady);
-		if (video.readyState >= 2) trySeek();
+		video.addEventListener("canplaythrough", onReady);
+		if (canSeek(video)) trySeek();
 
 		// Never block the UI forever on a stalled network decode.
 		const timeout = window.setTimeout(() => finish(gen === lodGeneration), 12000);
@@ -427,6 +438,8 @@ export function FramePlane({
 	const drawnRef = useRef<ImageBitmap | null>(null);
 	const lastIndexRef = useRef(0);
 	const directionRef = useRef(1);
+	const lastSeekFrameRef = useRef<number | null>(null);
+	const lastLodRef = useRef<LodMode | null>(null);
 	const aspectSetRef = useRef(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
@@ -563,6 +576,11 @@ export function FramePlane({
 		const interact = item.lodMode === "interact";
 		if (drawnRef.current && !interact) drawnRef.current = null;
 
+		if (lastLodRef.current !== item.lodMode) {
+			lastLodRef.current = item.lodMode;
+			lastSeekFrameRef.current = null;
+		}
+
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
 		const videoScrubOnly = videoScrubOnlyCached;
@@ -583,6 +601,16 @@ export function FramePlane({
 			}
 			return;
 		}
+
+		const syncVideoSeek = (force: boolean) => {
+			const frame = Math.round(wrapFrame(item.pos, item.count));
+			if (force || frame !== lastSeekFrameRef.current) {
+				seekVideo(item, item.pos);
+				lastSeekFrameRef.current = frame;
+			} else if (item.pendingTime != null) {
+				flushSeek(item);
+			}
+		};
 
 		// Interact desktop: exact ring frame only. Missing frame → hold last canvas or video.
 		if (interact && !videoScrubOnly && frameMap) {
@@ -641,7 +669,7 @@ export function FramePlane({
 
 		if (item.dragging) {
 			if (!video.paused) video.pause();
-			seekVideo(item, item.pos);
+			syncVideoSeek(false);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
@@ -657,7 +685,7 @@ export function FramePlane({
 		if (interact) {
 			if (!video.paused) video.pause();
 			item.vel = 0;
-			seekVideo(item, item.pos);
+			syncVideoSeek(false);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
