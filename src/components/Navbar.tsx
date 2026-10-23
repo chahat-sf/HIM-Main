@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { buildLoginHref } from "@/lib/auth-redirect";
+import { useSession } from "@/hooks/useSession";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
 
 // ─── Style constants ────────────────────────────────────────────────────────
 
@@ -198,6 +203,14 @@ function NavLink({ label, href }: { label: string; href: string }) {
 // ─── Navbar ─────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
+  const pathname = usePathname() || "/";
+  const { isAuthenticated } = useSession();
+  const { itemCount } = useCart();
+  const { itemCount: wishlistCount } = useWishlist();
+  const accountHref = isAuthenticated
+    ? "/account"
+    : buildLoginHref(pathname);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -418,16 +431,42 @@ export default function Navbar() {
               <SearchIcon />
             </button>
 
-            {/* <button type="button" aria-label="Wishlist" className="him-icon-btn">
+            <Link
+              href="/wishlist"
+              aria-label={
+                wishlistCount > 0
+                  ? `Wishlist, ${wishlistCount} items`
+                  : "Wishlist"
+              }
+              className="him-icon-btn him-cart-btn"
+            >
               <WishlistIcon />
-            </button>  */}
+              {wishlistCount > 0 && (
+                <span className="him-cart-count" aria-hidden="true">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
+            </Link>
 
-            <Link href="/account" aria-label="Account" className="him-icon-btn">
+            <Link href={accountHref} aria-label="Account" className="him-icon-btn">
               <UserIcon />
             </Link>
 
-            <Link href="/cart" aria-label="Shopping bag" className="him-icon-btn">
+            <Link
+              href="/cart"
+              aria-label={
+                itemCount > 0
+                  ? `Shopping bag, ${itemCount} items`
+                  : "Shopping bag"
+              }
+              className="him-icon-btn him-cart-btn"
+            >
               <BagIcon />
+              {itemCount > 0 && (
+                <span className="him-cart-count" aria-hidden="true">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
@@ -482,6 +521,29 @@ export default function Navbar() {
 
         .him-icon-btn:hover {
           color: #fff;
+        }
+
+        .him-cart-btn {
+          position: relative;
+        }
+
+        .him-cart-count {
+          position: absolute;
+          top: -6px;
+          right: -9px;
+          min-width: 15px;
+          height: 15px;
+          padding: 0 4px;
+          border-radius: 999px;
+          background: #c4a574;
+          color: #111;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 9px;
+          font-weight: 600;
+          line-height: 15px;
+          text-align: center;
+          letter-spacing: 0;
+          box-sizing: border-box;
         }
 
         /* ───────── Search popup ───────── */

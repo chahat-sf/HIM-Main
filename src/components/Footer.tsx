@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { buildLoginHref } from "@/lib/auth-redirect";
+import { useSession } from "@/hooks/useSession";
 
 type FooterLink = { label: string; href: string };
 
@@ -14,10 +17,10 @@ const HELP_LINKS: FooterLink[] = [
   { label: "RETURN POLICY", href: "/collection" },
 ];
 
-const LINKS: FooterLink[] = [
+const LINKS_BASE: FooterLink[] = [
   { label: "REWARDS", href: "/collection" },
   { label: "REVIEWS", href: "/collection" },
-  { label: "ACCOUNT", href: "/account" },
+  { label: "ACCOUNT", href: "/login" },
   { label: "CAREERS", href: "/collection" },
 ];
 
@@ -76,6 +79,21 @@ function AccordionChevron({ open }: { open: boolean }) {
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [open, setOpen] = useState<AccordionKey>(null);
+  const pathname = usePathname() || "/";
+  const { isAuthenticated } = useSession();
+
+  const LINKS = useMemo(
+    () =>
+      LINKS_BASE.map((link) =>
+        link.label === "ACCOUNT"
+          ? {
+            ...link,
+            href: isAuthenticated ? "/account" : buildLoginHref(pathname),
+          }
+          : link,
+      ),
+    [isAuthenticated, pathname],
+  );
 
   const toggle = (key: AccordionKey) => {
     setOpen((prev) => (prev === key ? null : key));
@@ -271,11 +289,16 @@ export default function Footer() {
 
         .him-footer-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
-          gap: 32px 28px;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 32px 20px;
           align-items: start;
-          max-width: 1200px;
+          max-width: 1100px;
           margin: 0 auto;
+          width: 100%;
+        }
+
+        .him-footer-col {
+          text-align: center;
         }
 
         .him-footer-col-title {
@@ -286,6 +309,7 @@ export default function Footer() {
           text-transform: uppercase;
           color: #f5f1e9;
           line-height: 1.2;
+          text-align: center;
         }
 
         .him-footer-col-toggle {
@@ -312,7 +336,9 @@ export default function Footer() {
           padding: 0;
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 14px;
+          text-align: center;
         }
 
         .him-footer-col-list :global(a) {
@@ -328,24 +354,30 @@ export default function Footer() {
           color: #ffffff;
         }
 
-        /* Newsletter */
+        /* Newsletter — true center column */
         .him-footer-newsletter {
           display: flex;
           justify-content: center;
+          align-items: flex-start;
           text-align: center;
-          padding: 0 12px;
+          padding: 0 8px;
+          grid-column: 3;
         }
 
         .him-footer-newsletter-form {
           width: 100%;
-          max-width: 280px;
+          max-width: 260px;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
+          text-align: center;
         }
 
         .him-footer-newsletter-label {
           margin-bottom: 14px;
+          text-align: center;
+          width: 100%;
         }
 
         .him-footer-newsletter-field {
@@ -367,10 +399,12 @@ export default function Footer() {
           font-family: inherit;
           font-size: 11px;
           padding: 0 8px 0 0;
+          text-align: center;
         }
 
         .him-footer-newsletter-field input::placeholder {
           color: rgba(245, 241, 233, 0.45);
+          text-align: center;
         }
 
         .him-footer-newsletter-field button {
@@ -396,13 +430,16 @@ export default function Footer() {
           line-height: 1.55;
           color: rgba(245, 241, 233, 0.55);
           max-width: 240px;
+          text-align: center;
         }
 
         /* Store */
         .him-footer-store {
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 14px;
+          text-align: center;
         }
 
         .him-footer-store-country {
@@ -411,6 +448,7 @@ export default function Footer() {
           letter-spacing: 0.8px;
           text-transform: uppercase;
           color: rgba(245, 241, 233, 0.9);
+          text-align: center;
         }
 
         .him-footer-store-hours {
@@ -419,11 +457,13 @@ export default function Footer() {
           padding: 0;
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 6px;
           font-size: 10px;
           letter-spacing: 0.4px;
           color: rgba(245, 241, 233, 0.7);
           text-transform: uppercase;
+          text-align: center;
         }
 
         /* Rule + bottom */
@@ -467,9 +507,20 @@ export default function Footer() {
           }
 
           .him-footer-newsletter {
+            grid-column: auto;
             order: -1;
             margin-bottom: 36px;
             padding: 0;
+          }
+
+          .him-footer-col-list,
+          .him-footer-store {
+            align-items: flex-start;
+            text-align: left;
+          }
+
+          .him-footer-col {
+            text-align: left;
           }
 
           .him-footer-col-title--desktop {

@@ -1,9 +1,13 @@
 "use client";
 
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import type { AccountPayload } from "@/lib/account";
+import { firstNameFromFullName, formatDisplayDate } from "@/lib/format";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -16,89 +20,7 @@ const BORDER = "rgba(255,255,255,0.28)";
 const RULE = "rgba(255,255,255,0.14)";
 const GUTTER = "clamp(16px, 4vw, 60px)";
 const CONTENT_MAX = "1120px";
-
-// ─── Mock data (aligned to Figma) ─────────────────────────────────────────────
-
-const USER = {
-  name: "Aarav.",
-  tagline: "A more considered wardrobe,\nfor wherever the day takes you.",
-  details: {
-    fullName: "Aarav Sharma",
-    email: "aarav.sharma@email.com",
-    phone: "+91 98765 43210",
-    dob: "14 March 1995",
-  },
-  address: {
-    label: "DEFAULT SHIPPING ADDRESS",
-    lines: [
-      "Aarav Sharma",
-      "12, Palm Grove Apartments",
-      "Bandra West",
-      "Mumbai, Maharashtra 400050",
-      "India",
-    ],
-  },
-};
-
-const ORDERS = [
-  {
-    id: "#HIM762309",
-    date: "10 Apr 2024",
-    items: 1,
-    status: "Processing",
-    statusColor: "#d4a017",
-    total: "₹ 6,990",
-  },
-  {
-    id: "#HIM717834",
-    date: "24 May 2024",
-    items: 3,
-    status: "Shipped",
-    statusColor: "#6ba3e8",
-    total: "₹ 8,960",
-  },
-  {
-    id: "#HIM714571",
-    date: "12 Jun 2024",
-    items: 2,
-    status: "Delivered",
-    statusColor: "#5aad6e",
-    total: "₹ 14,913",
-  },
-];
-
-const SAVED = [
-  {
-    slug: "textured-thermal-white-7",
-    name: "LINEN SHIRT",
-    price: "₹ 4,080",
-    image: "/products/man-image-100.webp",
-    swatches: ["#111", "#a3a3a3"],
-  },
-  {
-    slug: "textured-thermal-white-8",
-    name: "WIDE LEG TROUSERS",
-    price: "₹ 5,840",
-    image: "/products/man-image-101.webp",
-    swatches: ["#a3a3a3", "#7a1420"],
-  },
-  {
-    slug: "textured-thermal-white-9",
-    name: "DENIM JACKET",
-    price: "₹ 6,960",
-    image: "/products/man-image-102.webp",
-    swatches: ["#3a5aa8", "#111", "#a3a3a3"],
-  },
-];
-
-const DETAIL_ROWS = [
-  ["Full Name", USER.details.fullName],
-  ["Email", USER.details.email],
-  ["Phone", USER.details.phone],
-  ["Date of Birth", USER.details.dob],
-] as const;
-
-// ─── Section helpers ──────────────────────────────────────────────────────────
+const GOLD = "#c4a574";
 
 function Card({ children }: { children: React.ReactNode }) {
   return <div className="acc-card">{children}</div>;
@@ -107,17 +29,24 @@ function Card({ children }: { children: React.ReactNode }) {
 function SectionHeader({
   title,
   action,
+  onAction,
   href,
 }: {
   title: string;
   action?: string;
+  onAction?: () => void;
   href?: string;
 }) {
   return (
     <div className="acc-section-header">
       <p className="acc-section-title">{title}</p>
-      {action && (
-        <Link href={href ?? "#"} className="acc-action-link">
+      {action && onAction && (
+        <button type="button" className="acc-action-link" onClick={onAction}>
+          {action}
+        </button>
+      )}
+      {action && href && !onAction && (
+        <Link href={href} className="acc-action-link">
           {action}
         </Link>
       )}
@@ -146,15 +75,174 @@ function Chevron() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function dash(value: string | null | undefined) {
+  return value?.trim() ? value : "—";
+}
 
 export default function AccountPage() {
+  const router = useRouter();
+  const [data, setData] = useState<AccountPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+
+  const [addrLabel, setAddrLabel] = useState("DEFAULT SHIPPING ADDRESS");
+  const [line1, setLine1] = useState("");
+  const [line2, setLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("India");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("/api/account", { credentials: "include" });
+        if (res.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          throw new Error(body?.error || "Unable to load account.");
+        }
+        const payload = (await res.json()) as AccountPayload;
+        if (!cancelled) {
+          setData(payload);
+          hydrateForms(payload);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Unable to load account.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  function hydrateForms(payload: AccountPayload) {
+    setFullName(payload.user.fullName);
+    setPhone(payload.user.phone ?? "");
+    setDateOfBirth(payload.user.dateOfBirth?.slice(0, 10) ?? "");
+
+    const addr = payload.addresses[0];
+    if (addr) {
+      setAddrLabel(addr.label);
+      setLine1(addr.line1);
+      setLine2(addr.line2 ?? "");
+      setCity(addr.city);
+      setState(addr.state);
+      setPostalCode(addr.postalCode);
+      setCountry(addr.country);
+    }
+  }
+
+  async function onSignOut() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    router.push("/login");
+  }
+
+  async function onSaveProfile(event: FormEvent) {
+    event.preventDefault();
+    setFormError("");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/account/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          phone: phone.trim() || null,
+          dateOfBirth: dateOfBirth || null,
+        }),
+      });
+      const body = (await res.json()) as AccountPayload & { error?: string };
+      if (!res.ok) {
+        setFormError(body.error || "Unable to update profile.");
+        return;
+      }
+      setData(body);
+      hydrateForms(body);
+      setEditingProfile(false);
+    } catch {
+      setFormError("Unable to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSaveAddress(event: FormEvent) {
+    event.preventDefault();
+    setFormError("");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/account/addresses", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: addrLabel,
+          line1,
+          line2: line2.trim() || null,
+          city,
+          state,
+          postalCode,
+          country,
+        }),
+      });
+      const body = (await res.json()) as AccountPayload & { error?: string };
+      if (!res.ok) {
+        setFormError(body.error || "Unable to save address.");
+        return;
+      }
+      setData(body);
+      hydrateForms(body);
+      setEditingAddress(false);
+    } catch {
+      setFormError("Unable to save address.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const welcomeName = data
+    ? firstNameFromFullName(data.user.fullName)
+    : "…";
+
+  const detailRows: [string, string][] = data
+    ? [
+        ["Full Name", data.user.fullName],
+        ["Email", data.user.email],
+        ["Phone", dash(data.user.phone)],
+        ["Date of Birth", dash(formatDisplayDate(data.user.dateOfBirth))],
+      ]
+    : [];
+
   return (
     <>
       <Navbar />
 
       <main className="acc-page">
-        {/* ── HERO ── */}
         <section className="acc-hero" aria-label="My Account">
           <Image
             src="/products/man-image-103.webp"
@@ -177,7 +265,6 @@ export default function AccountPage() {
           </div>
         </section>
 
-        {/* ── WELCOME BANNER ── */}
         <section className="acc-welcome" aria-label="Welcome">
           <Image
             src="/products/man-image-103.webp"
@@ -190,127 +277,279 @@ export default function AccountPage() {
           />
           <div className="acc-welcome-dim" />
           <div className="acc-welcome-inner">
-            <p className="acc-welcome-label">WELCOME BACK</p>
-            <h2 className="acc-welcome-name">{USER.name}</h2>
-            <p className="acc-welcome-tagline">{USER.tagline}</p>
+            <div className="acc-welcome-top">
+              <p className="acc-welcome-label">WELCOME BACK</p>
+              <button type="button" className="acc-signout" onClick={onSignOut}>
+                Sign out
+              </button>
+            </div>
+            <h2 className="acc-welcome-name">{welcomeName}</h2>
+            <p className="acc-welcome-tagline">
+              {"A more considered wardrobe,\nfor wherever the day takes you."}
+            </p>
           </div>
         </section>
 
-        {/* ── BODY ── */}
         <div className="acc-body">
-          {/* Personal + Address */}
-          <div className="acc-two-col">
-            <Card>
-              <SectionHeader title="PERSONAL DETAILS" action="EDIT" href="#" />
-              <table className="acc-details-table">
-                <tbody>
-                  {DETAIL_ROWS.map(([label, value]) => (
-                    <tr key={label}>
-                      <td className="acc-detail-label">{label}</td>
-                      <td className="acc-detail-value">{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+          {loading && <p className="acc-empty">Loading your account…</p>}
+          {error && !loading && <p className="acc-error">{error}</p>}
+          {formError && <p className="acc-error">{formError}</p>}
 
-            <Card>
-              <SectionHeader title="ADDRESSES" action="MANAGE" href="#" />
-              <div className="acc-address-box">
-                <p className="acc-address-label">{USER.address.label}</p>
-                {USER.address.lines.map((line) => (
-                  <p key={line} className="acc-address-line">
-                    {line}
-                  </p>
-                ))}
+          {data && !loading && (
+            <>
+              <div className="acc-two-col">
+                <Card>
+                  <SectionHeader
+                    title="PERSONAL DETAILS"
+                    action={editingProfile ? "CANCEL" : "EDIT"}
+                    onAction={() => {
+                      setFormError("");
+                      if (editingProfile) hydrateForms(data);
+                      setEditingProfile((v) => !v);
+                    }}
+                  />
+                  {editingProfile ? (
+                    <form className="acc-form" onSubmit={onSaveProfile}>
+                      <label>
+                        Full name
+                        <input
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Email
+                        <input value={data.user.email} disabled />
+                      </label>
+                      <label>
+                        Phone
+                        <input
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+91 …"
+                        />
+                      </label>
+                      <label>
+                        Date of birth
+                        <input
+                          type="date"
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="acc-save"
+                        disabled={saving}
+                        style={{ background: GOLD, color: "#111" }}
+                      >
+                        {saving ? "Saving…" : "Save details"}
+                      </button>
+                    </form>
+                  ) : (
+                    <table className="acc-details-table">
+                      <tbody>
+                        {detailRows.map(([label, value]) => (
+                          <tr key={label}>
+                            <td className="acc-detail-label">{label}</td>
+                            <td className="acc-detail-value">{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </Card>
+
+                <Card>
+                  <SectionHeader
+                    title="ADDRESSES"
+                    action={editingAddress ? "CANCEL" : "MANAGE"}
+                    onAction={() => {
+                      setFormError("");
+                      if (editingAddress) hydrateForms(data);
+                      setEditingAddress((v) => !v);
+                    }}
+                  />
+                  {editingAddress ? (
+                    <form className="acc-form" onSubmit={onSaveAddress}>
+                      <label>
+                        Label
+                        <input
+                          value={addrLabel}
+                          onChange={(e) => setAddrLabel(e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Address line 1
+                        <input
+                          value={line1}
+                          onChange={(e) => setLine1(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Address line 2
+                        <input
+                          value={line2}
+                          onChange={(e) => setLine2(e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        City
+                        <input
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        State
+                        <input
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Postal code
+                        <input
+                          value={postalCode}
+                          onChange={(e) => setPostalCode(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Country
+                        <input
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="acc-save"
+                        disabled={saving}
+                        style={{ background: GOLD, color: "#111" }}
+                      >
+                        {saving ? "Saving…" : "Save address"}
+                      </button>
+                    </form>
+                  ) : data.addresses.length === 0 ? (
+                    <p className="acc-empty">No addresses yet</p>
+                  ) : (
+                    data.addresses.map((addr) => (
+                      <div key={addr.id} className="acc-address-box">
+                        <p className="acc-address-label">{addr.label}</p>
+                        {addr.lines.map((line) => (
+                          <p key={`${addr.id}-${line}`} className="acc-address-line">
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </Card>
               </div>
-            </Card>
-          </div>
 
-          {/* Order History */}
-          <Card>
-            <SectionHeader title="ORDER HISTORY" action="VIEW ALL" href="#" />
-            <div className="acc-orders-scroll">
-              <table className="acc-orders-table">
-                <thead>
-                  <tr>
-                    {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL", ""].map(
-                      (h, i) => (
-                        <th key={h || `pad-${i}`}>{h}</th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ORDERS.map((order) => (
-                    <tr key={order.id}>
-                      <td className="acc-order-id">{order.id}</td>
-                      <td>{order.date}</td>
-                      <td>
-                        {order.items} {order.items === 1 ? "item" : "items"}
-                      </td>
-                      <td>
-                        <span
-                          className="acc-status"
-                          style={{ color: order.statusColor }}
-                        >
-                          <span
-                            className="acc-status-dot"
-                            style={{ background: order.statusColor }}
-                          />
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="acc-order-total">{order.total}</td>
-                      <td className="acc-order-chevron">
-                        <Chevron />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          {/* Saved Items */}
-          <section className="acc-saved" aria-label="Saved items">
-            <div className="acc-section-header" style={{ marginBottom: 16 }}>
-              <p className="acc-section-title">SAVED ITEMS</p>
-              <Link href="/collection" className="acc-action-link">
-                VIEW ALL
-              </Link>
-            </div>
-            <div className="acc-saved-grid">
-              {SAVED.map((item) => (
-                <Link
-                  key={item.slug}
-                  href={`/collection/${item.slug}`}
-                  className="acc-saved-card"
-                >
-                  <div className="acc-saved-img">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      quality={80}
-                      sizes="(max-width: 768px) 50vw, 28vw"
-                      className="object-cover object-center"
-                    />
+              <Card>
+                <SectionHeader title="ORDER HISTORY" />
+                {data.orders.length === 0 ? (
+                  <p className="acc-empty">No orders yet</p>
+                ) : (
+                  <div className="acc-orders-scroll">
+                    <table className="acc-orders-table">
+                      <thead>
+                        <tr>
+                          {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL", ""].map(
+                            (h, i) => (
+                              <th key={h || `pad-${i}`}>{h}</th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.orders.map((order) => (
+                          <tr key={order.id}>
+                            <td className="acc-order-id">{order.orderNumber}</td>
+                            <td>{order.date}</td>
+                            <td>
+                              {order.items}{" "}
+                              {order.items === 1 ? "item" : "items"}
+                            </td>
+                            <td>
+                              <span
+                                className="acc-status"
+                                style={{ color: order.statusColor }}
+                              >
+                                <span
+                                  className="acc-status-dot"
+                                  style={{ background: order.statusColor }}
+                                />
+                                {order.statusLabel}
+                              </span>
+                            </td>
+                            <td className="acc-order-total">{order.total}</td>
+                            <td className="acc-order-chevron">
+                              <Chevron />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <p className="acc-saved-name">{item.name}</p>
-                  <p className="acc-saved-price">{item.price}</p>
-                  <div className="acc-saved-swatches">
-                    {item.swatches.map((c, i) => (
-                      <span
-                        key={`${item.slug}-${c}-${i}`}
-                        style={{ background: c }}
-                      />
+                )}
+              </Card>
+
+              <section className="acc-saved" aria-label="Saved items">
+                <div className="acc-section-header" style={{ marginBottom: 16 }}>
+                  <p className="acc-section-title">SAVED ITEMS</p>
+                  <Link href="/collection" className="acc-action-link">
+                    VIEW ALL
+                  </Link>
+                </div>
+                {data.savedItems.length === 0 ? (
+                  <p className="acc-empty">
+                    No saved items yet.{" "}
+                    <Link href="/collection" className="acc-inline-link">
+                      Browse the collection
+                    </Link>
+                  </p>
+                ) : (
+                  <div className="acc-saved-grid">
+                    {data.savedItems.map((item) => (
+                      <Link
+                        key={item.slug}
+                        href={`/collection/${item.slug}`}
+                        className="acc-saved-card"
+                      >
+                        <div className="acc-saved-img">
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            quality={80}
+                            sizes="(max-width: 768px) 50vw, 28vw"
+                            className="object-cover object-center"
+                          />
+                        </div>
+                        <p className="acc-saved-name">{item.name}</p>
+                        <p className="acc-saved-price">{item.price}</p>
+                        <div className="acc-saved-swatches">
+                          {item.swatches.map((c, i) => (
+                            <span
+                              key={`${item.slug}-${c}-${i}`}
+                              style={{ background: c }}
+                            />
+                          ))}
+                        </div>
+                      </Link>
                     ))}
                   </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+                )}
+              </section>
+            </>
+          )}
         </div>
       </main>
 
@@ -323,7 +562,6 @@ export default function AccountPage() {
           color: ${INK};
         }
 
-        /* ── Hero ── */
         .acc-hero {
           position: relative;
           height: clamp(240px, 34vw, 420px);
@@ -373,7 +611,6 @@ export default function AccountPage() {
           line-height: 1.55;
         }
 
-        /* ── Welcome ── */
         .acc-welcome {
           position: relative;
           overflow: hidden;
@@ -395,13 +632,36 @@ export default function AccountPage() {
           margin: 0 auto;
           box-sizing: border-box;
         }
+        .acc-welcome-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
         .acc-welcome-label {
-          margin: 0 0 8px;
+          margin: 0;
           font-family: ${SANS};
           font-size: 9px;
           letter-spacing: 1.8px;
           text-transform: uppercase;
           color: ${MUTED};
+        }
+        .acc-signout {
+          background: none;
+          border: none;
+          padding: 0;
+          font-family: ${SANS};
+          font-size: 9px;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          color: ${MUTED_SOFT};
+          border-bottom: 1px solid ${MUTED_SOFT};
+          cursor: pointer;
+        }
+        .acc-signout:hover {
+          color: ${INK};
+          border-bottom-color: ${INK};
         }
         .acc-welcome-name {
           margin: 0 0 10px;
@@ -422,7 +682,6 @@ export default function AccountPage() {
           max-width: 340px;
         }
 
-        /* ── Body ── */
         .acc-body {
           max-width: ${CONTENT_MAX};
           margin: 0 auto;
@@ -465,13 +724,17 @@ export default function AccountPage() {
           border-bottom: 1px solid ${MUTED_SOFT};
           padding-bottom: 1px;
           flex-shrink: 0;
+          background: none;
+          border-top: none;
+          border-left: none;
+          border-right: none;
+          cursor: pointer;
         }
         .acc-action-link:hover {
           color: ${INK};
           border-bottom-color: ${INK};
         }
 
-        /* ── Two-col ── */
         .acc-two-col {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -510,6 +773,9 @@ export default function AccountPage() {
           padding: 16px 18px;
           background: rgba(255, 255, 255, 0.03);
         }
+        .acc-address-box + .acc-address-box {
+          margin-top: 12px;
+        }
         .acc-address-label {
           margin: 0 0 12px;
           font-family: ${SANS};
@@ -526,7 +792,69 @@ export default function AccountPage() {
           line-height: 1.65;
         }
 
-        /* ── Orders ── */
+        .acc-empty {
+          margin: 0;
+          font-family: ${SANS};
+          font-size: 12px;
+          color: ${MUTED_SOFT};
+          line-height: 1.5;
+        }
+        .acc-error {
+          margin: 0;
+          font-family: ${SANS};
+          font-size: 12px;
+          color: #e08a8a;
+        }
+        .acc-inline-link {
+          color: ${INK};
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+
+        .acc-form {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .acc-form label {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-family: ${SANS};
+          font-size: 10px;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: ${MUTED};
+        }
+        .acc-form input {
+          background: transparent;
+          border: 1px solid ${BORDER};
+          color: ${INK};
+          font-family: ${SANS};
+          font-size: 13px;
+          padding: 10px 12px;
+          text-transform: none;
+          letter-spacing: 0;
+        }
+        .acc-form input:disabled {
+          opacity: 0.45;
+        }
+        .acc-save {
+          margin-top: 4px;
+          border: none;
+          font-family: ${SANS};
+          font-size: 11px;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          padding: 12px 16px;
+          cursor: pointer;
+          align-self: flex-start;
+        }
+        .acc-save:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
         .acc-orders-scroll {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
@@ -593,7 +921,6 @@ export default function AccountPage() {
           flex-shrink: 0;
         }
 
-        /* ── Saved ── */
         .acc-saved {
           margin-top: 8px;
         }
@@ -642,15 +969,6 @@ export default function AccountPage() {
           flex: 0 0 auto;
         }
 
-        /* ── Tablet: keep two-col details, tighten saved ── */
-        @media (max-width: 1023px) and (min-width: 768px) {
-          .acc-saved-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-          }
-        }
-
-        /* ── Mobile ── */
         @media (max-width: 767px) {
           .acc-two-col {
             grid-template-columns: 1fr;

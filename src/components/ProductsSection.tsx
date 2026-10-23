@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import { useWishlist } from "@/hooks/useWishlist";
+import { getCatalogProductBySlug, parseCatalogPriceRupees } from "@/lib/catalog";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -49,9 +51,17 @@ const products = [
 
 const CARD_GAP = 16;
 
-function HeartIcon() {
+function HeartIcon({ filled }: { filled?: boolean }) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
       <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
     </svg>
   );
@@ -77,6 +87,7 @@ function ChevronIcon({ dir }: { dir: "left" | "right" }) {
 function ExistingProductsGrid() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
 
   // Scroll-turn: dark -> light. Eased toward scroll target so the shift isn't stepped.
   useEffect(() => {
@@ -253,7 +264,12 @@ function ExistingProductsGrid() {
                 {/* WISHLIST — plain icon, no circle */}
                 <button
                   type="button"
-                  aria-label={`Add ${product.name} to wishlist`}
+                  aria-label={
+                    inWishlist(product.slug)
+                      ? `Remove ${product.name} from wishlist`
+                      : `Add ${product.name} to wishlist`
+                  }
+                  aria-pressed={inWishlist(product.slug)}
                   className="absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                   style={{
                     right: "10px",
@@ -263,13 +279,27 @@ function ExistingProductsGrid() {
                     padding: 0,
                     border: 0,
                     background: "transparent",
-                    color: "#3a3a3a",
+                    color: inWishlist(product.slug) ? "#7a1420" : "#3a3a3a",
                     cursor: "pointer",
                     zIndex: 2,
                   }}
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const catalog = getCatalogProductBySlug(product.slug);
+                    void toggleWishlist({
+                      productId: catalog?.id ?? null,
+                      slug: product.slug,
+                      name: catalog?.name ?? product.name,
+                      price: parseCatalogPriceRupees(
+                        catalog?.price ?? product.price,
+                      ),
+                      image: catalog?.image ?? product.image,
+                      swatches: catalog?.swatches ?? product.swatches,
+                    });
+                  }}
                 >
-                  <HeartIcon />
+                  <HeartIcon filled={inWishlist(product.slug)} />
                 </button>
               </div>
             </Link>

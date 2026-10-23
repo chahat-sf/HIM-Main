@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./PdpNavbar.module.css";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
 
 const leftLinks = [
   { label: "JEANS", href: "/collection?category=JEANS" },
@@ -60,6 +62,9 @@ function NavLink({ label, href }: { label: string; href: string }) {
 }
 
 export default function PdpNavbar() {
+  const { itemCount } = useCart();
+  const { itemCount: wishlistCount } = useWishlist();
+
   return (
     <nav className={styles.nav} aria-label="Primary">
       <div className={styles.row}>
@@ -95,14 +100,40 @@ export default function PdpNavbar() {
             <Link href="/collection" aria-label="Search" className={styles.icon}>
               <SearchIcon />
             </Link>
-            <Link href="/collection" aria-label="Wishlist" className={styles.icon}>
+            <Link
+              href="/wishlist"
+              aria-label={
+                wishlistCount > 0
+                  ? `Wishlist, ${wishlistCount} items`
+                  : "Wishlist"
+              }
+              className={`${styles.icon} ${styles.cartIcon}`}
+            >
               <WishlistIcon />
+              {wishlistCount > 0 && (
+                <span className={styles.cartCount} aria-hidden="true">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Link>
-            <Link href="/collection" aria-label="Account" className={styles.icon}>
+            <Link href="/login" aria-label="Account" className={styles.icon}>
               <UserIcon />
             </Link>
-            <Link href="/collection" aria-label="Shopping bag" className={styles.icon}>
+            <Link
+              href="/cart"
+              aria-label={
+                itemCount > 0
+                  ? `Shopping bag, ${itemCount} items`
+                  : "Shopping bag"
+              }
+              className={`${styles.icon} ${styles.cartIcon}`}
+            >
               <BagIcon />
+              {itemCount > 0 && (
+                <span className={styles.cartCount} aria-hidden="true">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

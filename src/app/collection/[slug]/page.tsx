@@ -7,6 +7,12 @@ import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import { useEffect, useRef, useState } from "react";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import {
+  getCatalogProductBySlug,
+  parseCatalogPriceRupees,
+} from "@/lib/catalog";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
@@ -318,8 +324,13 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [bagError, setBagError] = useState("");
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
+  const { addItem } = useCart();
+  const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
+  const wishlisted = inWishlist(slug);
 
   // Reset per-product state whenever the slug changes
   useEffect(() => {
@@ -327,6 +338,8 @@ export default function ProductDetailPage() {
     setSelectedSize("");
     setActiveImg(0);
     setAdded(false);
+    setAdding(false);
+    setBagError("");
     setFocusId("intro");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
@@ -366,10 +379,43 @@ export default function ProductDetailPage() {
   const angle = Math.round((activeImg * 360) / imageCount);
   const rotate = (step: number) => setActiveImg((i) => (i + step + imageCount) % imageCount);
 
-  const handleAddToBag = () => {
-    if (!selectedSize) return;
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+  const handleAddToBag = async () => {
+    if (!selectedSize) {
+      setBagError("Please select a size");
+      return;
+    }
+    if (adding) return;
+
+    setBagError("");
+    setAdding(true);
+
+    const catalog = getCatalogProductBySlug(slug);
+    const priceRupees = Math.round(
+      Number(String(PRODUCT.price).replace(/,/g, "")) || 0,
+    );
+
+    try {
+      await addItem({
+        productId: catalog?.id ?? null,
+        slug,
+        name: catalog?.name ?? PRODUCT.name,
+        size: selectedSize,
+        color: selectedColor,
+        price: priceRupees,
+        qty: 1,
+        image:
+          catalog?.image ??
+          PRODUCT.images[0] ??
+          "/products/man-image-100.webp",
+        swatches: PRODUCT.colors.map((c) => c.hex),
+      });
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 2000);
+    } catch {
+      setBagError("Unable to add to bag. Please try again.");
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
@@ -501,7 +547,10 @@ export default function ProductDetailPage() {
                   type="button"
                   aria-label={c.name}
                   aria-pressed={selectedColor === c.name}
-                  onClick={() => setSelectedColor(c.name)}
+                  onClick={() => {
+                    setSelectedColor(c.name);
+                    setBagError("");
+                  }}
                   className={`pdp-color-swatch${selectedColor === c.name ? " active" : ""}`}
                   style={{ background: c.hex }}
                 />
@@ -519,21 +568,69 @@ export default function ProductDetailPage() {
               id="pdp-size"
               options={PRODUCT.sizes}
               value={selectedSize}
-              onChange={setSelectedSize}
+              onChange={(value) => {
+                setSelectedSize(value);
+                setBagError("");
+              }}
               placeholder="Select Size"
               aria-label="Select size"
               className="pdp-size-dropdown"
             />
 
-            {/* Add to bag */}
-            <button
-              type="button"
-              onClick={handleAddToBag}
-              aria-disabled={!selectedSize}
-              className="pdp-add-btn"
-            >
-              {added ? "ADDED TO BAG" : "ADD TO BAG"}
-            </button>
+            {/* Add to bag + wishlist */}
+            <div className="pdp-bag-row">
+              <button
+                type="button"
+                onClick={() => void handleAddToBag()}
+                disabled={adding}
+                aria-disabled={!selectedSize || adding}
+                className={`pdp-add-btn${!selectedSize ? " is-waiting-size" : ""}`}
+              >
+                {adding
+                  ? "ADDING…"
+                  : added
+                    ? "ADDED TO BAG"
+                    : "ADD TO BAG"}
+              </button>
+              <button
+                type="button"
+                className={`pdp-wish-btn${wishlisted ? " is-active" : ""}`}
+                aria-label={
+                  wishlisted ? "Remove from wishlist" : "Add to wishlist"
+                }
+                aria-pressed={wishlisted}
+                onClick={() => {
+                  const catalog = getCatalogProductBySlug(slug);
+                  void toggleWishlist({
+                    productId: catalog?.id ?? null,
+                    slug,
+                    name: catalog?.name ?? PRODUCT.name,
+                    price: parseCatalogPriceRupees(
+                      catalog?.price ?? String(PRODUCT.price),
+                    ),
+                    image:
+                      catalog?.image ??
+                      PRODUCT.images[0] ??
+                      "/products/man-image-100.webp",
+                    swatches:
+                      catalog?.swatches ?? PRODUCT.colors.map((c) => c.hex),
+                  });
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={wishlisted ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  aria-hidden="true"
+                >
+                  <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
+                </svg>
+              </button>
+            </div>
+            {bagError && <p className="pdp-bag-error">{bagError}</p>}
 
             {/* Accordions */}
             <div className="pdp-accordions">
@@ -900,11 +997,19 @@ export default function ProductDetailPage() {
           height: max(42px, calc(52 * var(--u)));
         }
 
-        /* Add to bag */
-        .pdp-add-btn {
-          width: 100%;
-          height: max(44px, calc(56 * var(--u)));
+        /* Add to bag + wishlist */
+        .pdp-bag-row {
+          display: flex;
+          gap: 10px;
           margin-top: calc(31 * var(--u));
+          align-items: stretch;
+        }
+
+        .pdp-add-btn {
+          flex: 1;
+          width: auto;
+          height: max(44px, calc(56 * var(--u)));
+          margin-top: 0;
           border: none;
           border-radius: 0;
           background: var(--pdp-ink);
@@ -918,6 +1023,28 @@ export default function ProductDetailPage() {
           transition: background 280ms ease, transform 280ms ease;
         }
 
+        .pdp-wish-btn {
+          flex: 0 0 max(44px, calc(56 * var(--u)));
+          width: max(44px, calc(56 * var(--u)));
+          height: max(44px, calc(56 * var(--u)));
+          border: 1px solid rgba(17, 17, 17, 0.22);
+          background: transparent;
+          color: var(--pdp-ink);
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          transition: color 200ms ease, border-color 200ms ease, background 200ms ease;
+        }
+
+        .pdp-wish-btn:hover {
+          border-color: var(--pdp-ink);
+        }
+
+        .pdp-wish-btn.is-active {
+          color: #7a1420;
+          border-color: #7a1420;
+        }
+
         .pdp-add-btn:hover {
           background: #2a2a2a;
         }
@@ -926,8 +1053,24 @@ export default function ProductDetailPage() {
           transform: scale(0.992);
         }
 
-        .pdp-add-btn[aria-disabled="true"] {
+        .pdp-add-btn:disabled,
+        .pdp-add-btn.is-waiting-size {
+          opacity: 0.4;
           cursor: default;
+          transform: none;
+        }
+
+        .pdp-add-btn:disabled:hover,
+        .pdp-add-btn.is-waiting-size:hover {
+          background: var(--pdp-ink);
+        }
+
+        .pdp-bag-error {
+          margin: 10px 0 0;
+          font-family: var(--pdp-sans);
+          font-size: 11px;
+          letter-spacing: 0.04em;
+          color: #b42318;
         }
 
         /* ── ACCORDIONS ── */

@@ -5,6 +5,8 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useState } from "react";
+import { useCart } from "@/hooks/useCart";
+import type { CartItem } from "@/lib/cart-types";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -19,56 +21,6 @@ const GOLD = "#c4a574";
 const GOLD_HOVER = "#d4b888";
 const GUTTER = "clamp(16px, 4vw, 60px)";
 const CONTENT_MAX = "1120px";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type CartItem = {
-  id: string;
-  slug: string;
-  name: string;
-  size: string;
-  color: string;
-  price: number;
-  qty: number;
-  image: string;
-  swatches: string[];
-};
-
-const INITIAL_CART: CartItem[] = [
-  {
-    id: "1",
-    slug: "textured-thermal-white-7",
-    name: "LINEN SHIRT",
-    size: "M",
-    color: "Ivory",
-    price: 4990,
-    qty: 1,
-    image: "/products/man-image-100.webp",
-    swatches: ["#f0ebe3", "#a3a3a3", "#111"],
-  },
-  {
-    id: "2",
-    slug: "textured-thermal-white-8",
-    name: "WIDE LEG TROUSERS",
-    size: "32",
-    color: "Oatmeal",
-    price: 5840,
-    qty: 1,
-    image: "/products/man-image-101.webp",
-    swatches: ["#a3a3a3", "#7a1420"],
-  },
-  {
-    id: "3",
-    slug: "textured-thermal-white-9",
-    name: "DENIM JACKET",
-    size: "M",
-    color: "Indigo",
-    price: 6960,
-    qty: 1,
-    image: "/products/man-image-102.webp",
-    swatches: ["#3a5aa8", "#111111"],
-  },
-];
 
 const YOU_MAY_LIKE = [
   {
@@ -207,23 +159,19 @@ function SectionHeading({
 }
 
 export default function CartPage() {
-  const [cart, setCart] = useState<CartItem[]>(INITIAL_CART);
+  const {
+    items: cart,
+    loading,
+    isAuthenticated,
+    updateQty,
+    removeItem,
+  } = useCart();
   const [promo, setPromo] = useState("");
   const [giftMsg, setGiftMsg] = useState(false);
   const [giftText, setGiftText] = useState("");
 
-  const updateQty = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item,
-      ),
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setCart((previous) =>
-      previous.filter((item) => item.id !== id)
-    );
+  const changeQty = (item: CartItem, delta: number) => {
+    void updateQty(item.id, Math.max(1, item.qty + delta));
   };
 
   const subtotal = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
@@ -263,7 +211,11 @@ export default function CartPage() {
 
         {/* ── BODY ── */}
         <div className="cart-body">
-          {cart.length === 0 ? (
+          {loading ? (
+            <div className="cart-empty">
+              <p className="cart-empty-title">Loading your bag…</p>
+            </div>
+          ) : cart.length === 0 ? (
             <div className="cart-empty">
               <p className="cart-empty-title">Your bag is empty.</p>
               <Link href="/collection" className="cart-btn-secondary">
@@ -326,15 +278,15 @@ export default function CartPage() {
 
                         <Stepper
                           qty={item.qty}
-                          onMinus={() => updateQty(item.id, -1)}
-                          onPlus={() => updateQty(item.id, 1)}
+                          onMinus={() => changeQty(item, -1)}
+                          onPlus={() => changeQty(item, 1)}
                         />
                       </div>
 
                       <div className="cart-item-aside">
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => void removeItem(item.id)}
                           aria-label={`Remove ${item.name}`}
                           className="cart-item-remove"
                         >
@@ -424,9 +376,18 @@ export default function CartPage() {
                   <button type="button">APPLY</button>
                 </div>
 
-                <Link href="#" className="cart-btn-primary">
-                  PROCEED TO CHECKOUT <ArrowIcon />
-                </Link>
+                {isAuthenticated ? (
+                  <Link href="#" className="cart-btn-primary">
+                    PROCEED TO CHECKOUT <ArrowIcon />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login?next=%2Fcart"
+                    className="cart-btn-primary"
+                  >
+                    LOGIN TO CHECKOUT <ArrowIcon />
+                  </Link>
+                )}
                 <Link href="/collection" className="cart-btn-secondary">
                   CONTINUE SHOPPING
                 </Link>

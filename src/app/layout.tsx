@@ -13,7 +13,6 @@ const spaceMono = Space_Mono({
 const cormorant = Cormorant_Garamond({
 	subsets: ["latin"],
 	weight: ["500", "600"],
-	style: ["normal", "italic"],
 	variable: "--font-room-serif",
 	display: "swap",
 });

@@ -1,0 +1,150 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { WishlistItem, WishlistItemInput } from "@/lib/wishlist-types";
+import {
+  addLocalWishlistItem,
+  notifyWishlistChanged,
+  readLocalWishlist,
+  removeLocalWishlistItem,
+  toggleLocalWishlistItem,
+  WISHLIST_CHANGED_EVENT,
+} from "@/lib/wishlist-local";
+import { useSession } from "@/hooks/useSession";
+
+async function fetchServerWishlist(): Promise<WishlistItem[]> {
+  const res = await fetch("/api/wishlist", { credentials: "include" });
+  if (res.status === 401) return [];
+  if (!res.ok) throw new Error("Unable to load wishlist");
+  const body = (await res.json()) as { items?: WishlistItem[] };
+  return body.items ?? [];
+}
+
+export function useWishlist() {
+  const { isAuthenticated, loading: sessionLoading } = useSession();
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    if (sessionLoading) return;
+    setLoading(true);
+    try {
+      if (isAuthenticated) {
+        setItems(await fetchServerWishlist());
+      } else {
+        setItems(readLocalWishlist());
+      }
+    } catch {
+      setItems(isAuthenticated ? [] : readLocalWishlist());
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, sessionLoading]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const softRefresh = () => {
+      if (sessionLoading) return;
+      if (isAuthenticated) {
+        void fetchServerWishlist()
+          .then(setItems)
+          .catch(() => setItems([]));
+      } else {
+        setItems(readLocalWishlist());
+      }
+    };
+    window.addEventListener(WISHLIST_CHANGED_EVENT, softRefresh);
+    window.addEventListener("storage", softRefresh);
+    return () => {
+      window.removeEventListener(WISHLIST_CHANGED_EVENT, softRefresh);
+      window.removeEventListener("storage", softRefresh);
+    };
+  }, [isAuthenticated, sessionLoading]);
+
+  const add = useCallback(
+    async (input: WishlistItemInput) => {
+      if (isAuthenticated) {
+        const res = await fetch("/api/wishlist", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) throw new Error("Unable to add to wishlist");
+        const body = (await res.json()) as { items?: WishlistItem[] };
+        setItems(body.items ?? []);
+        notifyWishlistChanged();
+        return;
+      }
+      setItems(addLocalWishlistItem(input));
+    },
+    [isAuthenticated],
+  );
+
+  const remove = useCallback(
+    async (slug: string) => {
+      if (isAuthenticated) {
+        const res = await fetch(
+          `/api/wishlist?slug=${encodeURIComponent(slug)}`,
+          { method: "DELETE", credentials: "include" },
+        );
+        if (!res.ok) throw new Error("Unable to remove from wishlist");
+        const body = (await res.json()) as { items?: WishlistItem[] };
+        setItems(body.items ?? []);
+        notifyWishlistChanged();
+        return;
+      }
+      setItems(removeLocalWishlistItem(slug));
+    },
+    [isAuthenticated],
+  );
+
+  const toggle = useCallback(
+    async (input: WishlistItemInput) => {
+      if (isAuthenticated) {
+        const res = await fetch("/api/wishlist", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...input, toggle: true }),
+        });
+        if (!res.ok) throw new Error("Unable to update wishlist");
+        const body = (await res.json()) as {
+          items?: WishlistItem[];
+          added?: boolean;
+        };
+        setItems(body.items ?? []);
+        notifyWishlistChanged();
+        return body.added ?? false;
+      }
+      const result = toggleLocalWishlistItem(input);
+      setItems(result.items);
+      return result.added;
+    },
+    [isAuthenticated],
+  );
+
+  const slugSet = useMemo(
+    () => new Set(items.map((item) => item.slug)),
+    [items],
+  );
+
+  const has = useCallback((slug: string) => slugSet.has(slug), [slugSet]);
+
+  const itemCount = items.length;
+
+  return {
+    items,
+    itemCount,
+    loading: loading || sessionLoading,
+    isAuthenticated,
+    has,
+    add,
+    remove,
+    toggle,
+    refresh,
+  };
+}

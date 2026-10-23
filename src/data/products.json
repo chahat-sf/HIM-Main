@@ -1,5 +1,6 @@
 [
   {
+    "id": 1,
     "slug": "textured-thermal-white-9",
     "name": "THE NOCTURNE",
     "title": "Black Embellished Velvet Jacket",
@@ -26,6 +27,7 @@
     "swatches": []
   },
   {
+    "id": 2,
     "slug": "textured-thermal-white-12",
     "name": "THE LAST WORD",
     "title": "Black Evening Tuxedo",
@@ -52,6 +54,7 @@
     "swatches": []
   },
   {
+    "id": 3,
     "slug": "textured-thermal-white-11",
     "name": "THE COMPOSURE",
     "title": "Black Cotton-Velvet Structured Jacket",
@@ -78,6 +81,7 @@
     "swatches": []
   },
   {
+    "id": 4,
     "slug": "textured-thermal-white-10",
     "name": "THE ARCHIVIST",
     "title": "Houndstooth Wool Overcoat",
@@ -104,6 +108,7 @@
     "swatches": []
   },
   {
+    "id": 5,
     "slug": "textured-thermal-white-8",
     "name": "THE EXCEPTION",
     "title": "Double-Breasted Tailored Denim Suit",
@@ -130,6 +135,7 @@
     "swatches": []
   },
   {
+    "id": 6,
     "slug": "textured-thermal-white-7",
     "name": "THE ATTACHÉ",
     "title": "Dark Double-Breasted Tailored Blazer",
