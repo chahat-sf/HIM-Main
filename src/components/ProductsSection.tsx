@@ -531,58 +531,62 @@ function EditorialCollage() {
 
   useEffect(() => {
     const parallaxFactors = [0.02, -0.016, 0.024, -0.02];
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let target = 0;
+    let current = 0;
+    let sectionHeight = 1;
+    let raf = 0;
+    let lastT = 0;
 
-    let frame = 0;
-
-    const onScroll = () => {
-      if (frame) return;
-
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-
-        const section = sectionRef.current;
-
-        if (!section) return;
-
-        const rect = section.getBoundingClientRect();
-
-        const viewportH = window.innerHeight || 1;
-
-        const progress =
-          (viewportH - rect.top) /
-          (viewportH + rect.height);
-
-        const clamped = Math.max(
-          -1,
-          Math.min(1, progress)
-        );
-
-        columnRefs.current.forEach((col, i) => {
-          if (!col) return;
-
-          const factor =
-            parallaxFactors[i % parallaxFactors.length];
-
-          const offset =
-            clamped * factor * rect.height;
-
-          col.style.transform = `translate3d(0, ${offset}px, 0)`;
-        });
+    const paint = (t: number) => {
+      columnRefs.current.forEach((col, i) => {
+        if (!col) return;
+        const factor = parallaxFactors[i % parallaxFactors.length];
+        col.style.transform = `translate3d(0, ${t * factor * sectionHeight}px, 0)`;
       });
     };
 
-    window.addEventListener("scroll", onScroll, {
-      passive: true,
-    });
+    const readTarget = () => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      sectionHeight = rect.height || 1;
+      const viewportH = window.innerHeight || 1;
+      const progress = (viewportH - rect.top) / (viewportH + rect.height);
+      target = Math.max(-1, Math.min(1, progress));
+    };
 
-    onScroll();
+    const tick = (now: number) => {
+      const dt = lastT ? Math.min((now - lastT) / 1000, 0.05) : 1 / 60;
+      lastT = now;
+      const diff = target - current;
 
+      if (reduceMotion || Math.abs(diff) < 0.001) {
+        current = target;
+        paint(current);
+        raf = 0;
+        lastT = 0;
+        return;
+      }
+
+      current += diff * (1 - Math.pow(1 - TURN_SMOOTHING, dt * 60));
+      paint(current);
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onScroll = () => {
+      readTarget();
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
+    readTarget();
+    current = target;
+    paint(current);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-
-      if (frame) {
-        cancelAnimationFrame(frame);
-      }
+      if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 

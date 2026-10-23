@@ -44,7 +44,9 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	const targetPctRef = useRef(0);
 	const displayPctRef = useRef(0);
 	const revealedRef = useRef(false);
+	const startedRef = useRef(false);
 	revealedRef.current = revealed;
+	startedRef.current = started;
 
 	const reportHeroProgress = useCallback((pct: number) => {
 		setHeroPct((prev) => Math.max(prev, Math.min(100, pct)));
@@ -117,11 +119,40 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 		return () => window.clearTimeout(timer);
 	}, [houseReady, started]);
 
+	// Reload often restores scroll mid-page behind the gate — pin to top until enter.
+	useEffect(() => {
+		const previous = history.scrollRestoration;
+		try {
+			history.scrollRestoration = "manual";
+		} catch {
+			/* unsupported */
+		}
+		const pinTop = () => {
+			if (!startedRef.current) window.scrollTo(0, 0);
+		};
+		pinTop();
+		// Safari / Chrome may restore scroll after first paint or on bfcache restore.
+		window.addEventListener("pageshow", pinTop);
+		const t1 = window.setTimeout(pinTop, 0);
+		const t2 = window.setTimeout(pinTop, 100);
+		return () => {
+			window.removeEventListener("pageshow", pinTop);
+			window.clearTimeout(t1);
+			window.clearTimeout(t2);
+			try {
+				history.scrollRestoration = previous;
+			} catch {
+				/* unsupported */
+			}
+		};
+	}, []);
+
 	useEffect(() => {
 		if (started) return;
 		const html = document.documentElement;
 		const previous = html.style.overflow;
 		html.style.overflow = "hidden";
+		window.scrollTo(0, 0);
 		return () => {
 			html.style.overflow = previous;
 		};
@@ -227,6 +258,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 						aria-label={revealed ? "welcome to the HIM world" : `Loading ${displayPct}%`}
 						onClick={() => {
 							if (!revealed) return;
+							window.scrollTo(0, 0);
 							setStarted(true);
 							// Unlock house AudioContext on the same user gesture.
 							window.dispatchEvent(new Event("him-start"));
