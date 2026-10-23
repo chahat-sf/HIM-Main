@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -9,20 +8,31 @@ import Footer from "@/components/Footer";
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 
+const BG = "#0a0a0a";
+const INK = "#ffffff";
+const MUTED = "rgba(255,255,255,0.45)";
+const MUTED_SOFT = "rgba(255,255,255,0.55)";
+const BORDER = "rgba(255,255,255,0.28)";
+const RULE = "rgba(255,255,255,0.14)";
+const GUTTER = "clamp(16px, 4vw, 60px)";
+const CONTENT_MAX = "1120px";
+
+// ─── Mock data (aligned to Figma) ─────────────────────────────────────────────
+
 const USER = {
   name: "Aarav.",
   tagline: "A more considered wardrobe,\nfor wherever the day takes you.",
   details: {
     fullName: "Aarav Sharma",
-    email: "aarav.sharma@gmail.com",
+    email: "aarav.sharma@email.com",
     phone: "+91 98765 43210",
     dob: "14 March 1995",
   },
   address: {
     label: "DEFAULT SHIPPING ADDRESS",
     lines: [
-      "Kaira Sharma",
-      "12, Park Grove Apartments",
+      "Aarav Sharma",
+      "12, Palm Grove Apartments",
       "Bandra West",
       "Mumbai, Maharashtra 400050",
       "India",
@@ -32,28 +42,28 @@ const USER = {
 
 const ORDERS = [
   {
-    id: "#HIM714571",
-    date: "12 Jun 2024",
-    items: 2,
-    status: "Delivered",
-    statusColor: "#78c99a",
-    total: "₹ 14,913",
+    id: "#HIM762309",
+    date: "10 Apr 2024",
+    items: 1,
+    status: "Processing",
+    statusColor: "#d4a017",
+    total: "₹ 6,990",
   },
   {
     id: "#HIM717834",
     date: "24 May 2024",
     items: 3,
     status: "Shipped",
-    statusColor: "#91b9f5",
+    statusColor: "#6ba3e8",
     total: "₹ 8,960",
   },
   {
-    id: "#HIM712209",
-    date: "18 Apr 2024",
-    items: 1,
-    status: "Processing",
-    statusColor: "#e8b36a",
-    total: "₹ 6,960",
+    id: "#HIM714571",
+    date: "12 Jun 2024",
+    items: 2,
+    status: "Delivered",
+    statusColor: "#5aad6e",
+    total: "₹ 14,913",
   },
 ];
 
@@ -63,36 +73,35 @@ const SAVED = [
     name: "LINEN SHIRT",
     price: "₹ 4,080",
     image: "/products/man-image-100.webp",
-    swatches: ["#f4ecd8", "#a3a3a3", "#111111"],
+    swatches: ["#111", "#a3a3a3"],
   },
   {
     slug: "textured-thermal-white-8",
     name: "WIDE LEG TROUSERS",
     price: "₹ 5,840",
     image: "/products/man-image-101.webp",
-    swatches: ["#a3a3a3", "#7a1420", "#111111"],
+    swatches: ["#a3a3a3", "#7a1420"],
   },
   {
     slug: "textured-thermal-white-9",
     name: "DENIM JACKET",
     price: "₹ 6,960",
     image: "/products/man-image-102.webp",
-    swatches: ["#f4ecd8", "#3a5aa8", "#111111"],
+    swatches: ["#3a5aa8", "#111", "#a3a3a3"],
   },
 ];
 
-const sectionLabel: React.CSSProperties = {
-  margin: 0,
-  fontFamily: SANS,
-  fontSize: "8px",
-  fontWeight: 600,
-  letterSpacing: "1.15px",
-  textTransform: "uppercase",
-  color: "#e8dfd0",
-};
+const DETAIL_ROWS = [
+  ["Full Name", USER.details.fullName],
+  ["Email", USER.details.email],
+  ["Phone", USER.details.phone],
+  ["Date of Birth", USER.details.dob],
+] as const;
+
+// ─── Section helpers ──────────────────────────────────────────────────────────
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <section className="account-card">{children}</section>;
+  return <div className="acc-card">{children}</div>;
 }
 
 function SectionHeader({
@@ -105,10 +114,10 @@ function SectionHeader({
   href?: string;
 }) {
   return (
-    <div className="account-section-header">
-      <p style={sectionLabel}>{title}</p>
+    <div className="acc-section-header">
+      <p className="acc-section-title">{title}</p>
       {action && (
-        <Link href={href ?? "#"} className="account-action">
+        <Link href={href ?? "#"} className="acc-action-link">
           {action}
         </Link>
       )}
@@ -116,32 +125,51 @@ function SectionHeader({
   );
 }
 
+function Chevron() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      aria-hidden="true"
+      style={{ flexShrink: 0, opacity: 0.55 }}
+    >
+      <path
+        d="M3.5 1.5L7 5L3.5 8.5"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function AccountPage() {
   return (
     <>
       <Navbar />
 
-      <main className="account-page">
-        {/* HERO */}
-        <section className="account-hero">
+      <main className="acc-page">
+        {/* ── HERO ── */}
+        <section className="acc-hero" aria-label="My Account">
           <Image
-            src="/homepage/navbar-image.webp"
+            src="/products/man-image-103.webp"
             alt=""
             fill
             priority
-            quality={85}
+            quality={80}
             sizes="100vw"
-            className="account-hero-image"
+            className="object-cover"
+            style={{ objectPosition: "center 18%" }}
           />
-
-          <div className="account-hero-overlay" />
-
-          <div className="account-hero-content">
-            <p className="account-eyebrow">MY ACCOUNT</p>
-
-            <h1>MY ACCOUNT</h1>
-
-            <p className="account-hero-caption">
+          <div className="acc-hero-overlay" />
+          <div className="acc-hero-content">
+            <h1 className="acc-hero-title">MY ACCOUNT</h1>
+            <p className="acc-hero-sub">
               A MORE CONSIDERED WARDROBE
               <br />
               BEGINS HERE.
@@ -149,51 +177,37 @@ export default function AccountPage() {
           </div>
         </section>
 
-        {/* WELCOME BANNER */}
-        <section className="account-welcome">
+        {/* ── WELCOME BANNER ── */}
+        <section className="acc-welcome" aria-label="Welcome">
           <Image
-            src="/homepage/3-man-image.webp"
+            src="/products/man-image-103.webp"
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, 980px"
-            className="account-welcome-image"
+            quality={70}
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: "center 40%", opacity: 0.42 }}
           />
-
-          <div className="account-welcome-overlay" />
-
-          <div className="account-welcome-content">
-            <p className="account-welcome-label">WELCOME BACK</p>
-
-            <h2>{USER.name}</h2>
-
-            <p className="account-welcome-description">
-              {USER.tagline}
-            </p>
+          <div className="acc-welcome-dim" />
+          <div className="acc-welcome-inner">
+            <p className="acc-welcome-label">WELCOME BACK</p>
+            <h2 className="acc-welcome-name">{USER.name}</h2>
+            <p className="acc-welcome-tagline">{USER.tagline}</p>
           </div>
         </section>
 
-        {/* DASHBOARD */}
-        <div className="account-dashboard">
-          {/* PERSONAL DETAILS + ADDRESS */}
-          <div className="account-two-col">
+        {/* ── BODY ── */}
+        <div className="acc-body">
+          {/* Personal + Address */}
+          <div className="acc-two-col">
             <Card>
-              <SectionHeader
-                title="Personal Details"
-                action="EDIT"
-                href="#"
-              />
-
-              <table className="account-details-table">
+              <SectionHeader title="PERSONAL DETAILS" action="EDIT" href="#" />
+              <table className="acc-details-table">
                 <tbody>
-                  {Object.entries({
-                    "Full Name": USER.details.fullName,
-                    Email: USER.details.email,
-                    Phone: USER.details.phone,
-                    "Date of Birth": USER.details.dob,
-                  }).map(([label, value]) => (
+                  {DETAIL_ROWS.map(([label, value]) => (
                     <tr key={label}>
-                      <td>{label}</td>
-                      <td>{value}</td>
+                      <td className="acc-detail-label">{label}</td>
+                      <td className="acc-detail-value">{value}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -201,19 +215,11 @@ export default function AccountPage() {
             </Card>
 
             <Card>
-              <SectionHeader
-                title="Addresses"
-                action="MANAGE"
-                href="#"
-              />
-
-              <div className="account-address">
-                <p className="account-address-label">
-                  {USER.address.label}
-                </p>
-
+              <SectionHeader title="ADDRESSES" action="MANAGE" href="#" />
+              <div className="acc-address-box">
+                <p className="acc-address-label">{USER.address.label}</p>
                 {USER.address.lines.map((line) => (
-                  <p key={line} className="account-address-line">
+                  <p key={line} className="acc-address-line">
                     {line}
                   </p>
                 ))}
@@ -221,45 +227,44 @@ export default function AccountPage() {
             </Card>
           </div>
 
-          {/* ORDER HISTORY */}
+          {/* Order History */}
           <Card>
-            <SectionHeader
-              title="Order History"
-              action="VIEW ALL"
-              href="#"
-            />
-
-            <div className="account-table-scroll">
-              <table className="account-orders-table">
+            <SectionHeader title="ORDER HISTORY" action="VIEW ALL" href="#" />
+            <div className="acc-orders-scroll">
+              <table className="acc-orders-table">
                 <thead>
                   <tr>
-                    {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL"].map(
-                      (heading) => (
-                        <th key={heading}>{heading}</th>
-                      )
+                    {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL", ""].map(
+                      (h, i) => (
+                        <th key={h || `pad-${i}`}>{h}</th>
+                      ),
                     )}
-                    <th aria-label="View order" />
                   </tr>
                 </thead>
-
                 <tbody>
                   {ORDERS.map((order) => (
                     <tr key={order.id}>
-                      <td className="account-order-id">{order.id}</td>
+                      <td className="acc-order-id">{order.id}</td>
                       <td>{order.date}</td>
-                      <td>{order.items} items</td>
+                      <td>
+                        {order.items} {order.items === 1 ? "item" : "items"}
+                      </td>
                       <td>
                         <span
-                          className="account-order-status"
+                          className="acc-status"
                           style={{ color: order.statusColor }}
                         >
-                          <span>●</span> {order.status}
+                          <span
+                            className="acc-status-dot"
+                            style={{ background: order.statusColor }}
+                          />
+                          {order.status}
                         </span>
                       </td>
-                      <td className="account-order-total">
-                        {order.total}
+                      <td className="acc-order-total">{order.total}</td>
+                      <td className="acc-order-chevron">
+                        <Chevron />
                       </td>
-                      <td className="account-order-arrow">›</td>
                     </tr>
                   ))}
                 </tbody>
@@ -267,47 +272,38 @@ export default function AccountPage() {
             </div>
           </Card>
 
-          {/* SAVED ITEMS */}
-          <section className="account-saved">
-            <SectionHeader
-              title="Saved Items"
-              action="VIEW ALL"
-              href="/collection"
-            />
-
-            <div className="account-saved-grid">
+          {/* Saved Items */}
+          <section className="acc-saved" aria-label="Saved items">
+            <div className="acc-section-header" style={{ marginBottom: 16 }}>
+              <p className="acc-section-title">SAVED ITEMS</p>
+              <Link href="/collection" className="acc-action-link">
+                VIEW ALL
+              </Link>
+            </div>
+            <div className="acc-saved-grid">
               {SAVED.map((item) => (
                 <Link
                   key={item.slug}
                   href={`/collection/${item.slug}`}
-                  className="account-product"
+                  className="acc-saved-card"
                 >
-                  <div className="account-product-image">
+                  <div className="acc-saved-img">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
                       quality={80}
-                      sizes="(max-width: 480px) 32vw, 300px"
+                      sizes="(max-width: 768px) 50vw, 28vw"
                       className="object-cover object-center"
                     />
-
-                    <span
-                      className="account-product-heart"
-                      aria-hidden="true"
-                    >
-                      ♡
-                    </span>
                   </div>
-
-                  <p className="account-product-name">{item.name}</p>
-                  <p className="account-product-price">{item.price}</p>
-
-                  <div className="account-product-swatches">
-                    {item.swatches.map((color, index) => (
+                  <p className="acc-saved-name">{item.name}</p>
+                  <p className="acc-saved-price">{item.price}</p>
+                  <div className="acc-saved-swatches">
+                    {item.swatches.map((c, i) => (
                       <span
-                        key={`${color}-${index}`}
-                        style={{ backgroundColor: color }}
+                        key={`${item.slug}-${c}-${i}`}
+                        style={{ background: c }}
                       />
                     ))}
                   </div>
@@ -321,565 +317,362 @@ export default function AccountPage() {
       <Footer />
 
       <style jsx global>{`
-        .account-page {
-          --account-bg: #0d0805;
-          --account-card: #100c09;
-          --account-border: #65584c;
-          --account-text: #eee6da;
-          --account-muted: #a79b8d;
-
+        .acc-page {
+          background: ${BG};
           min-height: 100vh;
-          background: var(--account-bg);
-          color: var(--account-text);
-          font-family: ${SANS};
+          color: ${INK};
         }
 
-        .account-page * {
-          box-sizing: border-box;
+        /* ── Hero ── */
+        .acc-hero {
+          position: relative;
+          height: clamp(240px, 34vw, 420px);
+          overflow: hidden;
+          background: #000;
         }
-
-        /* HERO */
-
-        .account-hero {
-  position: relative;
-  height: clamp(170px, 22vw, 280px);
-  min-height: 170px;
-  overflow: hidden;
-  background: #17110c;
-  margin-bottom: 35px;
-}
-
-        .account-hero-image {
-          object-fit: cover;
-          object-position: center 35%;
-          opacity: 0.57;
-        }
-
-        .account-hero-overlay {
+        .acc-hero-overlay {
           position: absolute;
           inset: 0;
           background: linear-gradient(
-            90deg,
-            rgba(8, 7, 6, 0.88) 0%,
-            rgba(8, 7, 6, 0.53) 55%,
-            rgba(8, 7, 6, 0.38) 100%
+            to bottom,
+            rgba(0, 0, 0, 0.2) 0%,
+            rgba(0, 0, 0, 0.55) 55%,
+            rgba(0, 0, 0, 0.85) 100%
           );
+          pointer-events: none;
         }
-
-        .account-hero-content {
+        .acc-hero-content {
           position: absolute;
           inset: 0;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
-          align-items: flex-start;
-          padding: 22px max(24px, calc((100% - 980px) / 2));
+          padding: clamp(28px, 5vw, 56px) ${GUTTER};
+          max-width: calc(${CONTENT_MAX} + ${GUTTER} * 2);
+          margin: 0 auto;
+          width: 100%;
+          box-sizing: border-box;
         }
-
-        .account-eyebrow {
-          margin: 0 0 8px;
-          font-size: 7px;
-          font-weight: 500;
-          letter-spacing: 1.1px;
-          color: #d0c3b3;
-        }
-
-        .account-hero-content h1 {
+        .acc-hero-title {
           margin: 0;
           font-family: ${SERIF};
-          font-size: clamp(30px, 4.2vw, 58px);
+          font-size: clamp(40px, 7.2vw, 88px);
           font-weight: 400;
-          line-height: 0.95;
-          letter-spacing: -0.5px;
-          color: #f8f1e8;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: ${INK};
+          line-height: 0.92;
+        }
+        .acc-hero-sub {
+          margin: 14px 0 0;
+          font-family: ${SANS};
+          font-size: clamp(9px, 0.85vw, 11px);
+          letter-spacing: 1.6px;
+          text-transform: uppercase;
+          color: ${MUTED_SOFT};
+          line-height: 1.55;
         }
 
-        .account-hero-caption {
-          margin: 9px 0 0;
-          font-size: 5.5px;
-          line-height: 1.7;
-          letter-spacing: 0.65px;
-          color: #b9aa99;
-        }
-
-        /* WELCOME */
-
-        .account-welcome {
+        /* ── Welcome ── */
+        .acc-welcome {
           position: relative;
-          isolation: isolate;
           overflow: hidden;
-          min-height: 105px;
-          background: #1a120d;
+          border-top: 1px solid ${BORDER};
+          border-bottom: 1px solid ${BORDER};
+          min-height: clamp(140px, 18vw, 200px);
         }
-
-        .account-welcome-image {
-          z-index: -2;
-          object-fit: cover;
-          object-position: center 40%;
-          opacity: 0.3;
-        }
-
-        .account-welcome-overlay {
+        .acc-welcome-dim {
           position: absolute;
-          z-index: -1;
           inset: 0;
-          background: linear-gradient(
-            90deg,
-            rgba(14, 9, 6, 0.95),
-            rgba(14, 9, 6, 0.64)
-          );
+          background: rgba(0, 0, 0, 0.55);
+          pointer-events: none;
         }
-
-        .account-welcome-content {
+        .acc-welcome-inner {
           position: relative;
-          max-width: 980px;
+          z-index: 1;
+          padding: clamp(28px, 4vw, 44px) ${GUTTER};
+          max-width: calc(${CONTENT_MAX} + ${GUTTER} * 2);
           margin: 0 auto;
-          padding: 15px 24px 16px;
+          box-sizing: border-box;
         }
-
-        .account-welcome-label {
-          margin: 0 0 6px;
-          color: #a99a88;
-          font-size: 6px;
-          letter-spacing: 1px;
+        .acc-welcome-label {
+          margin: 0 0 8px;
+          font-family: ${SANS};
+          font-size: 9px;
+          letter-spacing: 1.8px;
+          text-transform: uppercase;
+          color: ${MUTED};
         }
-
-        .account-welcome-content h2 {
-          margin: 0 0 5px;
+        .acc-welcome-name {
+          margin: 0 0 10px;
           font-family: ${SERIF};
-          font-size: 25px;
-          line-height: 1;
+          font-size: clamp(36px, 5vw, 64px);
           font-weight: 400;
-          color: #f4ecd8;
+          color: ${INK};
+          letter-spacing: 0.01em;
+          line-height: 1;
         }
-
-        .account-welcome-description {
+        .acc-welcome-tagline {
           margin: 0;
-          color: #c0b4a6;
-          font-size: 7px;
-          line-height: 1.6;
+          font-family: ${SANS};
+          font-size: clamp(11px, 1vw, 13px);
+          color: ${MUTED_SOFT};
+          line-height: 1.55;
           white-space: pre-line;
+          max-width: 340px;
         }
 
-        /* DASHBOARD LAYOUT */
-
-        .account-dashboard {
-          width: min(100% - 48px, 980px);
+        /* ── Body ── */
+        .acc-body {
+          max-width: ${CONTENT_MAX};
           margin: 0 auto;
-          padding: 22px 0 55px;
+          padding: clamp(28px, 4vw, 48px) ${GUTTER} clamp(56px, 8vw, 96px);
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: clamp(16px, 2vw, 22px);
+          box-sizing: border-box;
         }
 
-        .account-two-col {
+        .acc-card {
+          border: 1px solid ${BORDER};
+          padding: clamp(18px, 2.2vw, 28px) clamp(18px, 2.4vw, 28px);
+          background: transparent;
+        }
+
+        .acc-section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 18px;
+          gap: 12px;
+        }
+        .acc-section-title {
+          margin: 0;
+          font-family: ${SANS};
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 1.6px;
+          text-transform: uppercase;
+          color: ${INK};
+        }
+        .acc-action-link {
+          font-family: ${SANS};
+          font-size: 9px;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          color: ${MUTED_SOFT};
+          text-decoration: none;
+          border-bottom: 1px solid ${MUTED_SOFT};
+          padding-bottom: 1px;
+          flex-shrink: 0;
+        }
+        .acc-action-link:hover {
+          color: ${INK};
+          border-bottom-color: ${INK};
+        }
+
+        /* ── Two-col ── */
+        .acc-two-col {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
+          gap: clamp(14px, 1.8vw, 20px);
         }
 
-        .account-card {
-          min-width: 0;
-          padding: 12px 13px;
-          border: 1px solid var(--account-border);
-          background: var(--account-card);
-        }
-
-        .account-section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          margin-bottom: 10px;
-        }
-
-        .account-action {
-          flex-shrink: 0;
-          font-family: ${SANS};
-          font-size: 6px;
-          letter-spacing: 0.65px;
-          color: #b5a795;
-          text-decoration: none;
-          border-bottom: 1px solid #746657;
-          padding-bottom: 2px;
-        }
-
-        /* PERSONAL DETAILS */
-
-        .account-details-table {
+        .acc-details-table {
           width: 100%;
           border-collapse: collapse;
-          table-layout: fixed;
         }
-
-        .account-details-table tr {
-          border-bottom: 1px solid #2c241d;
+        .acc-details-table tr {
+          border-bottom: 1px solid ${RULE};
         }
-
-        .account-details-table tr:last-child {
+        .acc-details-table tr:last-child {
           border-bottom: none;
         }
-
-        .account-details-table td {
-          padding: 8px 0;
-          font-size: 7px;
-          line-height: 1.45;
-          overflow-wrap: anywhere;
+        .acc-detail-label {
+          padding: 12px 12px 12px 0;
+          font-family: ${SANS};
+          font-size: 11px;
+          color: ${MUTED};
+          width: 42%;
+          vertical-align: top;
         }
-
-        .account-details-table td:first-child {
-          width: 43%;
-          color: #a99d8f;
-        }
-
-        .account-details-table td:last-child {
-          color: #e7ded2;
+        .acc-detail-value {
+          padding: 12px 0;
+          font-family: ${SANS};
+          font-size: 12px;
+          color: ${INK};
           font-weight: 400;
-        }
-
-        /* ADDRESS */
-
-        .account-address {
-          padding: 10px;
-          background: #17110d;
-        }
-
-        .account-address-label {
-          margin: 0 0 7px;
-          color: #aa9b89;
-          font-size: 6px;
-          letter-spacing: 0.65px;
-          line-height: 1.5;
-        }
-
-        .account-address-line {
-          margin: 0 0 3px;
-          color: #e0d5c7;
-          font-size: 7px;
-          line-height: 1.5;
-        }
-
-        /* ORDER HISTORY */
-
-        .account-table-scroll {
-          width: 100%;
-          overflow-x: auto;
-          scrollbar-width: thin;
-          scrollbar-color: #625244 #100c09;
-        }
-
-        .account-orders-table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: left;
-        }
-
-        .account-orders-table th {
-          padding: 4px 5px 8px;
-          font-size: 5.5px;
-          font-weight: 500;
-          letter-spacing: 0.65px;
-          color: #9e9182;
-          white-space: nowrap;
-        }
-
-        .account-orders-table td {
-          padding: 10px 5px;
-          border-top: 1px solid #2c241d;
-          color: #c9bdae;
-          font-size: 7px;
-          white-space: nowrap;
-        }
-
-        .account-orders-table th:first-child,
-        .account-orders-table td:first-child {
-          padding-left: 0;
-        }
-
-        .account-orders-table th:last-child,
-        .account-orders-table td:last-child {
-          padding-right: 0;
-        }
-
-        .account-orders-table .account-order-id {
-          color: #e8dfd3;
-          font-weight: 500;
-        }
-
-        .account-orders-table .account-order-total {
-          color: #eee5d9;
-        }
-
-        .account-order-status {
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          font-size: 6px;
-        }
-
-        .account-order-status span {
-          font-size: 5px;
-        }
-
-        .account-order-arrow {
-          color: #9f8e7c !important;
-          font-size: 13px !important;
           text-align: right;
         }
 
-        /* SAVED ITEMS */
-
-        .account-saved {
-          min-width: 0;
+        .acc-address-box {
+          border: 1px solid ${RULE};
+          padding: 16px 18px;
+          background: rgba(255, 255, 255, 0.03);
         }
-
-        .account-saved > .account-section-header {
-          margin: 0 0 9px;
-          padding: 0 10px;
+        .acc-address-label {
+          margin: 0 0 12px;
+          font-family: ${SANS};
+          font-size: 8px;
+          letter-spacing: 1.2px;
+          color: ${MUTED};
+          text-transform: uppercase;
         }
-
-        .account-saved-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
-        }
-
-        .account-product {
-          display: block;
-          min-width: 0;
-          color: inherit;
-          text-decoration: none;
-        }
-
-        .account-product-image {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 1.48 / 1;
-          overflow: hidden;
-          background: #1b1510;
-        }
-
-        .account-product-image img {
-          transition: none !important;
-          transform: none !important;
-        }
-
-        .account-product-heart {
-          position: absolute;
-          right: 5px;
-          bottom: 5px;
-          display: grid;
-          width: 15px;
-          height: 15px;
-          place-items: center;
-          border-radius: 50%;
-          background: rgba(15, 12, 10, 0.75);
-          color: #f2e8da;
+        .acc-address-line {
+          margin: 0 0 2px;
+          font-family: ${SANS};
           font-size: 12px;
-          line-height: 1;
+          color: ${INK};
+          line-height: 1.65;
         }
 
-        .account-product-name {
-          margin: 6px 0 2px;
-          color: #e7ddd0;
-          font-size: 6px;
+        /* ── Orders ── */
+        .acc-orders-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .acc-orders-table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 560px;
+        }
+        .acc-orders-table th {
+          padding: 0 12px 12px 0;
+          font-family: ${SANS};
+          font-size: 8px;
+          font-weight: 600;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          color: ${MUTED};
+          text-align: left;
+          border-bottom: 1px solid ${RULE};
+          white-space: nowrap;
+        }
+        .acc-orders-table th:last-child {
+          padding-right: 0;
+          width: 20px;
+        }
+        .acc-orders-table td {
+          padding: 16px 12px 16px 0;
+          font-family: ${SANS};
+          font-size: 12px;
+          color: ${MUTED_SOFT};
+          border-bottom: 1px solid ${RULE};
+          white-space: nowrap;
+          vertical-align: middle;
+        }
+        .acc-orders-table tr:last-child td {
+          border-bottom: none;
+        }
+        .acc-order-id {
+          color: ${INK} !important;
           font-weight: 500;
-          letter-spacing: 0.35px;
         }
-
-        .account-product-price {
-          margin: 0 0 5px;
-          color: #b6a999;
-          font-size: 7px;
+        .acc-order-total {
+          color: ${INK} !important;
+          font-weight: 500;
         }
-
-        .account-product-swatches {
-          display: flex;
+        .acc-order-chevron {
+          padding-right: 0 !important;
+          text-align: right;
+          color: ${INK};
+        }
+        .acc-status {
+          display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 7px;
+          font-family: ${SANS};
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.2px;
         }
-
-        .account-product-swatches span {
-          display: block;
+        .acc-status-dot {
           width: 6px;
           height: 6px;
-          border: 1px solid rgba(230, 220, 205, 0.3);
           border-radius: 50%;
+          flex-shrink: 0;
         }
 
-        /* RESPONSIVE */
-
-        @media (min-width: 1200px) {
-          .account-dashboard {
-            width: min(100% - 56px, 980px);
-            padding-top: 22px;
-            gap: 10px;
-          }
-
-          .account-card {
-            padding: 14px 16px;
-          }
-
-          .account-two-col {
-            gap: 12px;
-          }
-
-          .account-saved-grid {
-            gap: 10px;
-          }
-
-          .account-product-name {
-            font-size: 7px;
-          }
-
-          .account-product-price {
-            font-size: 8px;
-          }
+        /* ── Saved ── */
+        .acc-saved {
+          margin-top: 8px;
+        }
+        .acc-saved-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: clamp(14px, 1.8vw, 20px);
+        }
+        .acc-saved-card {
+          display: block;
+          text-decoration: none;
+          color: inherit;
+        }
+        .acc-saved-img {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 3 / 4;
+          overflow: hidden;
+          background: #1a1a1a;
+        }
+        .acc-saved-name {
+          margin: 12px 0 4px;
+          font-family: ${SANS};
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.8px;
+          color: ${INK};
+          text-transform: uppercase;
+        }
+        .acc-saved-price {
+          margin: 0 0 8px;
+          font-family: ${SANS};
+          font-size: 12px;
+          color: ${MUTED_SOFT};
+        }
+        .acc-saved-swatches {
+          display: flex;
+          gap: 5px;
+        }
+        .acc-saved-swatches span {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          display: inline-block;
+          flex: 0 0 auto;
         }
 
-        @media (max-width: 480px) {
-          .account-hero {
-            height: 148px;
-          }
-
-          .account-hero-content {
-            padding: 18px 24px;
-          }
-
-          .account-hero-content h1 {
-            font-size: 30px;
-          }
-
-          .account-welcome {
-            min-height: 80px;
-          }
-
-          .account-welcome-content {
-            padding: 12px 24px;
-          }
-
-          .account-welcome-content h2 {
-            font-size: 21px;
-          }
-
-          .account-dashboard {
-            width: calc(100% - 56px);
-            padding-top: 10px;
-            padding-bottom: 32px;
-            gap: 9px;
-          }
-
-          .account-two-col {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            gap: 9px;
-          }
-
-          .account-card {
-            padding: 10px 9px;
-          }
-
-          .account-section-header {
-            gap: 4px;
-            margin-bottom: 8px;
-          }
-
-          .account-section-header > p {
-            font-size: 6px !important;
-            letter-spacing: 0.65px !important;
-          }
-
-          .account-action {
-            font-size: 5px;
-            letter-spacing: 0.3px;
-          }
-
-          .account-details-table td {
-            padding: 7px 0;
-            font-size: 6px;
-          }
-
-          .account-address {
-            padding: 7px;
-          }
-
-          .account-address-label {
-            font-size: 5px;
-          }
-
-          .account-address-line {
-            font-size: 6px;
-            line-height: 1.5;
-            overflow-wrap: anywhere;
-          }
-
-          .account-orders-table {
-            min-width: 0;
-          }
-
-          .account-orders-table th {
-            padding: 4px 3px 7px;
-            font-size: 4.5px;
-            letter-spacing: 0.2px;
-          }
-
-          .account-orders-table td {
-            padding: 9px 3px;
-            font-size: 5.5px;
-          }
-
-          .account-order-status {
-            gap: 2px;
-            font-size: 5px;
-          }
-
-          .account-orders-table .account-order-arrow {
-            font-size: 10px !important;
-          }
-
-          .account-saved > .account-section-header {
-            padding: 0 10px;
-            margin-bottom: 7px;
-          }
-
-          .account-saved-grid {
-            gap: 7px;
-          }
-
-          .account-product-image {
-            aspect-ratio: 1.48 / 1;
-          }
-
-          .account-product-name {
-            font-size: 5px;
-            letter-spacing: 0.15px;
-          }
-
-          .account-product-price {
-            font-size: 6px;
-          }
-
-          .account-product-swatches {
-            gap: 3px;
-          }
-
-          .account-product-swatches span {
-            width: 5px;
-            height: 5px;
+        /* ── Tablet: keep two-col details, tighten saved ── */
+        @media (max-width: 1023px) and (min-width: 768px) {
+          .acc-saved-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
           }
         }
 
-        @media (max-width: 340px) {
-          .account-dashboard {
-            width: calc(100% - 28px);
-          }
-
-          .account-two-col {
+        /* ── Mobile ── */
+        @media (max-width: 767px) {
+          .acc-two-col {
             grid-template-columns: 1fr;
           }
+          .acc-saved-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+          }
+          .acc-hero {
+            height: clamp(220px, 55vw, 320px);
+          }
+          .acc-welcome-name {
+            font-size: clamp(32px, 10vw, 48px);
+          }
+        }
 
-          .account-orders-table th,
-          .account-orders-table td {
-            font-size: 5px;
+        @media (max-width: 420px) {
+          .acc-saved-grid {
+            gap: 12px;
+          }
+          .acc-card {
+            padding: 16px;
           }
         }
       `}</style>
