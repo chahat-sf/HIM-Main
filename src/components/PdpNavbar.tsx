@@ -5,9 +5,9 @@ import Image from "next/image";
 import styles from "./PdpNavbar.module.css";
 
 const leftLinks = [
-  { label: "JEANS", href: "/collection" },
-  { label: "SHIRTS", href: "/collection" },
-  { label: "TSHIRTS", href: "/collection" },
+  { label: "JEANS", href: "/collection?category=JEANS" },
+  { label: "SHIRTS", href: "/collection?category=SHIRTS" },
+  { label: "TSHIRTS", href: "/collection?category=TSHIRTS" },
   { label: "LOOKBOOK", href: "/collection" },
 ];
 
