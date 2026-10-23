@@ -168,9 +168,6 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   useEffect(() => {
     if (!embedded) return;
-    const html = document.documentElement;
-    const previousBehavior = html.style.scrollBehavior;
-    html.style.scrollBehavior = "smooth";
 
     const coverageOf = (el: HTMLElement) => {
       const rect = el.getBoundingClientRect();
@@ -179,10 +176,13 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       return { rect, vh, coverage: visible / vh };
     };
 
-    // Armed only when fully off-screen; one snap per entry, then locked until off-screen again.
+    // Snap only when entering from the hero (above). Never yank while leaving into products.
     let armed = true;
     const el0 = rootRef.current;
-    if (el0 && coverageOf(el0).coverage > 0) armed = false;
+    if (el0) {
+      const { coverage, rect, vh } = coverageOf(el0);
+      if (coverage > 0 || rect.top < vh * 0.5) armed = false;
+    }
 
     let idle = 0;
     let snapping = false;
@@ -194,17 +194,18 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       const el = rootRef.current;
       if (!el || snapping || !armed) return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const { rect, vh, coverage } = coverageOf(el);
+      const { rect, coverage } = coverageOf(el);
       if (coverage <= 0) return;
-      // Already filling / aligned — consume the shot so we do not nudge again.
-      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
+      // Already past the top — user is leaving toward products; never snap back.
+      if (rect.top <= 0) {
         armed = false;
         return;
       }
-      // Only ease in when the house is partly on screen.
+      if (coverage > 0.97 || rect.top < 10) {
+        armed = false;
+        return;
+      }
       if (coverage < 0.28) return;
-      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
-      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
       armed = false;
       snapping = true;
       window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
@@ -215,14 +216,22 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
     const onScroll = () => {
       const el = rootRef.current;
-      if (el && coverageOf(el).coverage <= 0) armed = true;
-
       const now = performance.now();
       const y = window.scrollY;
       const dt = Math.max(1, now - lastT);
+      const scrollingDown = y > lastY;
       speed = Math.abs(y - lastY) / dt;
       lastY = y;
       lastT = now;
+
+      if (el) {
+        const { rect, vh, coverage } = coverageOf(el);
+        // Re-arm only after scrolling fully back into the hero above the house.
+        if (coverage <= 0 && rect.top >= vh * 0.5) armed = true;
+        // Scrolling down past the house top — stay disarmed so products scroll is free.
+        if (scrollingDown && rect.top < 0) armed = false;
+      }
+
       window.clearTimeout(idle);
       idle = window.setTimeout(() => {
         if (speed > 1.2) return;
@@ -232,7 +241,6 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      html.style.scrollBehavior = previousBehavior;
       window.removeEventListener("scroll", onScroll);
       window.clearTimeout(idle);
     };

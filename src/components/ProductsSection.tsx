@@ -4,11 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
-// Shared black <-> white scroll-turn colors
-const BG_DARK = "#0a0806";
+// Shared dark <-> light scroll-turn colors (dark matches house fog #1a120c)
+const BG_DARK = "#1a120c";
 const BG_LIGHT = "#fafafa"; // matches Figma light background
 const TEXT_LIGHT = "#f7f3ea";
 const TEXT_DARK = "#111111";
+const HOUSE_SEAM = "#1a120c";
 
 // Linear-interpolates between two hex colors by t (0–1).
 function lerpColor(hexA: string, hexB: string, t: number): string {
@@ -37,12 +38,12 @@ const SWATCHES = ["#a3a3a3", "#7a1420"]; // Heather Grey, Burgundy — same colo
 
 // Names / prices match the product pages (PRODUCTS_DB in /collection/[slug]/page.tsx)
 const products = [
-  { slug: "textured-thermal-white-7",  name: "THE ATTACHÉ",                   color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-8",  name: "THE EXCEPTION",                 color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-9",  name: "THE LAST WORD",                 color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST",                 color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-11", name: "THE COMPOSURE",                 color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II",       color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-7", name: "THE ATTACHÉ", color: "Heather Grey", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-8", name: "THE EXCEPTION", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-9", name: "THE LAST WORD", color: "Heather Grey", price: "₹42,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST", color: "Heather Grey", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-11", name: "THE COMPOSURE", color: "Heather Grey", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II", color: "Heather Grey", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
 ];
 
 const CARD_GAP = 16;
@@ -97,8 +98,8 @@ function ExistingProductsGrid() {
         const t = Math.max(0, Math.min(1, turnProgress));
 
         section.style.backgroundColor = lerpColor(BG_DARK, BG_LIGHT, t);
-        section.style.borderLeftColor = lerpColor("#000000", BG_LIGHT, t);
-        section.style.borderRightColor = lerpColor("#000000", BG_LIGHT, t);
+        section.style.borderLeftColor = lerpColor(HOUSE_SEAM, BG_LIGHT, t);
+        section.style.borderRightColor = lerpColor(HOUSE_SEAM, BG_LIGHT, t);
         section.style.setProperty("--fg", lerpColor(TEXT_LIGHT, TEXT_DARK, t));
       });
     };
@@ -141,9 +142,9 @@ function ExistingProductsGrid() {
       className="w-full"
       style={
         {
-          backgroundColor: "#080604",
-          borderLeft: "25px solid #000",
-          borderRight: "25px solid #000",
+          backgroundColor: HOUSE_SEAM,
+          borderLeft: `25px solid ${HOUSE_SEAM}`,
+          borderRight: `25px solid ${HOUSE_SEAM}`,
           padding: "0 30px 56px",
           ["--fg" as string]: TEXT_LIGHT,
         } as React.CSSProperties
