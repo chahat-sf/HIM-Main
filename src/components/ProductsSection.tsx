@@ -4,12 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
-// Shared dark <-> light scroll-turn colors (dark matches house fog #1a120c)
-const BG_DARK = "#1a120c";
+// Shared black <-> white scroll-turn colors
+const BG_DARK = "#0a0806";
 const BG_LIGHT = "#fafafa"; // matches Figma light background
 const TEXT_LIGHT = "#f7f3ea";
 const TEXT_DARK = "#111111";
-const HOUSE_SEAM = "#1a120c";
 
 // Linear-interpolates between two hex colors by t (0–1).
 function lerpColor(hexA: string, hexB: string, t: number): string {
@@ -98,8 +97,8 @@ function ExistingProductsGrid() {
         const t = Math.max(0, Math.min(1, turnProgress));
 
         section.style.backgroundColor = lerpColor(BG_DARK, BG_LIGHT, t);
-        section.style.borderLeftColor = lerpColor(HOUSE_SEAM, BG_LIGHT, t);
-        section.style.borderRightColor = lerpColor(HOUSE_SEAM, BG_LIGHT, t);
+        section.style.borderLeftColor = lerpColor("#000000", BG_LIGHT, t);
+        section.style.borderRightColor = lerpColor("#000000", BG_LIGHT, t);
         section.style.setProperty("--fg", lerpColor(TEXT_LIGHT, TEXT_DARK, t));
       });
     };
@@ -142,9 +141,9 @@ function ExistingProductsGrid() {
       className="w-full"
       style={
         {
-          backgroundColor: HOUSE_SEAM,
-          borderLeft: `25px solid ${HOUSE_SEAM}`,
-          borderRight: `25px solid ${HOUSE_SEAM}`,
+          backgroundColor: "#080604",
+          borderLeft: "25px solid #000",
+          borderRight: "25px solid #000",
           padding: "0 30px 56px",
           ["--fg" as string]: TEXT_LIGHT,
         } as React.CSSProperties
