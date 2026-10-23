@@ -628,7 +628,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           Miniature open window model by PK
         </p> */}
 
-        {mode === "interior" && !interactMode && (
+        {mode === "interior" && !interactMode && !interactLoading && (
           <>
             <div className={styles.castScrim} />
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
@@ -658,6 +658,21 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             )}
           </>
         )}
+
+        {/* Same wait surface as HomeGate while interact plate buffers. */}
+        <div
+          aria-hidden={!interactLoading}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 25,
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
+            opacity: interactLoading ? 0.92 : 0,
+            pointerEvents: interactLoading ? "auto" : "none",
+            transition: "opacity 0.35s ease",
+          }}
+        />
 
         {mode === "interior" && (
           <button
