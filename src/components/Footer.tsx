@@ -1,36 +1,91 @@
-
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-const footerLinks = [
-  "REWARDS",
-  "REVIEWS",
-  "CONTACT",
-  "ACCOUNT",
-  "RETURN POLICY",
-  "CAREERS",
-  "HELP CENTER",
-  "RETURN PORTAL",
-  "SUPPORT",
+type FooterLink = { label: string; href: string };
+
+const HELP_LINKS: FooterLink[] = [
+  { label: "HELP CENTER", href: "/collection" },
+  { label: "SUPPORT", href: "/collection" },
+  { label: "CONTACT", href: "/collection" },
+  { label: "RETURN PORTAL", href: "/collection" },
+  { label: "RETURN POLICY", href: "/collection" },
 ];
+
+const LINKS: FooterLink[] = [
+  { label: "REWARDS", href: "/collection" },
+  { label: "REVIEWS", href: "/collection" },
+  { label: "ACCOUNT", href: "/account" },
+  { label: "CAREERS", href: "/collection" },
+];
+
+const SOCIAL_LINKS: FooterLink[] = [
+  { label: "INSTAGRAM", href: "#" },
+  { label: "TIKTOK", href: "#" },
+  { label: "YOUTUBE", href: "#" },
+];
+
+const STORE_HOURS = ["MON-FRI: 11-7", "SAT: 11-5:30", "SUN: 11-5:30"];
+
+type AccordionKey = "help" | "links" | "store" | "social" | null;
+
+function ArrowIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="m6 12 4-4-4-4"
+        stroke="currentColor"
+        strokeWidth="1.1"
+      />
+    </svg>
+  );
+}
+
+function AccordionChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+      style={{
+        transform: open ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 180ms ease",
+      }}
+    >
+      <path
+        d="m4 2 4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [open, setOpen] = useState<AccordionKey>(null);
 
-  const [gender, setGender] = useState({
-    all: false,
-    men: false,
-    women: false,
-  });
+  const toggle = (key: AccordionKey) => {
+    setOpen((prev) => (prev === key ? null : key));
+  };
 
   return (
     <footer className="him-footer">
-      {/* TOP BAR */}
-      <div className="him-footer-top">
-        <div className="him-footer-logo">
+      {/* Centered logo */}
+      <div className="him-footer-logo-wrap">
+        <Link href="/" aria-label="HIM home">
           <Image
             src="/homepage/him-logo.webp"
             alt="HIM"
@@ -38,420 +93,414 @@ export default function Footer() {
             height={35}
             className="him-footer-logo-img"
           />
-        </div>
-
-        <div className="newsletter-copy">
-          <span>SIGN UP TO OUR NEWSLETTER</span>
-          <span>FOR TAILORED OFFERS</span>
-        </div>
-
-        <form
-          className="newsletter-form"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.currentTarget.value)}
-            placeholder="EMAIL ADDRESS"
-            aria-label="Email address"
-            className="newsletter-email"
-          />
-
-          <button type="submit" className="newsletter-submit">
-            <span>SUBMIT</span>
-            <span className="submit-arrow">→</span>
-          </button>
-        </form>
+        </Link>
       </div>
 
-      {/* BOTTOM BAR */}
-      <div className="him-footer-bottom">
-        <div className="footer-links-area">
-          <div className="footer-vertical-title">LINKS</div>
-
-          <div className="footer-links-grid">
-            {footerLinks.map((link) => (
-              <Link href="/collection" key={link}>
-                {link}
-              </Link>
+      {/* Main grid */}
+      <div className="him-footer-grid" role="contentinfo" aria-label="Main footer">
+        {/* HELP */}
+        <nav className="him-footer-col him-footer-col--help" aria-label="Help">
+          <button
+            type="button"
+            className="him-footer-col-toggle"
+            aria-expanded={open === "help"}
+            onClick={() => toggle("help")}
+          >
+            <span className="him-footer-col-title">HELP</span>
+            <AccordionChevron open={open === "help"} />
+          </button>
+          <p className="him-footer-col-title him-footer-col-title--desktop">
+            HELP
+          </p>
+          <ul
+            className={`him-footer-col-list${open === "help" ? " is-open" : ""}`}
+          >
+            {HELP_LINKS.map((link) => (
+              <li key={link.label}>
+                <Link href={link.href}>{link.label}</Link>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </nav>
 
-        <div className="footer-column footer-socials">
-          <div className="footer-vertical-title">SOCIALS</div>
+        {/* LINKS */}
+        <nav className="him-footer-col him-footer-col--links" aria-label="Links">
+          <button
+            type="button"
+            className="him-footer-col-toggle"
+            aria-expanded={open === "links"}
+            onClick={() => toggle("links")}
+          >
+            <span className="him-footer-col-title">LINKS</span>
+            <AccordionChevron open={open === "links"} />
+          </button>
+          <p className="him-footer-col-title him-footer-col-title--desktop">
+            LINKS
+          </p>
+          <ul
+            className={`him-footer-col-list${open === "links" ? " is-open" : ""}`}
+          >
+            {LINKS.map((link) => (
+              <li key={link.label}>
+                <Link href={link.href}>{link.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-          <div className="footer-column-links">
-            <span>INSTAGRAM</span>
-            <span>TIKTOK</span>
-            <span>YOUTUBE</span>
-          </div>
-        </div>
-
-        <div className="footer-column footer-store">
-          <div className="footer-vertical-title">THE STORE</div>
-
-          <div className="footer-store-content">
-            <span>INDIA</span>
-
-            <div className="store-hours">
-              <span>MON-FRI: 11-7</span>
-              <span>SAT: 11-5:30</span>
-              <span>SUN: 11-5:30</span>
+        {/* NEWSLETTER (center) */}
+        <div className="him-footer-newsletter">
+          <form
+            className="him-footer-newsletter-form"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <label
+              className="him-footer-col-title him-footer-newsletter-label"
+              htmlFor="NewsletterForm--footer"
+            >
+              SIGN UP TO OUR NEWSLETTER
+            </label>
+            <div className="him-footer-newsletter-field">
+              <input
+                id="NewsletterForm--footer"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+                placeholder="Email address"
+                aria-label="Email address"
+                autoComplete="email"
+                required
+              />
+              <button type="submit" aria-label="Subscribe">
+                <ArrowIcon />
+              </button>
             </div>
+            <p className="him-footer-newsletter-copy">
+              For tailored offers and news on our latest collections.
+            </p>
+          </form>
+        </div>
+
+        {/* THE STORE */}
+        <div className="him-footer-col him-footer-col--store">
+          <button
+            type="button"
+            className="him-footer-col-toggle"
+            aria-expanded={open === "store"}
+            onClick={() => toggle("store")}
+          >
+            <span className="him-footer-col-title">THE STORE</span>
+            <AccordionChevron open={open === "store"} />
+          </button>
+          <p className="him-footer-col-title him-footer-col-title--desktop">
+            THE STORE
+          </p>
+          <div
+            className={`him-footer-store${open === "store" ? " is-open" : ""}`}
+          >
+            <p className="him-footer-store-country">INDIA</p>
+            <ul className="him-footer-store-hours">
+              {STORE_HOURS.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
           </div>
         </div>
+
+        {/* SOCIAL */}
+        <nav
+          className="him-footer-col him-footer-col--social"
+          aria-label="Social"
+        >
+          <button
+            type="button"
+            className="him-footer-col-toggle"
+            aria-expanded={open === "social"}
+            onClick={() => toggle("social")}
+          >
+            <span className="him-footer-col-title">SOCIAL</span>
+            <AccordionChevron open={open === "social"} />
+          </button>
+          <p className="him-footer-col-title him-footer-col-title--desktop">
+            SOCIAL
+          </p>
+          <ul
+            className={`him-footer-col-list${open === "social" ? " is-open" : ""}`}
+          >
+            {SOCIAL_LINKS.map((link) => (
+              <li key={link.label}>
+                <Link href={link.href}>{link.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      <hr className="him-footer-rule" />
+
+      <div className="him-footer-bottom">
+        <p className="him-footer-copyright">
+          © HIM. ALL RIGHTS RESERVED.
+        </p>
+        <p className="him-footer-locale">INDIA</p>
       </div>
 
       <style jsx>{`
-       
-.him-footer {
-  width: 100%;
-  min-height: 300px;
-  color: #f5f1e9;
-  background: #100b08;
-  border-top: 1px solid rgba(255, 255, 255, 0.48);
-  font-family: Arial, Helvetica, sans-serif;
-}
+        .him-footer {
+          width: 100%;
+          color: #f5f1e9;
+          background: #100b08;
+          border-top: 1px solid rgba(245, 241, 233, 0.28);
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 48px clamp(20px, 4vw, 48px) 28px;
+          box-sizing: border-box;
+        }
 
-/* TOP BAR */
+        .him-footer-logo-wrap {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 40px;
+        }
 
-.him-footer-top {
-  min-height: 100px;
-  display: flex;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.42);
-}
+        .him-footer-logo-wrap :global(.him-footer-logo-img) {
+          display: block;
+          width: 72px;
+          height: auto;
+          object-fit: contain;
+        }
 
-.him-footer-logo {
-  width: 170px;
-  flex: 0 0 170px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid rgba(255, 255, 255, 0.42);
-}
+        .him-footer-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+          gap: 32px 28px;
+          align-items: start;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
 
-.him-footer-logo :global(.him-footer-logo-img) {
-  display: block;
-  width: 100px;
-  height: auto;
-  object-fit: contain;
-}
+        .him-footer-col-title {
+          margin: 0 0 18px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.4px;
+          text-transform: uppercase;
+          color: #f5f1e9;
+          line-height: 1.2;
+        }
 
-.newsletter-copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-self: stretch;
-  padding-left: 38px;
-  flex: 1;
-  min-width: 200px;
-  color: #f5f1e9;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.6;
-}
+        .him-footer-col-toggle {
+          display: none;
+          width: 100%;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 0;
+          border: none;
+          border-bottom: 1px solid rgba(245, 241, 233, 0.2);
+          background: transparent;
+          color: #f5f1e9;
+          cursor: pointer;
+          font-family: inherit;
+        }
 
-.newsletter-form {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 22px;
-  padding: 0 35px 0 15px;
-}
+        .him-footer-col-toggle .him-footer-col-title {
+          margin: 0;
+        }
 
-.newsletter-email {
-  width: 400px;
-  height: 50px;
-  padding: 0 15px;
-  border: 1px solid rgba(245, 241, 233, 0.72);
-  border-radius: 0;
-  outline: none;
-  background: #716f6f;
-  color: #000000;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
-  box-sizing: border-box;
-}
+        .him-footer-col-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
 
-.newsletter-email::placeholder {
-  color: #FAFAFA;
-  opacity: 1;
-}
+        .him-footer-col-list :global(a) {
+          color: rgba(245, 241, 233, 0.78);
+          font-size: 10px;
+          letter-spacing: 0.8px;
+          text-decoration: none;
+          text-transform: uppercase;
+          transition: color 160ms ease;
+        }
 
-.newsletter-email:focus {
-  border-color: #000000;
-}
+        .him-footer-col-list :global(a):hover {
+          color: #ffffff;
+        }
 
-.newsletter-submit {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  border: 0;
-  background: transparent;
-  color: #f5f1e9;
-  white-space: nowrap;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  cursor: pointer;
-}
+        /* Newsletter */
+        .him-footer-newsletter {
+          display: flex;
+          justify-content: center;
+          text-align: center;
+          padding: 0 12px;
+        }
 
-.submit-arrow {
-  font-size: 20px;
-  line-height: 0.8;
-}
+        .him-footer-newsletter-form {
+          width: 100%;
+          max-width: 280px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
 
-/* BOTTOM BAR */
+        .him-footer-newsletter-label {
+          margin-bottom: 14px;
+        }
 
-.him-footer-bottom {
-  min-height: 200px;
-  display: grid;
-  grid-template-columns: minmax(540px, 1.5fr) minmax(220px, 1fr) auto;
-  align-items: start;
-  column-gap: 65px;
-  padding: 42px 50% 35px 38px;
-  box-sizing: border-box;
-}
+        .him-footer-newsletter-field {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          border-bottom: 1px solid rgba(245, 241, 233, 0.55);
+          margin-bottom: 14px;
+        }
 
-.footer-links-area {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  column-gap: 48px;
-  align-items: start;
-}
+        .him-footer-newsletter-field input {
+          flex: 1;
+          min-width: 0;
+          height: 36px;
+          border: none;
+          outline: none;
+          background: transparent;
+          color: #f5f1e9;
+          font-family: inherit;
+          font-size: 11px;
+          padding: 0 8px 0 0;
+        }
 
-.footer-vertical-title {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 1.4px;
-  color: rgba(245, 241, 233, 0.9);
-  white-space: nowrap;
-}
+        .him-footer-newsletter-field input::placeholder {
+          color: rgba(245, 241, 233, 0.45);
+        }
 
-.footer-links-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(95px, 1fr));
-  grid-auto-flow: row;
-  column-gap: 35px;
-  row-gap: 22px;
-  align-items: start;
-}
+        .him-footer-newsletter-field button {
+          flex-shrink: 0;
+          width: 36px;
+          height: 36px;
+          display: grid;
+          place-items: center;
+          border: none;
+          background: transparent;
+          color: #f5f1e9;
+          cursor: pointer;
+          padding: 0;
+        }
 
-.footer-links-grid a,
-.footer-column-links a {
-  color: rgba(245, 241, 233, 0.86);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 9px;
-  line-height: 1.5;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 180ms ease;
-}
+        .him-footer-newsletter-field button:hover {
+          opacity: 0.75;
+        }
 
-.footer-links-grid a:hover,
-.footer-column-links a:hover {
-  color: #ffffff;
-}
+        .him-footer-newsletter-copy {
+          margin: 0;
+          font-size: 10px;
+          line-height: 1.55;
+          color: rgba(245, 241, 233, 0.55);
+          max-width: 240px;
+        }
 
-.footer-column {
-  display: grid;
-  grid-template-columns: 15px auto;
-  align-items: start;
-  column-gap: 28px;
-}
+        /* Store */
+        .him-footer-store {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
 
-.footer-column-links {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
+        .him-footer-store-country {
+          margin: 0;
+          font-size: 10px;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: rgba(245, 241, 233, 0.9);
+        }
 
-.footer-store-content {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  color: rgba(245, 241, 233, 0.9);
-  font-size: 10px;
-  line-height: 1.5;
-  white-space: nowrap;
-}
+        .him-footer-store-hours {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-size: 10px;
+          letter-spacing: 0.4px;
+          color: rgba(245, 241, 233, 0.7);
+          text-transform: uppercase;
+        }
 
-.store-hours {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  color: rgba(245, 241, 233, 0.82);
-  font-size: 9px;
-}
+        /* Rule + bottom */
+        .him-footer-rule {
+          border: none;
+          border-top: 1px solid rgba(245, 241, 233, 0.28);
+          margin: 40px 0 20px;
+        }
 
-/* TABLET */
+        .him-footer-bottom {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
 
-@media (max-width: 1100px) {
-  .him-footer-top {
-    min-height: 90px;
-  }
+        .him-footer-copyright,
+        .him-footer-locale {
+          margin: 0;
+          font-size: 9px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: rgba(245, 241, 233, 0.65);
+        }
 
-  .him-footer-logo :global(.him-footer-logo-img) {
-  width: 80px;
-}
+        /* ── Mobile / tablet ── */
+        @media (max-width: 1023px) {
+          .him-footer {
+            padding: 36px 20px 24px;
+          }
 
-  .newsletter-copy {
-    padding-left: 22px;
-    font-size: 9px;
-  }
+          .him-footer-logo-wrap {
+            margin-bottom: 28px;
+          }
 
-  .newsletter-form {
-    gap: 12px;
-    padding-right: 18px;
-  }
+          .him-footer-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+          }
 
-  .newsletter-email {
-    width: 210px;
-    height: 40px;
-  }
+          .him-footer-newsletter {
+            order: -1;
+            margin-bottom: 36px;
+            padding: 0;
+          }
 
-  .him-footer-bottom {
-    grid-template-columns: minmax(390px, 1fr) auto auto;
-    column-gap: 30px;
-    padding: 35px 25px;
-  }
+          .him-footer-col-title--desktop {
+            display: none;
+          }
 
-  .footer-links-area {
-    column-gap: 25px;
-  }
+          .him-footer-col-toggle {
+            display: flex;
+          }
 
-  .footer-links-grid {
-    column-gap: 16px;
-    grid-template-columns: repeat(3, minmax(70px, 1fr));
-  }
+          .him-footer-col-list,
+          .him-footer-store {
+            display: none;
+            padding: 12px 0 18px;
+          }
 
-  .footer-column {
-    column-gap: 14px;
-  }
-}
+          .him-footer-col-list.is-open,
+          .him-footer-store.is-open {
+            display: flex;
+          }
 
-/* MOBILE */
+          .him-footer-rule {
+            margin: 28px 0 18px;
+          }
 
-@media (max-width: 700px) {
-  .him-footer {
-    min-height: auto;
-  }
-
-  .him-footer-top {
-    display: grid;
-    grid-template-columns: 90px 1fr;
-    min-height: auto;
-  }
-
- .him-footer-logo {
-    width: 100px;
-    height: auto;
-    flex: none;
-    grid-row: span 2;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 8px;
-  }
-
- .him-footer-logo :global(.him-footer-logo-img) {
-    width: 70px;
-    height: auto;
-  }
-
-  .newsletter-copy {
-    min-width: 0;
-    padding: 15px;
-    font-size: 9px;
-  }
-
-  .newsletter-form {
-    grid-column: 2;
-    justify-content: flex-start;
-    padding: 0 15px 18px;
-    gap: 10px;
-  }
-
-  .newsletter-email {
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-    height: 38px;
-    font-size: 9px;
-  }
-
-  .newsletter-submit {
-    gap: 5px;
-    font-size: 8px;
-  }
-
-  .him-footer-bottom {
-    grid-template-columns: 1fr 1fr;
-    row-gap: 35px;
-    column-gap: 20px;
-    padding: 30px 20px 35px;
-  }
-
-  .footer-links-area {
-    grid-column: 1 / -1;
-    grid-template-columns: 15px minmax(0, 1fr);
-    column-gap: 22px;
-  }
-
-  .footer-links-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 10px;
-    row-gap: 17px;
-  }
-
-  .footer-links-grid a,
-  .footer-column-links a {
-    font-size: 8px;
-    white-space: normal;
-  }
-
-  .footer-column {
-    grid-template-columns: 12px minmax(0, 1fr);
-    column-gap: 12px;
-  }
-
-  .footer-column-links {
-    gap: 16px;
-  }
-
-  .footer-store-content {
-    font-size: 8px;
-  }
-
-  .store-hours {
-    font-size: 7px;
-  }
-}
-
-@media (max-width: 380px) {
-  .him-footer-bottom {
-    padding-left: 14px;
-    padding-right: 14px;
-    column-gap: 12px;
-  }
-
-  .footer-links-area {
-    column-gap: 14px;
-  }
-
-  .footer-links-grid {
-    column-gap: 7px;
-  }
-}
-
+          .him-footer-bottom {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+          }
+        }
       `}</style>
     </footer>
   );
