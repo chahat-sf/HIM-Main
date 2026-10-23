@@ -48,11 +48,23 @@ const PLANE_HEIGHT = (OPENING_HEIGHT * (WINDOW_Z - PLANE_Z) / WINDOW_Z) * 1.08;
 
 let reduceMotionCached =
 	typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** Touch / small screens: scrub with video only — WebP ring flickers to frame 0 on mobile. */
+let videoScrubOnlyCached =
+	typeof window !== "undefined" &&
+	(window.matchMedia("(pointer: coarse)").matches ||
+		window.matchMedia("(max-width: 768px)").matches);
 if (typeof window !== "undefined") {
 	const media = window.matchMedia("(prefers-reduced-motion: reduce)");
 	media.addEventListener("change", () => {
 		reduceMotionCached = media.matches;
 	});
+	const syncVideoScrub = () => {
+		videoScrubOnlyCached =
+			window.matchMedia("(pointer: coarse)").matches ||
+			window.matchMedia("(max-width: 768px)").matches;
+	};
+	window.matchMedia("(pointer: coarse)").addEventListener("change", syncVideoScrub);
+	window.matchMedia("(max-width: 768px)").addEventListener("change", syncVideoScrub);
 }
 
 function smoothstep(t: number) {
@@ -235,7 +247,7 @@ function applyLod(item: PlayState, mode: LodMode) {
 		if (video.readyState >= 1) onMeta();
 	}
 
-	if (mode === "interact") {
+	if (mode === "interact" && !videoScrubOnlyCached) {
 		const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
 		item.sequence.load();
 		item.sequence.warm(index);
@@ -266,16 +278,15 @@ export function scrub(room: number, pos: number) {
 	const gap = frameDelta(item.pos, pos, item.count);
 	item.pos = pos;
 	item.target = pos;
-	if (!item.usingFrames) {
+	// Mobile / video scrub path, or desktop while ring hasn't painted yet.
+	if (videoScrubOnlyCached || !item.usingFrames) {
 		seekVideo(item, pos);
 		return;
 	}
-	if (!item.sequence.fullyDecoded) {
-		item.sequence.prefetch(
-			Math.floor(wrapFrame(item.pos, item.count)) % item.count,
-			gap >= 0 ? 1 : -1,
-		);
-	}
+	item.sequence.prefetch(
+		Math.floor(wrapFrame(item.pos, item.count)) % item.count,
+		gap >= 0 ? 1 : -1,
+	);
 }
 
 export function releaseDrag(room: number, _velocity: number) {
@@ -483,9 +494,10 @@ export function FramePlane({
 
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
-		// Only the 1k interact LOD loads/decodes WebPs (ring cache). Idle is video-only.
-		if (interact && (focused || near)) sequence.load();
-		else if (interact) sequence.trim();
+		const videoScrubOnly = videoScrubOnlyCached;
+		// Desktop: warm WebP ring. Mobile: skip frames entirely (video scrub is stable).
+		if (interact && !videoScrubOnly && (focused || near)) sequence.load();
+		else if (interact && !focused) sequence.trim();
 		if (focused && interact) ensurePreload(video);
 
 		mesh.visible = focused;
@@ -501,8 +513,8 @@ export function FramePlane({
 			return;
 		}
 
-		// Interact: prefer ring bitmap when available, else video seek.
-		if (interact && frameMap) {
+		// Interact desktop: exact ring frame only. Missing frame → hold last canvas or video.
+		if (interact && !videoScrubOnly && frameMap) {
 			if (!item.dragging) item.vel = 0;
 
 			const index = Math.floor(wrapFrame(item.pos, item.count)) % item.count;
@@ -512,7 +524,7 @@ export function FramePlane({
 			}
 			sequence.prefetch(index, directionRef.current);
 
-			const bitmap = sequence.frame(index);
+			const bitmap = sequence.exactFrame(index);
 			const ctx = frameCtxRef.current;
 			if (bitmap && ctx) {
 				if (!video.paused) video.pause();
@@ -538,6 +550,16 @@ export function FramePlane({
 				}
 				return;
 			}
+
+			// Hold last good canvas frame while the ring catches up — never flash frame 0.
+			if (item.usingFrames && drawnRef.current) {
+				if (!video.paused) video.pause();
+				if (material.map !== frameMap) {
+					material.map = frameMap;
+					material.needsUpdate = true;
+				}
+				return;
+			}
 			item.usingFrames = false;
 		}
 
@@ -548,6 +570,7 @@ export function FramePlane({
 
 		if (item.dragging) {
 			if (!video.paused) video.pause();
+			seekVideo(item, item.pos);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
@@ -559,7 +582,7 @@ export function FramePlane({
 			return;
 		}
 
-		// Interact before frames ready: hold still on video seek (no auto-spin).
+		// Interact (mobile / ring miss): video seek, no auto-spin.
 		if (interact) {
 			if (!video.paused) video.pause();
 			item.vel = 0;

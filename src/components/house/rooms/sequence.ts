@@ -87,7 +87,11 @@ export class FrameSequence {
 					if (token !== this.token) return;
 					this.blobs[i] = blob;
 					this.settled++;
-					if (i === 0) void this.decode(0);
+					// Decode around current scrub center — not always frame 0
+					// (frame 0 as a stand-in causes flicker-to-start on mobile).
+					if (i === this.center || (this.center === 0 && i === 0)) {
+						void this.decode(i);
+					}
 				} catch {
 					if (token !== this.token) return;
 					// Failed fetches do not increment settled — only fetchDone.
@@ -148,9 +152,14 @@ export class FrameSequence {
 		return this.bitmaps.has(this.wrap(index));
 	}
 
+	/** Exact decoded frame only — no nearest-neighbour (that flashed frame 0 while scrubbing). */
+	exactFrame(index: number) {
+		return this.bitmaps.get(this.wrap(index)) ?? null;
+	}
+
 	/**
-	 * Exact frame when present in the ring. Otherwise nearest ready neighbour
-	 * so the plate rarely goes blank while scrubbing.
+	 * Exact frame when present. Nearest neighbour only within a short gap and
+	 * never across more than half the loop (avoids jumping to frame 0).
 	 */
 	frame(index: number) {
 		const i = this.wrap(index);
@@ -219,6 +228,8 @@ export class FrameSequence {
 			let farthest = -1;
 			let farthestDistance = -1;
 			for (const key of this.bitmaps.keys()) {
+				// Never evict the scrub center — dropping it causes a blank/flash mid-drag.
+				if (key === this.center) continue;
 				const d = Math.abs(key - this.center);
 				const distance = Math.min(d, this.count - d);
 				if (distance > farthestDistance) {
