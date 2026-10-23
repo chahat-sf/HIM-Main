@@ -116,7 +116,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
-  const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
+  // Start rendering immediately so idle video warms during the load gate (not only on scroll-in).
+  const [frameloop, setFrameloop] = useState<"always" | "never">("always");
   const homeLoad = useHomeLoad();
   const homeLoadRef = useRef(homeLoad);
   homeLoadRef.current = homeLoad;
@@ -159,31 +160,24 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  // Off-screen → never. On-screen → always, except freeze while the page is scrolling
-  // so WebGL does not fight scroll / bestsellers bg lerp on the main thread.
+  // Warm the house during HomeGate (even off-screen) so auto-spin is live when the
+  // user scrolls to section 2. After first frame: always while visible, never off-screen.
+  // Do not freeze on page scroll — that left the plate stuck mid-spin on arrival.
   useEffect(() => {
     if (!embedded) return;
     const el = rootRef.current;
     if (!el) return;
 
-    let scrolling = false;
-    let idle = 0;
-
     const syncFrameloop = () => {
-      if (!intersectingRef.current) {
-        setFrameloop("never");
-        return;
-      }
-      // Keep rendering while dragging or while interact media is loading in.
-      if (dragRef.current || interactLoadingRef.current) {
+      if (!ready) {
         setFrameloop("always");
         return;
       }
-      if (scrolling) {
-        setFrameloop("never");
+      if (dragRef.current || interactLoadingRef.current || intersectingRef.current) {
+        setFrameloop("always");
         return;
       }
-      setFrameloop("always");
+      setFrameloop("never");
     };
 
     const io = new IntersectionObserver(
@@ -194,24 +188,10 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
       { threshold: 0.01 },
     );
     io.observe(el);
+    syncFrameloop();
 
-    const onScroll = () => {
-      scrolling = true;
-      syncFrameloop();
-      window.clearTimeout(idle);
-      idle = window.setTimeout(() => {
-        scrolling = false;
-        syncFrameloop();
-      }, 150);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      io.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(idle);
-    };
-  }, [embedded]);
+    return () => io.disconnect();
+  }, [embedded, ready]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
