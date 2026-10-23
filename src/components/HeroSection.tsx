@@ -11,7 +11,8 @@ const HOLD_END = 0.08;           // last 8% of the scroll holds on the final fra
 const SMOOTHING = 0.1;           // 0.05 = very floaty, 0.2 = snappy (same speed on every screen)
 const ZOOM = 1;                  // 1 = fill screen. Use 1.16 for the extra zoom you had before
 const CONCURRENCY = 8;           // how many frames download at once
-const TEXT_FADE_SPEED = 8;       // how fast the left text fades while scrolling (higher = faster)
+const TEXT_FADE_END = 0.35;      // lift progress (0–1) where hero copy is fully faded out
+const TEXT_FADE_DRIFT = -14;     // px translateY at full fade
 
 // Memory handling: frames are freed once the hero is this many screens above the viewport,
 // and are loaded again as soon as the hero is within RELOAD_SCREENS of coming back.
@@ -20,6 +21,11 @@ const RELOAD_SCREENS = 1;
 
 const framePath = (i: number) =>
   `/homepage/frames/frame_${String(i + 1).padStart(4, "0")}.webp`;
+
+function smoothstep(t: number) {
+  const x = Math.min(1, Math.max(0, t));
+  return x * x * (3 - 2 * x);
+}
 
 export default function HeroSection() {
   const wrapperRef = useRef<HTMLElement>(null);
@@ -127,13 +133,17 @@ export default function HeroSection() {
       if (hintRef.current) {
         hintRef.current.style.opacity = p > 0.02 ? "0" : "1";
       }
-      // Left-side hero text fades out as the lift starts to open
-      if (copyRef.current) {
-        const o = Math.max(0, 1 - p * TEXT_FADE_SPEED);
-        copyRef.current.style.opacity = String(o);
-        copyRef.current.style.transform = `translate3d(0, ${(1 - o) * -14}px, 0)`;
-        copyRef.current.style.pointerEvents = o < 0.2 ? "none" : "auto";
-      }
+    };
+
+    // Copy fade follows smoothed frame progress (same easing as the lift), not raw scroll.
+    const applyCopyFade = () => {
+      const copy = copyRef.current;
+      if (!copy) return;
+      const progress = Math.min(1, Math.max(0, current / (FRAME_COUNT - 1)));
+      const o = 1 - smoothstep(progress / TEXT_FADE_END);
+      copy.style.opacity = String(o);
+      copy.style.transform = `translate3d(0, ${(1 - o) * TEXT_FADE_DRIFT}px, 0)`;
+      copy.style.pointerEvents = o < 0.2 ? "none" : "auto";
     };
 
     const tick = (t: number) => {
@@ -144,6 +154,7 @@ export default function HeroSection() {
       if (reduceMotion || Math.abs(diff) < 0.005) {
         current = target;
         draw();
+        applyCopyFade();
         raf = 0;
         lastT = 0;
         return;
@@ -151,6 +162,7 @@ export default function HeroSection() {
       // frame-rate independent easing
       current += diff * (1 - Math.pow(1 - SMOOTHING, dt * 60));
       draw();
+      applyCopyFade();
       raf = requestAnimationFrame(tick);
     };
 
@@ -229,11 +241,13 @@ export default function HeroSection() {
       readScroll();
       current = target;
       draw(true);
+      applyCopyFade();
     });
 
     resize();
     readScroll();
     current = target;
+    applyCopyFade();
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", resize);
