@@ -7,7 +7,7 @@ const Flythrough = dynamic(() => import("./Flythrough"), {
 	loading: () => (
 		<section
 			id="house"
-			className="relative h-dvh w-full overflow-hidden bg-[#1a120c]"
+			className="relative h-svh w-full overflow-hidden bg-[#1a120c]"
 			aria-label="The House"
 		/>
 	),

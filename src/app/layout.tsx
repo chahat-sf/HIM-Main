@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
+import NavigationOverlay from "@/components/NavigationOverlay";
 import "./globals.css";
 
 const spaceMono = Space_Mono({
@@ -30,6 +31,14 @@ export const metadata: Metadata = {
 		template: "%s — HIM",
 	},
 	description: "HIM — Luxury Menswear",
+	icons: {
+		icon: [
+			{ url: "/favicon.ico", sizes: "32x32" },
+			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+		],
+		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+	},
 	openGraph: {
 		title: "HIM",
 		description: "HIM — Luxury Menswear",
@@ -49,7 +58,10 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en" className={`${spaceMono.variable} ${cormorant.variable} ${jost.variable}`}>
-			<body className="font-sans antialiased">{children}</body>
+			<body className="font-sans antialiased">
+				{children}
+				<NavigationOverlay />
+			</body>
 		</html>
 	);
 }

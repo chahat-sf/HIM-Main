@@ -44,7 +44,9 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	const targetPctRef = useRef(0);
 	const displayPctRef = useRef(0);
 	const revealedRef = useRef(false);
+	const startedRef = useRef(false);
 	revealedRef.current = revealed;
+	startedRef.current = started;
 
 	const reportHeroProgress = useCallback((pct: number) => {
 		setHeroPct((prev) => Math.max(prev, Math.min(100, pct)));
@@ -108,20 +110,51 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 		return () => window.clearTimeout(timer);
 	}, [pageReady, revealed]);
 
-	// Soft-lock guard: if house Suspense/KTX2 never resolves, still unlock the gate.
+	// Soft-unlock: slow/dead network should not sit on 0% forever — reveal the CTA.
 	useEffect(() => {
-		if (houseReady || started) return;
+		if (pageReady || started) return;
 		const timer = window.setTimeout(() => {
+			setHeroReady(true);
+			setHeroPct(100);
 			setHouseReady(true);
-		}, 8000);
+		}, 12000);
 		return () => window.clearTimeout(timer);
-	}, [houseReady, started]);
+	}, [pageReady, started]);
+
+	// Reload often restores scroll mid-page behind the gate — pin to top until enter.
+	useEffect(() => {
+		const previous = history.scrollRestoration;
+		try {
+			history.scrollRestoration = "manual";
+		} catch {
+			/* unsupported */
+		}
+		const pinTop = () => {
+			if (!startedRef.current) window.scrollTo(0, 0);
+		};
+		pinTop();
+		// Safari / Chrome may restore scroll after first paint or on bfcache restore.
+		window.addEventListener("pageshow", pinTop);
+		const t1 = window.setTimeout(pinTop, 0);
+		const t2 = window.setTimeout(pinTop, 100);
+		return () => {
+			window.removeEventListener("pageshow", pinTop);
+			window.clearTimeout(t1);
+			window.clearTimeout(t2);
+			try {
+				history.scrollRestoration = previous;
+			} catch {
+				/* unsupported */
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		if (started) return;
 		const html = document.documentElement;
 		const previous = html.style.overflow;
 		html.style.overflow = "hidden";
+		window.scrollTo(0, 0);
 		return () => {
 			html.style.overflow = previous;
 		};
@@ -227,6 +260,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 						aria-label={revealed ? "welcome to the HIM world" : `Loading ${displayPct}%`}
 						onClick={() => {
 							if (!revealed) return;
+							window.scrollTo(0, 0);
 							setStarted(true);
 							// Unlock house AudioContext on the same user gesture.
 							window.dispatchEvent(new Event("him-start"));
@@ -241,13 +275,28 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 							/>
 						)}
 						<span className="magnetic-btn__hover" aria-hidden />
-						<span ref={magneticLabelRef} className="magnetic-btn__label">
-							<span className="magnetic-btn__copy" data-active={revealed || undefined}>
-								welcome to the HIM world
+						<span
+							ref={magneticLabelRef}
+							className="magnetic-btn__label"
+							style={{ display: "grid", placeItems: "center" }}
+						>
+							{/* Visible copy swaps; hidden sizer keeps loading pill = welcome button size. */}
+							<span className="magnetic-btn__copy" style={{ gridArea: "1 / 1", whiteSpace: "nowrap" }}>
+								{revealed ? "welcome to the HIM world" : `${displayPct}%`}
 							</span>
-							<span className="magnetic-btn__copy" data-active={!revealed || undefined}>
-								{displayPct}%
-							</span>
+							{!revealed && (
+								<span
+									className="magnetic-btn__sizer"
+									aria-hidden
+									style={{
+										gridArea: "1 / 1",
+										visibility: "hidden",
+										whiteSpace: "nowrap",
+									}}
+								>
+									welcome to the HIM world
+								</span>
+							)}
 						</span>
 					</button>
 				</div>
@@ -288,19 +337,16 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 						border-color 0.3s ease,
 						color 0.3s ease,
 						background 0.3s ease,
-						box-shadow 0.3s ease,
-						padding 0.55s cubic-bezier(0.22, 0.7, 0.18, 1);
+						box-shadow 0.3s ease;
 				}
 
 				.magnetic-btn--loading {
 					cursor: default;
 					pointer-events: none;
-					padding: 12px 42px;
 				}
 
 				.magnetic-btn--ready {
 					cursor: pointer;
-					padding: 22px 42px;
 					will-change: transform;
 				}
 
@@ -351,19 +397,20 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 					position: relative;
 					z-index: 2;
 					display: grid;
+					place-items: center;
 					pointer-events: none;
 					transition: color 0.3s ease;
 				}
 
-				.magnetic-btn__copy {
+				.magnetic-btn__copy,
+				.magnetic-btn__sizer {
 					grid-area: 1 / 1;
-					justify-self: center;
-					visibility: hidden;
-					transition: opacity 0.35s ease;
+					white-space: nowrap;
 				}
 
-				.magnetic-btn__copy[data-active] {
-					visibility: visible;
+				/* Invisible width lock — never shown, so no FOUC concat with %. */
+				.magnetic-btn__sizer {
+					visibility: hidden;
 				}
 
 				.magnetic-btn--loading .magnetic-btn__label {

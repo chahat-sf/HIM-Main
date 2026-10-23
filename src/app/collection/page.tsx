@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useState } from "react";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // ─── Shared arrow SVG ───────────────────────────────────────────────
 function Arrow() {
@@ -25,21 +26,31 @@ function Arrow() {
 const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
 
 const PRODUCTS = [
-  { slug: "textured-thermal-white",   name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-2", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-2", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
   { slug: "textured-thermal-white-3", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-4", name: "Textured Thermal – White", price: "₹16,000", category: "JEANS",   image: "/products/item-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-5", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS",  image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-4", name: "Textured Thermal – White", price: "₹16,000", category: "JEANS", image: "/products/item-4.webp", swatches: SWATCHES },
+  { slug: "textured-thermal-white-5", name: "Textured Thermal – White", price: "₹16,000", category: "SHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
   { slug: "textured-thermal-white-6", name: "Textured Thermal – White", price: "₹16,000", category: "TSHIRTS", image: "/products/item-4.webp", swatches: SWATCHES },
 ];
 
-const FILTERS = ["ALL", "SHIRTS", "TSHIRTS", "JEANS"];
+const FILTERS = ["ALL", "SHIRTS", "TSHIRTS", "JEANS"] as const;
+type Filter = (typeof FILTERS)[number];
+
+function parseCategory(raw: string | null): Filter {
+  if (raw && (FILTERS as readonly string[]).includes(raw)) return raw as Filter;
+  return "ALL";
+}
+
+function categoryHref(filter: Filter) {
+  return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
+}
 
 const EXPLORE_ITEMS = [
-  { label: "ALL MEN'S", href: "/collection",      image: "/lookbook/man-on-lunch.webp" },
-  { label: "SHIRTS",    href: "/collection",      image: "/lookbook/man-on-bike.webp" },
-  { label: "TSHIRTS",   href: "/collection",      image: "/lookbook/man-on-car.webp" },
-  { label: "JEANS",     href: "/collection",      image: "/lookbook/Where-The-Sun-Settles.webp" },
+  { label: "ALL MEN'S", href: "/collection", image: "/lookbook/man-on-lunch.webp" },
+  { label: "SHIRTS", href: "/collection?category=SHIRTS", image: "/lookbook/man-on-bike.webp" },
+  { label: "TSHIRTS", href: "/collection?category=TSHIRTS", image: "/lookbook/man-on-car.webp" },
+  { label: "JEANS", href: "/collection?category=JEANS", image: "/lookbook/Where-The-Sun-Settles.webp" },
 ];
 
 // ─── Single product card ─────────────────────────────────────────────
@@ -87,13 +98,19 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────
-export default function CollectionPage() {
-  const [activeFilter, setActiveFilter] = useState("ALL");
+function CollectionPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeFilter = parseCategory(searchParams.get("category"));
 
   const filtered =
     activeFilter === "ALL"
       ? PRODUCTS
       : PRODUCTS.filter((p) => p.category === activeFilter);
+
+  const setActiveFilter = (filter: Filter) => {
+    router.replace(categoryHref(filter), { scroll: false });
+  };
 
   return (
     <>
@@ -542,5 +559,13 @@ export default function CollectionPage() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function CollectionPage() {
+  return (
+    <Suspense fallback={null}>
+      <CollectionPageInner />
+    </Suspense>
   );
 }

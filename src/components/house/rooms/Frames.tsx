@@ -180,10 +180,17 @@ function wrapTime(seconds: number, duration: number) {
 	return ((seconds % duration) + duration) % duration;
 }
 
+/** Seeking while the file is still buffering aborts/restarts the media GET (request storm). */
+function canSeek(video: HTMLVideoElement) {
+	if (video.readyState >= 3) return true;
+	return video.readyState >= 2 && video.seekable.length > 0;
+}
+
 function flushSeek(item: PlayState) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
 	if (item.seekLock || video.seeking) return;
+	if (!canSeek(video)) return;
 	const t = item.pendingTime;
 	if (t == null) return;
 	if (Math.abs(video.currentTime - t) <= 0.5 / item.fps) {
@@ -254,11 +261,86 @@ function applyLod(item: PlayState, mode: LodMode) {
 	}
 }
 
-/** Toggle 2k idle auto-spin vs 1k interactive drag. Room is always 0 with one bay. */
-export function setInteractMode(enabled: boolean, room = 0) {
+/**
+ * Wait until the interact plate video can seek (avoids 5–7s jumpy scrub on cold load).
+ * Resolves false if a newer LOD swap cancelled this wait.
+ */
+function waitInteractVideoReady(item: PlayState, gen: number): Promise<boolean> {
+	const video = item.video;
+	if (!video) return Promise.resolve(true);
+
+	return new Promise((resolve) => {
+		let settled = false;
+		let seekStarted = false;
+		const finish = (ok: boolean) => {
+			if (settled) return;
+			settled = true;
+			video.removeEventListener("loadeddata", onReady);
+			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("canplaythrough", onReady);
+			video.removeEventListener("seeked", onSeeked);
+			window.clearTimeout(timeout);
+			resolve(ok);
+		};
+
+		const onSeeked = () => {
+			if (gen !== lodGeneration) {
+				finish(false);
+				return;
+			}
+			item.seekLock = false;
+			item.pendingTime = null;
+			finish(true);
+		};
+
+		const trySeek = () => {
+			if (gen !== lodGeneration) {
+				finish(false);
+				return;
+			}
+			item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+			if (item.duration <= 0 || !canSeek(video)) return;
+
+			const t = wrapTime(Math.round(item.pos) / item.fps, item.duration);
+			if (Math.abs(video.currentTime - t) <= 0.05 && !video.seeking) {
+				finish(true);
+				return;
+			}
+
+			// One seek only — repeated canplay must not restart the media GET.
+			if (seekStarted) return;
+			seekStarted = true;
+			video.addEventListener("seeked", onSeeked);
+			item.seekLock = true;
+			item.pendingTime = t;
+			try {
+				video.currentTime = t;
+			} catch {
+				finish(true);
+			}
+		};
+
+		const onReady = () => trySeek();
+		video.addEventListener("loadeddata", onReady);
+		video.addEventListener("canplay", onReady);
+		video.addEventListener("canplaythrough", onReady);
+		if (canSeek(video)) trySeek();
+
+		// Never block the UI forever on a stalled network decode.
+		const timeout = window.setTimeout(() => finish(gen === lodGeneration), 12000);
+	});
+}
+
+/** Toggle 2k idle auto-spin vs 1k interactive drag. Resolves when interact video is seek-ready (or immediately when leaving). */
+export function setInteractMode(enabled: boolean, room = 0): Promise<boolean> {
 	const item = play[room];
-	if (!item) return;
-	applyLod(item, enabled ? "interact" : "idle");
+	if (!item) return Promise.resolve(false);
+	if (!enabled) {
+		applyLod(item, "idle");
+		return Promise.resolve(true);
+	}
+	if (item.lodMode !== "interact") applyLod(item, "interact");
+	return waitInteractVideoReady(item, lodGeneration);
 }
 
 export function beginDrag(room: number) {
@@ -356,6 +438,8 @@ export function FramePlane({
 	const drawnRef = useRef<ImageBitmap | null>(null);
 	const lastIndexRef = useRef(0);
 	const directionRef = useRef(1);
+	const lastSeekFrameRef = useRef<number | null>(null);
+	const lastLodRef = useRef<LodMode | null>(null);
 	const aspectSetRef = useRef(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const announced = useRef(false);
@@ -492,6 +576,11 @@ export function FramePlane({
 		const interact = item.lodMode === "interact";
 		if (drawnRef.current && !interact) drawnRef.current = null;
 
+		if (lastLodRef.current !== item.lodMode) {
+			lastLodRef.current = item.lodMode;
+			lastSeekFrameRef.current = null;
+		}
+
 		const focused = nearestRoom(state.camera.position.x) === room;
 		const near = Math.abs(state.camera.position.x - ROOMS[room].x) < BAY * 1.1;
 		const videoScrubOnly = videoScrubOnlyCached;
@@ -512,6 +601,16 @@ export function FramePlane({
 			}
 			return;
 		}
+
+		const syncVideoSeek = (force: boolean) => {
+			const frame = Math.round(wrapFrame(item.pos, item.count));
+			if (force || frame !== lastSeekFrameRef.current) {
+				seekVideo(item, item.pos);
+				lastSeekFrameRef.current = frame;
+			} else if (item.pendingTime != null) {
+				flushSeek(item);
+			}
+		};
 
 		// Interact desktop: exact ring frame only. Missing frame → hold last canvas or video.
 		if (interact && !videoScrubOnly && frameMap) {
@@ -570,7 +669,7 @@ export function FramePlane({
 
 		if (item.dragging) {
 			if (!video.paused) video.pause();
-			seekVideo(item, item.pos);
+			syncVideoSeek(false);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}
@@ -586,7 +685,7 @@ export function FramePlane({
 		if (interact) {
 			if (!video.paused) video.pause();
 			item.vel = 0;
-			seekVideo(item, item.pos);
+			syncVideoSeek(false);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
 			return;
 		}

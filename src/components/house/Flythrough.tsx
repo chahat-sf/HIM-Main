@@ -108,11 +108,16 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [dragGuide, setDragGuide] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [interactMode, setInteractModeState] = useState(false);
+  const [interactLoading, setInteractLoading] = useState(false);
   const interactModeRef = useRef(false);
+  const interactReadyRef = useRef(false);
+  const interactLoadingRef = useRef(false);
+  const interactTokenRef = useRef(0);
   const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
-  const [frameloop, setFrameloop] = useState<"always" | "never">(embedded ? "never" : "always");
+  // Start rendering immediately so idle video warms during the load gate (not only on scroll-in).
+  const [frameloop, setFrameloop] = useState<"always" | "never">("always");
   const homeLoad = useHomeLoad();
   const homeLoadRef = useRef(homeLoad);
   homeLoadRef.current = homeLoad;
@@ -130,6 +135,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const rootRef = useRef<HTMLElement | null>(null);
   const proximityRef = useRef(embedded ? 0 : 1);
   const applyAmbientRef = useRef<() => void>(() => { });
+  const intersectingRef = useRef(!embedded);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -154,89 +160,38 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  // Warm the house during HomeGate (even off-screen) so auto-spin is live when the
+  // user scrolls to section 2. After first frame: always while visible, never off-screen.
+  // Do not freeze on page scroll — that left the plate stuck mid-spin on arrival.
   useEffect(() => {
     if (!embedded) return;
     const el = rootRef.current;
     if (!el) return;
+
+    const syncFrameloop = () => {
+      if (!ready) {
+        setFrameloop("always");
+        return;
+      }
+      if (dragRef.current || interactLoadingRef.current || intersectingRef.current) {
+        setFrameloop("always");
+        return;
+      }
+      setFrameloop("never");
+    };
+
     const io = new IntersectionObserver(
-      ([entry]) => setFrameloop(entry.isIntersecting ? "always" : "never"),
+      ([entry]) => {
+        intersectingRef.current = entry.isIntersecting;
+        syncFrameloop();
+      },
       { threshold: 0.01 },
     );
     io.observe(el);
+    syncFrameloop();
+
     return () => io.disconnect();
-  }, [embedded]);
-
-  useEffect(() => {
-    if (!embedded) return;
-    const html = document.documentElement;
-    const previousBehavior = html.style.scrollBehavior;
-    html.style.scrollBehavior = "smooth";
-
-    const coverageOf = (el: HTMLElement) => {
-      const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
-      return { rect, vh, coverage: visible / vh };
-    };
-
-    // Armed only when fully off-screen; one snap per entry, then locked until off-screen again.
-    let armed = true;
-    const el0 = rootRef.current;
-    if (el0 && coverageOf(el0).coverage > 0) armed = false;
-
-    let idle = 0;
-    let snapping = false;
-    let lastY = window.scrollY;
-    let lastT = performance.now();
-    let speed = 0;
-
-    const settle = () => {
-      const el = rootRef.current;
-      if (!el || snapping || !armed) return;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const { rect, vh, coverage } = coverageOf(el);
-      if (coverage <= 0) return;
-      // Already filling / aligned — consume the shot so we do not nudge again.
-      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
-        armed = false;
-        return;
-      }
-      // Only ease in when the house is partly on screen.
-      if (coverage < 0.28) return;
-      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
-      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
-      armed = false;
-      snapping = true;
-      window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
-      window.setTimeout(() => {
-        snapping = false;
-      }, 750);
-    };
-
-    const onScroll = () => {
-      const el = rootRef.current;
-      if (el && coverageOf(el).coverage <= 0) armed = true;
-
-      const now = performance.now();
-      const y = window.scrollY;
-      const dt = Math.max(1, now - lastT);
-      speed = Math.abs(y - lastY) / dt;
-      lastY = y;
-      lastT = now;
-      window.clearTimeout(idle);
-      idle = window.setTimeout(() => {
-        if (speed > 1.2) return;
-        settle();
-      }, 120);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      html.style.scrollBehavior = previousBehavior;
-      window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(idle);
-    };
-  }, [embedded]);
+  }, [embedded, ready]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -391,39 +346,64 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     fadeGain(audioCtx.current, outsideGain.current, 0);
   }
 
+  function clearInteractUi() {
+    interactTokenRef.current += 1;
+    interactModeRef.current = false;
+    interactReadyRef.current = false;
+    interactLoadingRef.current = false;
+    setInteractModeState(false);
+    setInteractLoading(false);
+    setDragGuide(false);
+    dragGuideRef.current = false;
+    setDragging(false);
+    dragRef.current = null;
+  }
+
   function exit() {
     if (modeRef.current !== "interior") return;
     modeRef.current = "exiting";
     token.current += 1;
     // Re-enter always starts on 2k idle auto-spin.
-    setInteractMode(false, indexRef.current);
-    interactModeRef.current = false;
-    setInteractModeState(false);
-    setDragGuide(false);
-    dragGuideRef.current = false;
-    setDragging(false);
-    dragRef.current = null;
+    void setInteractMode(false, indexRef.current);
+    clearInteractUi();
     setMode("exiting");
     setCommand({ token: token.current, kind: "exit", index: indexRef.current });
     fadeGain(audioCtx.current, outsideGain.current, proximityRef.current * OUTSIDE_LEVEL);
   }
 
-  function toggleInteract() {
+  async function toggleInteract() {
     if (modeRef.current !== "interior") return;
-    const next = !interactModeRef.current;
-    setInteractMode(next, indexRef.current);
-    interactModeRef.current = next;
-    setInteractModeState(next);
-    if (next) {
-      const show = !dragGuideSeen();
-      dragGuideRef.current = show;
-      setDragGuide(show);
-    } else {
-      setDragGuide(false);
-      dragGuideRef.current = false;
-      setDragging(false);
-      dragRef.current = null;
+
+    // Cancel in-flight load or leave drag → back to idle auto-spin.
+    if (interactModeRef.current || interactLoadingRef.current) {
+      void setInteractMode(false, indexRef.current);
+      clearInteractUi();
+      return;
     }
+
+    const loadToken = ++interactTokenRef.current;
+    interactLoadingRef.current = true;
+    interactReadyRef.current = false;
+    setInteractLoading(true);
+    // Ensure the canvas keeps painting while the interact plate buffers.
+    if (!embedded || intersectingRef.current) setFrameloop("always");
+
+    const ok = await setInteractMode(true, indexRef.current);
+    if (loadToken !== interactTokenRef.current) return;
+    if (!ok || modeRef.current !== "interior") {
+      interactLoadingRef.current = false;
+      setInteractLoading(false);
+      return;
+    }
+
+    interactModeRef.current = true;
+    interactReadyRef.current = true;
+    interactLoadingRef.current = false;
+    setInteractModeState(true);
+    setInteractLoading(false);
+    const show = !dragGuideSeen();
+    dragGuideRef.current = show;
+    setDragGuide(show);
   }
 
   function slide(to: number) {
@@ -447,11 +427,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     if (!current) return;
     if (current.kind === "enter") {
       modeRef.current = "interior";
-      setInteractMode(false, indexRef.current);
-      interactModeRef.current = false;
-      setInteractModeState(false);
-      setDragGuide(false);
-      dragGuideRef.current = false;
+      void setInteractMode(false, indexRef.current);
+      clearInteractUi();
       setMode("interior");
       return;
     }
@@ -530,7 +507,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (modeRef.current !== "interior" || !interactModeRef.current) return;
+    if (modeRef.current !== "interior" || !interactModeRef.current || !interactReadyRef.current) return;
     if ((event.target as Element).closest("button, [data-cast]")) return;
     const item = roomPlay(indexRef.current);
     if (!item) return;
@@ -570,9 +547,12 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     <Root
       ref={rootRef}
       id={embedded ? "house" : undefined}
-      className="relative h-dvh w-full overflow-hidden bg-[#1a120c] text-white"
+      className="relative h-svh w-full overflow-hidden bg-[#1a120c] text-white"
       aria-busy={!ready}
-      style={{ touchAction: embedded ? "pan-y" : "none" }}
+      style={{
+        touchAction: embedded ? "pan-y" : "none",
+        transform: "translateZ(0)",
+      }}
       onPointerDownCapture={(event) => {
         if (event.button !== 0) return;
         startSound(audioCtx.current, sprite.current, CLICK);
@@ -587,7 +567,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         camera={{ position: [0, 1.9, 0.05], fov: 72, near: 0.1, far: 80 }}
         dpr={dpr}
         gl={{ antialias: true, toneMapping: NoToneMapping }}
-        style={{ width: "100%", height: "100%", display: "block" }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }}
       >
         <color attach="background" args={["#1a120c"]} />
         <fog attach="fog" args={["#1a120c", 22, 48]} />
@@ -625,7 +605,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         style={{
           background: "transparent",
           pointerEvents: mode === "interior" ? "auto" : "none",
-          touchAction: mode === "interior" && interactMode ? "none" : "pan-y",
+          touchAction: mode === "interior" && interactMode && !interactLoading ? "none" : "pan-y",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -648,7 +628,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           Miniature open window model by PK
         </p> */}
 
-        {mode === "interior" && !interactMode && (
+        {mode === "interior" && !interactMode && !interactLoading && (
           <>
             <div className={styles.castScrim} />
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
@@ -679,27 +659,49 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           </>
         )}
 
+        {/* Same wait surface as HomeGate while interact plate buffers. */}
+        <div
+          aria-hidden={!interactLoading}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 25,
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
+            opacity: interactLoading ? 0.92 : 0,
+            pointerEvents: interactLoading ? "auto" : "none",
+            transition: "opacity 0.35s ease",
+          }}
+        />
+
         {mode === "interior" && (
           <button
             type="button"
-            className={`${styles.rotateBtn}${interactMode ? ` ${styles.rotateBtnActive}` : ""}`}
+            className={`${styles.rotateBtn}${interactMode ? ` ${styles.rotateBtnActive}` : ""}${interactLoading ? ` ${styles.rotateBtnLoading}` : ""}`}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              toggleInteract();
+              void toggleInteract();
             }}
-            aria-label={interactMode ? "Return to auto spin" : "Enable drag rotate"}
+            aria-label={
+              interactLoading
+                ? "Loading drag rotate"
+                : interactMode
+                  ? "Return to auto spin"
+                  : "Enable drag rotate"
+            }
             aria-pressed={interactMode}
+            aria-busy={interactLoading}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg className={styles.rotateBtnIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 12a9 9 0 1 1-3.2-6.9" />
               <path d="M21 3v6h-6" />
             </svg>
-            <span>{interactMode ? "Auto" : "Rotate"}</span>
+            <span>{interactLoading ? "Loading" : interactMode ? "Auto" : "Rotate"}</span>
           </button>
         )}
 
-        <DragGuide visible={dragGuide && interactMode} onDismiss={dismissDragGuide} />
+        <DragGuide visible={dragGuide && interactMode && !interactLoading} onDismiss={dismissDragGuide} />
       </div>
 
       {!embedded && (

@@ -757,6 +757,37 @@
   transform: translateY(0);
 }
 
+.rotateBtn.rotateBtnLoading {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.rotateBtn.rotateBtnLoading .rotateBtnIcon {
+  animation: rotateBtnSpin 0.9s linear infinite;
+}
+
+@keyframes rotateBtnSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .rotateBtn {
+    gap: 6px;
+    padding: 8px 14px;
+    font: 500 11px / 1 var(--sans);
+    letter-spacing: 0.05em;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+    left: max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  .rotateBtn .rotateBtnIcon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 .root.sliding .nextBtn {
   pointer-events: none;
 }
