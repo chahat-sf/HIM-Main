@@ -254,11 +254,82 @@ function applyLod(item: PlayState, mode: LodMode) {
 	}
 }
 
-/** Toggle 2k idle auto-spin vs 1k interactive drag. Room is always 0 with one bay. */
-export function setInteractMode(enabled: boolean, room = 0) {
+/**
+ * Wait until the interact plate video can seek (avoids 5–7s jumpy scrub on cold load).
+ * Resolves false if a newer LOD swap cancelled this wait.
+ */
+function waitInteractVideoReady(item: PlayState, gen: number): Promise<boolean> {
+	const video = item.video;
+	if (!video) return Promise.resolve(true);
+
+	return new Promise((resolve) => {
+		let settled = false;
+		const finish = (ok: boolean) => {
+			if (settled) return;
+			settled = true;
+			video.removeEventListener("loadeddata", onReady);
+			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("seeked", onSeeked);
+			window.clearTimeout(timeout);
+			resolve(ok);
+		};
+
+		const onSeeked = () => {
+			if (gen !== lodGeneration) {
+				finish(false);
+				return;
+			}
+			item.seekLock = false;
+			item.pendingTime = null;
+			finish(true);
+		};
+
+		const trySeek = () => {
+			if (gen !== lodGeneration) {
+				finish(false);
+				return;
+			}
+			if (video.readyState < 2) return;
+			item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+			if (item.duration <= 0) return;
+
+			const t = wrapTime(Math.round(item.pos) / item.fps, item.duration);
+			if (Math.abs(video.currentTime - t) <= 0.05 && !video.seeking && video.readyState >= 2) {
+				finish(true);
+				return;
+			}
+
+			video.removeEventListener("seeked", onSeeked);
+			video.addEventListener("seeked", onSeeked);
+			item.seekLock = true;
+			item.pendingTime = t;
+			try {
+				video.currentTime = t;
+			} catch {
+				finish(true);
+			}
+		};
+
+		const onReady = () => trySeek();
+		video.addEventListener("loadeddata", onReady);
+		video.addEventListener("canplay", onReady);
+		if (video.readyState >= 2) trySeek();
+
+		// Never block the UI forever on a stalled network decode.
+		const timeout = window.setTimeout(() => finish(gen === lodGeneration), 12000);
+	});
+}
+
+/** Toggle 2k idle auto-spin vs 1k interactive drag. Resolves when interact video is seek-ready (or immediately when leaving). */
+export function setInteractMode(enabled: boolean, room = 0): Promise<boolean> {
 	const item = play[room];
-	if (!item) return;
-	applyLod(item, enabled ? "interact" : "idle");
+	if (!item) return Promise.resolve(false);
+	if (!enabled) {
+		applyLod(item, "idle");
+		return Promise.resolve(true);
+	}
+	if (item.lodMode !== "interact") applyLod(item, "interact");
+	return waitInteractVideoReady(item, lodGeneration);
 }
 
 export function beginDrag(room: number) {
