@@ -211,7 +211,7 @@ function ExistingProductsGrid() {
     >
       {/* SECTION HEADER */}
       <div
-        className="flex items-center justify-between"
+        className="bestsellers-header flex items-center justify-between"
         style={{ height: "72px" }}
       >
         <h2
@@ -437,10 +437,19 @@ function ExistingProductsGrid() {
           min-width: 0;
         }
         @media (max-width: 1024px) {
+          /* Left inset lives on the section (doesn’t scroll away).
+             Scroller bleeds to the right edge; padding-right only after last slide. */
           .bestsellers-section {
             border-left-width: 12px;
-            border-right-width: 12px;
-            padding: 0 16px 40px;
+            border-right-width: 0;
+            padding: 0 0 40px 16px;
+          }
+          .bestsellers-header {
+            padding-right: 16px;
+          }
+          .bestsellers-scroller {
+            padding-left: 0;
+            padding-right: 16px;
           }
           .bestsellers-card {
             width: calc((100% - ${CARD_GAP}px) / 2.3);
@@ -450,7 +459,14 @@ function ExistingProductsGrid() {
           .bestsellers-section {
             border-left-width: 0;
             border-right-width: 0;
-            padding: 0 14px 32px;
+            padding: 0 0 32px 14px;
+          }
+          .bestsellers-header {
+            padding-right: 14px;
+          }
+          .bestsellers-scroller {
+            padding-left: 0;
+            padding-right: 14px;
           }
           .bestsellers-card {
             width: 72%;
