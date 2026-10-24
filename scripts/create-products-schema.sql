@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS products (
   category VARCHAR(80) NULL,
   image_url VARCHAR(512) NOT NULL,
   images_json JSON NULL,
+  video_url VARCHAR(512) NULL,
   price_cents INT UNSIGNED NOT NULL DEFAULT 0,
   swatches_json JSON NULL,
   colors_json JSON NULL,

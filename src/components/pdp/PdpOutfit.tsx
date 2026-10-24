@@ -9,7 +9,18 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import { buildPdpMedia } from "@/lib/catalog-types";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
+
+function PlayBadge() {
+  return (
+    <span className="pdp-thumb-play" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
+        <path d="M3 1.5v9l8-4.5L3 1.5Z" />
+      </svg>
+    </span>
+  );
+}
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
@@ -93,6 +104,7 @@ export default function PdpOutfit({
   related: CatalogProduct[];
 }) {
   const slug = product.slug;
+  const MEDIA = buildPdpMedia(product);
   const PRODUCT = {
     name: product.name,
     title: product.title,
@@ -115,6 +127,7 @@ export default function PdpOutfit({
   const [bagError, setBagError] = useState("");
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addItem } = useCart();
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
@@ -162,9 +175,20 @@ export default function PdpOutfit({
     };
   }, []);
 
-  const imageCount = PRODUCT.images.length;
-  const angle = Math.round((activeImg * 360) / imageCount);
+  const imageCount = MEDIA.length;
+  const videoIndex = product.videoUrl ? imageCount - 1 : -1;
+  const angle = imageCount > 0 ? Math.round((activeImg * 360) / imageCount) : 0;
   const rotate = (step: number) => setActiveImg((i) => (i + step + imageCount) % imageCount);
+
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (activeImg === videoIndex && videoIndex >= 0) {
+      void vid.play().catch(() => {});
+    } else {
+      vid.pause();
+    }
+  }, [activeImg, slug, videoIndex]);
 
   const handleAddToBag = async () => {
     if (!selectedSize) {
@@ -212,18 +236,22 @@ export default function PdpOutfit({
             <div className="pdp-left-inner">
               {/* Vertical thumbnail strip — desktop only */}
               <div className="pdp-thumbs" role="listbox" aria-label="Product images">
-                {PRODUCT.images.map((src, i) => (
+                {MEDIA.map((item, i) => (
                   <button
-                    key={src}
+                    key={item.kind === "image" ? item.src : `video-${item.src}`}
                     type="button"
                     role="option"
                     aria-selected={activeImg === i}
-                    aria-label={`View image ${i + 1}`}
-                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}`}
+                    aria-label={
+                      item.kind === "video"
+                        ? "View product video"
+                        : `View image ${i + 1}`
+                    }
+                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}${item.kind === "video" ? " is-video" : ""}`}
                     onClick={() => setActiveImg(i)}
                   >
                     <Image
-                      src={src}
+                      src={item.kind === "image" ? item.src : item.poster}
                       alt=""
                       fill
                       quality={60}
@@ -231,6 +259,7 @@ export default function PdpOutfit({
                       className="object-cover object-top"
                       style={{ objectFit: "cover", objectPosition: "top center" }}
                     />
+                    {item.kind === "video" ? <PlayBadge /> : null}
                   </button>
                 ))}
               </div>
@@ -241,18 +270,34 @@ export default function PdpOutfit({
                   className="pdp-main-img-focus"
                   style={{ transform: focusTransform(FOCUS[focusId] ?? FOCUS.intro) }}
                 >
-                  {PRODUCT.images.map((src, i) => (
-                    <Image
-                      key={src}
-                      src={src}
-                      alt={i === activeImg ? PRODUCT.name : ""}
-                      fill
-                      priority={i === 0}
-                      quality={90}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 36vw"
-                      className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
-                    />
-                  ))}
+                  {MEDIA.map((item, i) =>
+                    item.kind === "image" ? (
+                      <Image
+                        key={item.src}
+                        src={item.src}
+                        alt={i === activeImg ? PRODUCT.name : ""}
+                        fill
+                        priority={i === 0}
+                        quality={90}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 36vw"
+                        className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
+                      />
+                    ) : (
+                      <video
+                        key={`video-${item.src}`}
+                        ref={videoRef}
+                        className={`pdp-main-img-frame pdp-media-video${i === activeImg ? " active" : ""}`}
+                        src={item.src}
+                        poster={item.poster}
+                        muted
+                        playsInline
+                        controls
+                        loop
+                        preload="metadata"
+                        aria-label={`${PRODUCT.name} video`}
+                      />
+                    ),
+                  )}
                 </div>
 
                 {/* Mobile prev/next arrows */}
@@ -284,13 +329,17 @@ export default function PdpOutfit({
                 {/* Mobile dot indicators */}
                 {imageCount > 1 && (
                   <div className="pdp-mob-dots" role="tablist" aria-label="Image indicators">
-                    {PRODUCT.images.map((_, i) => (
+                    {MEDIA.map((item, i) => (
                       <button
-                        key={i}
+                        key={item.kind === "image" ? item.src : `video-${item.src}`}
                         type="button"
                         role="tab"
                         aria-selected={activeImg === i}
-                        aria-label={`Go to image ${i + 1}`}
+                        aria-label={
+                          item.kind === "video"
+                            ? "Go to product video"
+                            : `Go to image ${i + 1}`
+                        }
                         className={`pdp-mob-dot${activeImg === i ? " active" : ""}`}
                         onClick={() => setActiveImg(i)}
                       />
@@ -559,6 +608,18 @@ export default function PdpOutfit({
           border-color: var(--pdp-ink);
         }
 
+        .pdp-thumb-play {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.28);
+          pointer-events: none;
+        }
+
         .pdp-main-img {
           position: relative;
           flex: 1;
@@ -596,6 +657,20 @@ export default function PdpOutfit({
         .pdp-main-img-frame.active {
           opacity: 1;
           transform: scale(1);
+        }
+
+        video.pdp-media-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          background: #e9e6e1;
+        }
+
+        .pdp-main-img-frame:not(.active) {
+          pointer-events: none;
         }
 
         .pdp-rotate {

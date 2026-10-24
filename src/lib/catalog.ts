@@ -29,6 +29,7 @@ type ProductRow = RowDataPacket & {
 	category: string | null;
 	image_url: string;
 	images_json: unknown;
+	video_url: string | null;
 	price_cents: number;
 	swatches_json: unknown;
 	colors_json: unknown;
@@ -85,6 +86,7 @@ function mapRow(row: ProductRow): CatalogProduct {
 		category: row.category ?? "",
 		image,
 		images: images.length > 0 ? images : [image],
+		videoUrl: row.video_url?.trim() || null,
 		price: formatPriceRupees(row.price_cents),
 		priceCents: Number(row.price_cents) || 0,
 		swatches,
@@ -99,7 +101,7 @@ function mapRow(row: ProductRow): CatalogProduct {
 const SELECT_COLS = `
   id, slug, name, title, fabric, description, marketing_line,
   alternatives_json, details_json, category, image_url, images_json,
-  price_cents, swatches_json, colors_json, sizes_json, size_fit,
+  video_url, price_cents, swatches_json, colors_json, sizes_json, size_fit,
   shipping, pdp_layout
 `;
 

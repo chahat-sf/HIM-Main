@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import HimWaySection from "@/components/HimWaySection";
 import RouteLoading from "@/components/RouteLoading";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,12 +32,12 @@ function categoryHref(filter: string) {
   return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
 }
 
-const EXPLORE_ITEMS = [
+/* const EXPLORE_ITEMS = [
   { label: "ALL MEN'S", href: "/collection", image: "/lookbook/man-on-lunch.webp" },
   { label: "JACKETS", href: "/collection?category=JACKETS", image: "/lookbook/man-on-bike.webp" },
   { label: "SUITS", href: "/collection?category=SUITS", image: "/lookbook/man-on-car.webp" },
   { label: "BLAZERS", href: "/collection?category=BLAZERS", image: "/lookbook/Where-The-Sun-Settles.webp" },
-];
+]; */
 
 function HeartIcon({ filled }: { filled?: boolean }) {
   return (
@@ -212,6 +213,9 @@ function CollectionPageInner() {
           </div>
         </div>
 
+        {/* Scroll target for Him Way "EXPLORE MORE" */}
+        <div id="collection-listing" aria-hidden="true" />
+
         {/* ── FILTER BAR ──────────────────────────────────────────── */}
         <div className="collection-bar">
           <div className="collection-bar-left">
@@ -246,7 +250,7 @@ function CollectionPageInner() {
         </div>
         */}
 
-        {/* ── MORE WAYS TO WEAR IT ─────────────────────────────────── */}
+        {/* ── MORE WAYS TO WEAR IT ───────────────────────────────────
         <section className="mwwi-section">
           <div className="mwwi-header">
             <div>
@@ -283,6 +287,9 @@ function CollectionPageInner() {
             ))}
           </div>
         </section>
+        */}
+
+        <HimWaySection />
       </main>
 
       <Footer />
@@ -293,6 +300,8 @@ function CollectionPageInner() {
           background: #fff;
           color: #111;
           min-height: 100vh;
+          overflow-x: clip;
+          max-width: 100%;
         }
 
         /* ── HERO ── */
@@ -360,10 +369,17 @@ function CollectionPageInner() {
         }
 
         /* ── FILTER BAR ── */
+        #collection-listing {
+          height: 0;
+          overflow: hidden;
+          scroll-margin-top: 0;
+        }
+
         .collection-bar {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
           padding: 0 clamp(16px, 4vw, 56px);
           height: 52px;
           border-bottom: 1px solid rgba(0,0,0,0.1);
@@ -371,15 +387,29 @@ function CollectionPageInner() {
           position: sticky;
           top: 0;
           z-index: 30;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .collection-bar-left {
           display: flex;
           align-items: center;
           gap: 4px;
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow-x: auto;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .collection-bar-left::-webkit-scrollbar {
+          display: none;
         }
 
         .collection-filter-btn {
+          flex: 0 0 auto;
           padding: 5px 12px;
           border: 1px solid transparent;
           background: transparent;
@@ -391,6 +421,7 @@ function CollectionPageInner() {
           color: rgba(0,0,0,0.45);
           cursor: pointer;
           transition: all 150ms ease;
+          white-space: nowrap;
         }
 
         .collection-filter-btn:hover,
@@ -400,11 +431,13 @@ function CollectionPageInner() {
         }
 
         .collection-count {
+          flex: 0 0 auto;
           font-family: Arial, Helvetica, sans-serif;
           font-size: 9px;
           font-weight: 400;
           letter-spacing: 0.5px;
           color: rgba(0,0,0,0.4);
+          white-space: nowrap;
         }
 
         /* ── PRODUCT GRID ── */

@@ -9,6 +9,17 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import { buildPdpMedia } from "@/lib/catalog-types";
+
+function PlayBadge() {
+  return (
+    <span className="pdp-thumb-play" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
+        <path d="M3 1.5v9l8-4.5L3 1.5Z" />
+      </svg>
+    </span>
+  );
+}
 
 function PlusIcon({ open }: { open: boolean }) {
   return (
@@ -78,6 +89,7 @@ export default function PdpSingle({
   related: CatalogProduct[];
 }) {
   const slug = product.slug;
+  const MEDIA = buildPdpMedia(product);
   const PRODUCT = {
     name: product.name,
     title: product.title,
@@ -100,10 +112,11 @@ export default function PdpSingle({
   const [bagError, setBagError] = useState("");
   const shotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
   const { addItem } = useCart();
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
-  const imageCount = PRODUCT.images.length;
+  const imageCount = MEDIA.length;
 
   const goCarousel = (step: number) => {
     if (imageCount < 1) return;
@@ -167,7 +180,20 @@ export default function PdpSingle({
       window.removeEventListener("scroll", pick);
       mq.removeEventListener("change", pick);
     };
-  }, [slug, PRODUCT.images.length]);
+  }, [slug, MEDIA.length]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    root.querySelectorAll<HTMLVideoElement>("video[data-pdp-media]").forEach((vid) => {
+      const idx = Number(vid.dataset.pdpIndex);
+      if (idx === activeImg) {
+        void vid.play().catch(() => {});
+      } else {
+        vid.pause();
+      }
+    });
+  }, [activeImg, slug]);
 
   const scrollToShot = (index: number) => {
     setActiveImg(index);
@@ -222,7 +248,7 @@ export default function PdpSingle({
     <>
       <PdpNavbar />
 
-      <main className="pdp-main pdp-single">
+      <main ref={rootRef} className="pdp-main pdp-single">
         <nav className="pdp-s-crumbs" aria-label="Breadcrumb">
           <ol className="pdp-s-crumbs-list">
             <li>
@@ -258,22 +284,41 @@ export default function PdpSingle({
                   className="pdp-s-carousel-stage"
                   onScroll={onCarouselScroll}
                 >
-                  {PRODUCT.images.map((src, i) => (
-                    <div key={src} className="pdp-s-carousel-slide">
-                      <Image
-                        src={src}
-                        alt={
-                          i === 0
-                            ? PRODUCT.name
-                            : `${PRODUCT.name} view ${i + 1}`
-                        }
-                        fill
-                        priority={i === 0}
-                        quality={90}
-                        sizes="100vw"
-                        draggable={false}
-                        className="pdp-s-carousel-frame object-contain object-center"
-                      />
+                  {MEDIA.map((item, i) => (
+                    <div
+                      key={item.kind === "image" ? item.src : `video-${item.src}`}
+                      className="pdp-s-carousel-slide"
+                    >
+                      {item.kind === "image" ? (
+                        <Image
+                          src={item.src}
+                          alt={
+                            i === 0
+                              ? PRODUCT.name
+                              : `${PRODUCT.name} view ${i + 1}`
+                          }
+                          fill
+                          priority={i === 0}
+                          quality={90}
+                          sizes="100vw"
+                          draggable={false}
+                          className="pdp-s-carousel-frame object-contain object-center"
+                        />
+                      ) : (
+                        <video
+                          data-pdp-media
+                          data-pdp-index={i}
+                          className="pdp-s-carousel-frame pdp-media-video"
+                          src={item.src}
+                          poster={item.poster}
+                          muted
+                          playsInline
+                          controls
+                          loop
+                          preload="metadata"
+                          aria-label={`${PRODUCT.name} video`}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -349,18 +394,22 @@ export default function PdpSingle({
                 role="listbox"
                 aria-label="Product images"
               >
-                {PRODUCT.images.map((src, i) => (
+                {MEDIA.map((item, i) => (
                   <button
-                    key={src}
+                    key={item.kind === "image" ? item.src : `video-${item.src}`}
                     type="button"
                     role="option"
                     aria-selected={activeImg === i}
-                    aria-label={`View image ${i + 1}`}
-                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}`}
+                    aria-label={
+                      item.kind === "video"
+                        ? "View product video"
+                        : `View image ${i + 1}`
+                    }
+                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}${item.kind === "video" ? " is-video" : ""}`}
                     onClick={() => scrollToShot(i)}
                   >
                     <Image
-                      src={src}
+                      src={item.kind === "image" ? item.src : item.poster}
                       alt=""
                       fill
                       quality={60}
@@ -368,34 +417,51 @@ export default function PdpSingle({
                       className="object-cover object-top"
                       style={{ objectFit: "cover", objectPosition: "top center" }}
                     />
+                    {item.kind === "video" ? <PlayBadge /> : null}
                   </button>
                 ))}
               </div>
 
               <div className="pdp-single-stack">
-                {PRODUCT.images.map((src, i) => (
+                {MEDIA.map((item, i) => (
                   <div
-                    key={src}
+                    key={item.kind === "image" ? item.src : `video-${item.src}`}
                     className="pdp-single-shot"
                     ref={(el) => {
                       shotRefs.current[i] = el;
                     }}
                     style={{ scrollMarginTop: "var(--pdp-nav-h)" }}
                   >
-                    <Image
-                      src={src}
-                      alt={
-                        i === 0
-                          ? PRODUCT.name
-                          : `${PRODUCT.name} view ${i + 1}`
-                      }
-                      width={1200}
-                      height={1500}
-                      priority={i < 2}
-                      quality={90}
-                      sizes="(max-width: 768px) 100vw, 40vw"
-                      className="pdp-single-shot-img"
-                    />
+                    {item.kind === "image" ? (
+                      <Image
+                        src={item.src}
+                        alt={
+                          i === 0
+                            ? PRODUCT.name
+                            : `${PRODUCT.name} view ${i + 1}`
+                        }
+                        width={1200}
+                        height={1500}
+                        priority={i < 2}
+                        quality={90}
+                        sizes="(max-width: 768px) 100vw, 40vw"
+                        className="pdp-single-shot-img"
+                      />
+                    ) : (
+                      <video
+                        data-pdp-media
+                        data-pdp-index={i}
+                        className="pdp-media-video pdp-single-shot-img"
+                        src={item.src}
+                        poster={item.poster}
+                        muted
+                        playsInline
+                        controls
+                        loop
+                        preload="metadata"
+                        aria-label={`${PRODUCT.name} video`}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -702,6 +768,18 @@ export default function PdpSingle({
           border-color: var(--pdp-ink);
         }
 
+        .pdp-single .pdp-thumb-play {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.28);
+          pointer-events: none;
+        }
+
         .pdp-single-stack {
           flex: 1;
           min-width: 0;
@@ -722,6 +800,16 @@ export default function PdpSingle({
           width: 100%;
           height: auto;
           display: block;
+        }
+
+        .pdp-single-shot .pdp-media-video {
+          width: 100%;
+          height: auto;
+          display: block;
+          aspect-ratio: 4 / 5;
+          object-fit: cover;
+          object-position: center;
+          background: #e9e6e1;
         }
 
         /* Buy box sticks; page scroll moves the left image stack */
@@ -1254,6 +1342,17 @@ export default function PdpSingle({
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
+          }
+
+          .pdp-s-carousel-frame.pdp-media-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            pointer-events: auto;
+            background: #e9e6e1;
           }
 
           .pdp-s-carousel-arrow {
