@@ -98,9 +98,31 @@ export default function PdpSingle({
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
   const shotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
   const { addItem } = useCart();
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
+  const imageCount = PRODUCT.images.length;
+
+  const goCarousel = (step: number) => {
+    if (imageCount < 1) return;
+    setActiveImg((i) => {
+      const next = (i + step + imageCount) % imageCount;
+      const el = carouselRef.current;
+      if (el) {
+        const w = el.clientWidth;
+        el.scrollTo({ left: next * w, behavior: "smooth" });
+      }
+      return next;
+    });
+  };
+
+  const onCarouselScroll = () => {
+    const el = carouselRef.current;
+    if (!el || el.clientWidth < 1) return;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveImg((i) => (next === i ? i : Math.max(0, Math.min(imageCount - 1, next))));
+  };
 
   useEffect(() => {
     setSelectedColor(PRODUCT.colors[0]?.name ?? "");
@@ -109,14 +131,19 @@ export default function PdpSingle({
     setAdded(false);
     setAdding(false);
     setBagError("");
+    carouselRef.current?.scrollTo({ left: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 769px)");
+    if (!mq.matches) return;
+
     const shots = shotRefs.current.filter(Boolean) as HTMLDivElement[];
     if (!shots.length) return;
 
     const pick = () => {
+      if (!mq.matches) return;
       const line = window.innerHeight * 0.45;
       let next = 0;
       shots.forEach((el, i) => {
@@ -132,10 +159,12 @@ export default function PdpSingle({
     });
     shots.forEach((el) => observer.observe(el));
     window.addEventListener("scroll", pick, { passive: true });
+    mq.addEventListener("change", pick);
     pick();
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", pick);
+      mq.removeEventListener("change", pick);
     };
   }, [slug, PRODUCT.images.length]);
 
@@ -180,14 +209,138 @@ export default function PdpSingle({
     }
   };
 
+  const category = product.category?.trim() || "";
+  const categoryHref = category
+    ? `/collection?category=${encodeURIComponent(category)}`
+    : "/collection";
+  const progressPct =
+    imageCount > 0 ? ((activeImg + 1) / imageCount) * 100 : 0;
+
   return (
     <>
       <PdpNavbar />
 
       <main className="pdp-main pdp-single">
+        <nav className="pdp-s-crumbs" aria-label="Breadcrumb">
+          <ol className="pdp-s-crumbs-list">
+            <li>
+              <Link href="/">HOME</Link>
+            </li>
+            <li aria-hidden="true" className="pdp-s-crumbs-sep">
+              &gt;
+            </li>
+            <li>
+              <Link href="/collection">COLLECTION</Link>
+            </li>
+            {category ? (
+              <>
+                <li aria-hidden="true" className="pdp-s-crumbs-sep">
+                  &gt;
+                </li>
+                <li>
+                  <Link href={categoryHref}>{category}</Link>
+                </li>
+              </>
+            ) : null}
+          </ol>
+        </nav>
+
         <div className="pdp-columns">
-          {/* Left: thumbs + stacked images (same chrome as outfit) */}
+          {/* Left: desktop thumbs + stack; mobile carousel */}
           <div className="pdp-left pdp-single-left">
+            {/* Mobile carousel (hidden on desktop) — native swipe via scroll-snap */}
+            <div className="pdp-s-carousel">
+              <div className="pdp-s-carousel-viewport">
+                <div
+                  ref={carouselRef}
+                  className="pdp-s-carousel-stage"
+                  onScroll={onCarouselScroll}
+                >
+                  {PRODUCT.images.map((src, i) => (
+                    <div key={src} className="pdp-s-carousel-slide">
+                      <Image
+                        src={src}
+                        alt={
+                          i === 0
+                            ? PRODUCT.name
+                            : `${PRODUCT.name} view ${i + 1}`
+                        }
+                        fill
+                        priority={i === 0}
+                        quality={90}
+                        sizes="100vw"
+                        draggable={false}
+                        className="pdp-s-carousel-frame object-contain object-center"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {imageCount > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="pdp-s-carousel-arrow pdp-s-carousel-arrow--prev"
+                      aria-label="Previous image"
+                      onClick={() => goCarousel(-1)}
+                    >
+                      <svg
+                        width="10"
+                        height="16"
+                        viewBox="0 0 10 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M8.5 1L1.5 8l7 7"
+                          stroke="currentColor"
+                          strokeWidth="1.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="pdp-s-carousel-arrow pdp-s-carousel-arrow--next"
+                      aria-label="Next image"
+                      onClick={() => goCarousel(1)}
+                    >
+                      <svg
+                        width="10"
+                        height="16"
+                        viewBox="0 0 10 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M1.5 1L8.5 8l-7 7"
+                          stroke="currentColor"
+                          strokeWidth="1.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
+              {imageCount > 1 && (
+                <div
+                  className="pdp-s-carousel-progress"
+                  role="progressbar"
+                  aria-valuemin={1}
+                  aria-valuemax={imageCount}
+                  aria-valuenow={activeImg + 1}
+                  aria-label={`Image ${activeImg + 1} of ${imageCount}`}
+                >
+                  <span
+                    className="pdp-s-carousel-progress-fill"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="pdp-single-left-inner">
               <div
                 className="pdp-thumbs"
@@ -421,6 +574,7 @@ export default function PdpSingle({
           background: #fff;
           color: var(--pdp-ink);
           --u: calc(min(100vw, 1440px) / 1440);
+          /* Match PdpNavbar.module.css --pdp-nav-h (logo bar; mobile adds explore strip) */
           --pdp-nav-h: 68px;
           padding-top: var(--pdp-nav-h);
         }
@@ -429,6 +583,50 @@ export default function PdpSingle({
           display: grid;
           grid-template-columns: 40% 60%;
           align-items: start;
+        }
+
+        /* Breadcrumbs — compact Kith-style caps */
+        .pdp-s-crumbs {
+          position: relative;
+          z-index: 1;
+          padding: 14px calc(24 * var(--u)) 10px;
+          background: #fff;
+        }
+
+        .pdp-s-crumbs-list {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          font-family: var(--pdp-sans);
+          font-size: 10px;
+          font-weight: 400;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(17, 17, 17, 0.55);
+        }
+
+        .pdp-s-crumbs-list a {
+          color: inherit;
+          text-decoration: none;
+          transition: color 180ms ease;
+        }
+
+        .pdp-s-crumbs-list a:hover {
+          color: var(--pdp-ink);
+        }
+
+        .pdp-s-crumbs-sep {
+          color: rgba(0, 0, 0, 0.28);
+          font-weight: 300;
+        }
+
+        /* Mobile carousel — desktop hidden */
+        .pdp-s-carousel {
+          display: none;
         }
 
         /* Single: left scrolls (stacked shots), right sticks */
@@ -943,16 +1141,112 @@ export default function PdpSingle({
         }
 
         @media (max-width: 768px) {
+          /* Must match PdpNavbar mobile --pdp-nav-h (56 + 36) */
           .pdp-main {
-            --pdp-nav-h: 56px;
+            --pdp-nav-h: 92px;
+          }
+
+          .pdp-s-crumbs {
+            padding: 14px 16px 12px;
           }
 
           .pdp-columns {
             display: block;
           }
 
-          .pdp-single .pdp-thumbs {
+          .pdp-single-left-inner {
             display: none;
+          }
+
+          .pdp-s-carousel {
+            display: block;
+            background: #fff;
+          }
+
+          .pdp-s-carousel-viewport {
+            position: relative;
+            width: 100%;
+            background: #e9e6e1;
+          }
+
+          .pdp-s-carousel-stage {
+            display: flex;
+            width: 100%;
+            aspect-ratio: 4 / 5;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            scrollbar-width: none;
+            overscroll-behavior-x: contain;
+          }
+
+          .pdp-s-carousel-stage::-webkit-scrollbar {
+            display: none;
+          }
+
+          .pdp-s-carousel-slide {
+            position: relative;
+            flex: 0 0 100%;
+            width: 100%;
+            height: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            background: #e9e6e1;
+          }
+
+          .pdp-s-carousel-frame {
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+          }
+
+          .pdp-s-carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 48px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: rgba(0, 0, 0, 0.55);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+          }
+
+          .pdp-s-carousel-arrow:hover,
+          .pdp-s-carousel-arrow:active {
+            color: rgba(0, 0, 0, 0.85);
+          }
+
+          .pdp-s-carousel-arrow--prev {
+            left: 2px;
+          }
+
+          .pdp-s-carousel-arrow--next {
+            right: 2px;
+          }
+
+          .pdp-s-carousel-progress {
+            position: relative;
+            height: 2px;
+            margin: 0;
+            background: rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+          }
+
+          .pdp-s-carousel-progress-fill {
+            display: block;
+            height: 100%;
+            background: #111;
+            transition: width 280ms ease;
           }
 
           .pdp-single .pdp-single-right {

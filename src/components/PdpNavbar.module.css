@@ -1,10 +1,14 @@
 .nav {
+  /* Shared with PDP main padding so content clears the fixed bar */
+  --pdp-nav-h: 68px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 50;
   width: 100%;
+  height: var(--pdp-nav-h);
+  box-sizing: border-box;
   background: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   color: #111;
@@ -120,6 +124,11 @@
 }
 
 @media (max-width: 768px) {
+  /* logo row 56px + explore strip 36px */
+  .nav {
+    --pdp-nav-h: 92px;
+  }
+
   .row {
     height: 56px;
     padding: 0 16px;
@@ -152,7 +161,9 @@
     align-items: center;
     justify-content: flex-start;
     gap: 22px;
-    padding: 4px 16px 14px;
+    height: 36px;
+    padding: 0 16px;
+    box-sizing: border-box;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;

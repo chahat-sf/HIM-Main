@@ -10,9 +10,9 @@ gsap.registerPlugin(useGSAP);
 const DEFAULT_OUTFITS = ["Outfit 1", "Outfit 2", "Outfit 3"];
 
 const STATS = [
-  { label: "Style", value: 0.75 },
-  { label: "Comfort", value: 0.5 },
-  { label: "Confidence", value: 0.85 },
+  { label: "Style", value: 1 },
+  { label: "Comfort", value: 1 },
+  { label: "Confidence", value: 1 },
 ] as const;
 
 export const OUTFIT_COUNT = 3;

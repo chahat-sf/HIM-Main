@@ -11,28 +11,20 @@ type FooterLink = { label: string; href: string };
 
 const HELP_LINKS: FooterLink[] = [
   { label: "HELP CENTER", href: "/collection" },
-  { label: "SUPPORT", href: "/collection" },
   { label: "CONTACT", href: "/collection" },
-  { label: "RETURN PORTAL", href: "/collection" },
-  { label: "RETURN POLICY", href: "/collection" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
-  { label: "REWARDS", href: "/collection" },
   { label: "REVIEWS", href: "/collection" },
   { label: "ACCOUNT", href: "/login" },
-  { label: "CAREERS", href: "/collection" },
 ];
 
 const SOCIAL_LINKS: FooterLink[] = [
   { label: "INSTAGRAM", href: "#" },
-  { label: "TIKTOK", href: "#" },
   { label: "YOUTUBE", href: "#" },
 ];
 
-const STORE_HOURS = ["MON-FRI: 11-7", "SAT: 11-5:30", "SUN: 11-5:30"];
-
-type AccordionKey = "help" | "links" | "store" | "social" | null;
+type AccordionKey = "help" | "links" | "social" | null;
 
 function ArrowIcon() {
   return (
@@ -199,32 +191,6 @@ export default function Footer() {
           </form>
         </div>
 
-        {/* THE STORE */}
-        <div className="him-footer-col him-footer-col--store">
-          <button
-            type="button"
-            className="him-footer-col-toggle"
-            aria-expanded={open === "store"}
-            onClick={() => toggle("store")}
-          >
-            <span className="him-footer-col-title">THE STORE</span>
-            <AccordionChevron open={open === "store"} />
-          </button>
-          <p className="him-footer-col-title him-footer-col-title--desktop">
-            THE STORE
-          </p>
-          <div
-            className={`him-footer-store${open === "store" ? " is-open" : ""}`}
-          >
-            <p className="him-footer-store-country">INDIA</p>
-            <ul className="him-footer-store-hours">
-              {STORE_HOURS.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
         {/* SOCIAL */}
         <nav
           className="him-footer-col him-footer-col--social"
@@ -289,7 +255,7 @@ export default function Footer() {
 
         .him-footer-grid {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 32px 20px;
           align-items: start;
           max-width: 1100px;
@@ -433,39 +399,6 @@ export default function Footer() {
           text-align: center;
         }
 
-        /* Store */
-        .him-footer-store {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 14px;
-          text-align: center;
-        }
-
-        .him-footer-store-country {
-          margin: 0;
-          font-size: 10px;
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
-          color: rgba(245, 241, 233, 0.9);
-          text-align: center;
-        }
-
-        .him-footer-store-hours {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
-          font-size: 10px;
-          letter-spacing: 0.4px;
-          color: rgba(245, 241, 233, 0.7);
-          text-transform: uppercase;
-          text-align: center;
-        }
-
         /* Rule + bottom */
         .him-footer-rule {
           border: none;
@@ -513,8 +446,7 @@ export default function Footer() {
             padding: 0;
           }
 
-          .him-footer-col-list,
-          .him-footer-store {
+          .him-footer-col-list {
             align-items: flex-start;
             text-align: left;
           }
@@ -531,14 +463,12 @@ export default function Footer() {
             display: flex;
           }
 
-          .him-footer-col-list,
-          .him-footer-store {
+          .him-footer-col-list {
             display: none;
             padding: 12px 0 18px;
           }
 
-          .him-footer-col-list.is-open,
-          .him-footer-store.is-open {
+          .him-footer-col-list.is-open {
             display: flex;
           }
 
