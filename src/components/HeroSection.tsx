@@ -366,63 +366,62 @@ export default function HeroSection() {
 
         /* ───────── Hero text (left, bottom) ───────── */
 
-        .him-hero-copy {
-          left: clamp(20px, 5.9vw, 112px);
-          bottom: clamp(28px, 5vh, 60px);
-          max-width: min(90%, 560px);
-          color: #fff;
-        }
+       .him-hero-copy {
+  left: clamp(20px, 5.9vw, 112px);
+  bottom: clamp(28px, 5vh, 60px);
+  max-width: min(90%, 560px);
+  color: #fff;
+}
 
-        .him-hero-label {
-          display: block;
-          margin-bottom: clamp(10px, 1.4vh, 16px);
-          margin-bottom: -3px;
-          color: rgba(255, 255, 255, 0.7);
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: clamp(8px, 0.6vw, 11px);
-          font-weight: 400;
-          letter-spacing: 1.6px;
-          text-transform: uppercase;
-        }
+.him-hero-label {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(8px, 0.6vw, 11px);
+  font-weight: 400;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
 
-        .him-hero-title {
-          margin: 0;
-          color: #fff;
-          font-family: "Cormorant Garamond", "Cinzel", Georgia, serif;
-          font-size: clamp(34px, 4.2vw, 76px);
-          font-weight: 500;
-          font-variant: small-caps;
-          line-height: 1.04;
-          letter-spacing: 0.01em;
-        }
+.him-hero-title {
+  margin: 0;
+  color: #fff;
+  font-family: "Cormorant Garamond", "Cinzel", Georgia, serif;
+  font-size: clamp(34px, 4.2vw, 76px);
+  font-weight: 500;
+  font-variant: small-caps;
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+}
 
-        .him-hero-text {
-          margin: clamp(12px, 1.8vh, 20px) 0 0;
-          max-width: 340px;
-          color: rgba(255, 255, 255, 0.82);
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: clamp(11px, 0.85vw, 15px);
-          font-weight: 400;
-          line-height: 1.55;
-        }
+.him-hero-text {
+  margin: 10px 0 0;
+  max-width: 340px;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(11px, 0.85vw, 15px);
+  font-weight: 400;
+  line-height: 1.4;
+}
 
-        .him-hero-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: clamp(16px, 2.4vh, 26px);
-          height: clamp(32px, 2.7vw, 46px);
-          padding: 0 clamp(16px, 1.5vw, 26px);
-          background: #fff;
-          color: #1a1612;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: clamp(9px, 0.7vw, 12px);
-          font-weight: 500;
-          letter-spacing: 0.4px;
-          text-decoration: none;
-          text-transform: uppercase;
-          transition: background 200ms ease, transform 200ms ease;
-        }
+.him-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  height: clamp(32px, 2.7vw, 46px);
+  padding: 0 clamp(16px, 1.5vw, 26px);
+  background: #fff;
+  color: #1a1612;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(9px, 0.7vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 200ms ease, transform 200ms ease;
+}
 
         .him-hero-btn:hover {
           background: #f1eee9;
@@ -430,26 +429,28 @@ export default function HeroSection() {
         }
 
         @media (max-width: 768px) {
-          .him-hero-copy {
-            left: 20px;
-            bottom: 36px;
-          }
+  .him-hero-copy {
+    left: 20px;
+    bottom: 36px;
+  }
 
-          .him-hero-title {
-            font-size: clamp(34px, 10vw, 48px);
-          }
+  .him-hero-title {
+    font-size: clamp(34px, 10vw, 48px);
+    line-height: 0.92;
+  }
 
-          .him-hero-text {
-            max-width: 260px;
-            font-size: 12px;
-          }
+  .him-hero-text {
+    max-width: 260px;
+    font-size: 12px;
+    margin-top: 10px;
+  }
 
-          .him-hero-btn {
-            height: 36px;
-            font-size: 10px;
-            margin-top: 18px;
-          }
-        }
+  .him-hero-btn {
+    height: 36px;
+    font-size: 10px;
+    margin-top: 14px;
+  }
+}
       `}</style>
     </section>
   );

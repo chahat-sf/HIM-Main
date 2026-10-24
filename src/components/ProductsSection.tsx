@@ -723,14 +723,10 @@ function EditorialCollage() {
           motion.
         </p>
 
-        <button
-          type="button"
-          onClick={() =>
-            document.getElementById("components")?.scrollIntoView({
-              behavior: "smooth",
-            })
-          }
+        <Link
+          href="/collection"
           style={{
+            display: "inline-block",
             marginTop: "10px",
             padding: "0 0 3px",
             border: "none",
@@ -742,11 +738,12 @@ function EditorialCollage() {
             fontWeight: 500,
             letterSpacing: "0.4px",
             textTransform: "uppercase",
+            textDecoration: "none",
             cursor: "pointer",
           }}
         >
           Explore the edit →
-        </button>
+        </Link>
       </div>
 
       {/* OVERLAPPING BOTTOM TYPOGRAPHY OVERLAY */}
@@ -990,37 +987,37 @@ function ProvisionsSection() {
             </p>
 
             {/* BUTTON */}
-            <button
-              type="button"
-              style={{
-                marginTop: "22px",
-                height: "36px",
-                padding: "0 24px",
-                border: "none",
-                borderRadius: 0,
-                background: "#fff",
-                color: "#27221e",
-                fontFamily: "Arial, Helvetica, sans-serif",
-                fontSize: "10px",
-                fontWeight: 500,
-                letterSpacing: "0.3px",
-                lineHeight: 1,
-                cursor: "pointer",
-                transition:
-                  "transform 200ms ease, background 200ms ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform =
-                  "translateY(-2px)";
-                e.currentTarget.style.background = "#f1eee9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.background = "#ffffff";
-              }}
-            >
-              EXPLORE NOW&nbsp; →
-            </button>
+            <Link href="/collection" className="no-underline">
+              <button
+                type="button"
+                style={{
+                  marginTop: "22px",
+                  height: "36px",
+                  padding: "0 24px",
+                  border: "none",
+                  borderRadius: 0,
+                  background: "#fff",
+                  color: "#27221e",
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                  fontSize: "10px",
+                  fontWeight: 500,
+                  letterSpacing: "0.3px",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  transition: "transform 200ms ease, background 200ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.background = "#f1eee9";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.background = "#ffffff";
+                }}
+              >
+                EXPLORE NOW&nbsp; →
+              </button>
+            </Link>
           </div>
         </div>
       </div>
