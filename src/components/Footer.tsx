@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { buildLoginHref } from "@/lib/auth-redirect";
@@ -70,6 +70,9 @@ function AccordionChevron({ open }: { open: boolean }) {
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [open, setOpen] = useState<AccordionKey>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
   const { isAuthenticated } = useSession();
 
   const LINKS = useMemo(
@@ -87,6 +90,46 @@ export default function Footer() {
 
   const toggle = (key: AccordionKey) => {
     setOpen((prev) => (prev === key ? null : key));
+  };
+
+  const onNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setStatus("idle");
+    setStatusMessage("");
+
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "footer" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        alreadySubscribed?: boolean;
+      };
+
+      if (!res.ok) {
+        setStatus("error");
+        setStatusMessage(data.error || "Unable to subscribe. Please try again.");
+        return;
+      }
+
+      setStatus("success");
+      setStatusMessage(
+        data.alreadySubscribed
+          ? "You're already on the list."
+          : "Thanks — you're subscribed.",
+      );
+      setEmail("");
+    } catch {
+      setStatus("error");
+      setStatusMessage("Unable to subscribe. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -120,15 +163,19 @@ export default function Footer() {
           <p className="him-footer-col-title him-footer-col-title--desktop">
             HELP
           </p>
-          <ul
-            className={`him-footer-col-list${open === "help" ? " is-open" : ""}`}
+          <div
+            className={`him-footer-col-panel${open === "help" ? " is-open" : ""}`}
           >
-            {HELP_LINKS.map((link) => (
-              <li key={link.label}>
-                <Link href={link.href}>{link.label}</Link>
-              </li>
-            ))}
-          </ul>
+            <div className="him-footer-col-panel-inner">
+              <ul className="him-footer-col-list">
+                {HELP_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </nav>
 
         {/* LINKS */}
@@ -145,22 +192,26 @@ export default function Footer() {
           <p className="him-footer-col-title him-footer-col-title--desktop">
             LINKS
           </p>
-          <ul
-            className={`him-footer-col-list${open === "links" ? " is-open" : ""}`}
+          <div
+            className={`him-footer-col-panel${open === "links" ? " is-open" : ""}`}
           >
-            {LINKS.map((link) => (
-              <li key={link.label}>
-                <Link href={link.href}>{link.label}</Link>
-              </li>
-            ))}
-          </ul>
+            <div className="him-footer-col-panel-inner">
+              <ul className="him-footer-col-list">
+                {LINKS.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </nav>
 
         {/* NEWSLETTER (center) */}
         <div className="him-footer-newsletter">
           <form
             className="him-footer-newsletter-form"
-            onSubmit={(event) => event.preventDefault()}
+            onSubmit={onNewsletterSubmit}
           >
             <label
               className="him-footer-col-title him-footer-newsletter-label"
@@ -173,19 +224,40 @@ export default function Footer() {
                 id="NewsletterForm--footer"
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.currentTarget.value)}
+                onChange={(event) => {
+                  setEmail(event.currentTarget.value);
+                  if (status !== "idle") {
+                    setStatus("idle");
+                    setStatusMessage("");
+                  }
+                }}
                 placeholder="Email address"
                 aria-label="Email address"
                 autoComplete="email"
                 required
+                disabled={submitting}
               />
-              <button type="submit" aria-label="Subscribe">
+              <button
+                type="submit"
+                aria-label="Subscribe"
+                disabled={submitting}
+              >
                 <ArrowIcon />
               </button>
             </div>
             <p className="him-footer-newsletter-copy">
               For tailored offers and news on our latest collections.
             </p>
+            {statusMessage ? (
+              <p
+                className={`him-footer-newsletter-status${
+                  status === "error" ? " is-error" : " is-success"
+                }`}
+                role="status"
+              >
+                {statusMessage}
+              </p>
+            ) : null}
           </form>
         </div>
 
@@ -206,15 +278,19 @@ export default function Footer() {
           <p className="him-footer-col-title him-footer-col-title--desktop">
             SOCIAL
           </p>
-          <ul
-            className={`him-footer-col-list${open === "social" ? " is-open" : ""}`}
+          <div
+            className={`him-footer-col-panel${open === "social" ? " is-open" : ""}`}
           >
-            {SOCIAL_LINKS.map((link) => (
-              <li key={link.label}>
-                <Link href={link.href}>{link.label}</Link>
-              </li>
-            ))}
-          </ul>
+            <div className="him-footer-col-panel-inner">
+              <ul className="him-footer-col-list">
+                {SOCIAL_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </nav>
       </div>
 
@@ -294,6 +370,16 @@ export default function Footer() {
           margin: 0;
         }
 
+        .him-footer-col-panel {
+          display: grid;
+          grid-template-rows: 1fr;
+        }
+
+        .him-footer-col-panel-inner {
+          min-height: 0;
+          overflow: hidden;
+        }
+
         .him-footer-col-list {
           list-style: none;
           margin: 0;
@@ -371,6 +457,12 @@ export default function Footer() {
           text-align: center;
         }
 
+        .him-footer-newsletter-field input:disabled,
+        .him-footer-newsletter-field button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
         .him-footer-newsletter-field button {
           flex-shrink: 0;
           width: 36px;
@@ -384,7 +476,7 @@ export default function Footer() {
           padding: 0;
         }
 
-        .him-footer-newsletter-field button:hover {
+        .him-footer-newsletter-field button:hover:not(:disabled) {
           opacity: 0.75;
         }
 
@@ -395,6 +487,22 @@ export default function Footer() {
           color: rgba(245, 241, 233, 0.55);
           max-width: 240px;
           text-align: center;
+        }
+
+        .him-footer-newsletter-status {
+          margin: 10px 0 0;
+          font-size: 10px;
+          line-height: 1.4;
+          letter-spacing: 0.4px;
+          max-width: 240px;
+        }
+
+        .him-footer-newsletter-status.is-success {
+          color: rgba(245, 241, 233, 0.85);
+        }
+
+        .him-footer-newsletter-status.is-error {
+          color: #e8b4a0;
         }
 
         /* Rule + bottom */
@@ -447,6 +555,7 @@ export default function Footer() {
           .him-footer-col-list {
             align-items: flex-start;
             text-align: left;
+            padding: 12px 0 18px;
           }
 
           .him-footer-col {
@@ -461,13 +570,13 @@ export default function Footer() {
             display: flex;
           }
 
-          .him-footer-col-list {
-            display: none;
-            padding: 12px 0 18px;
+          .him-footer-col-panel {
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1);
           }
 
-          .him-footer-col-list.is-open {
-            display: flex;
+          .him-footer-col-panel.is-open {
+            grid-template-rows: 1fr;
           }
 
           .him-footer-rule {
@@ -478,6 +587,12 @@ export default function Footer() {
             flex-direction: column;
             text-align: center;
             gap: 10px;
+          }
+        }
+
+        @media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+          .him-footer-col-panel {
+            transition: none;
           }
         }
       `}</style>
