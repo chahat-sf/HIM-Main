@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:seed-products": "node scripts/seed-products.mjs"
+    "db:seed-products": "node scripts/seed-products.mjs",
+    "images:cards": "node scripts/generate-card-images.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

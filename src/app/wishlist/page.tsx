@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
+import { toCardImage } from "@/lib/card-image";
 import { useWishlist } from "@/hooks/useWishlist";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -84,10 +85,10 @@ export default function WishlistPage() {
                       className="wish-card-img him-card-media"
                     >
                       <Image
-                        src={item.image}
+                        src={toCardImage(item.image)}
                         alt={item.name}
                         fill
-                        quality={80}
+                        quality={75}
                         sizes="(max-width: 768px) 50vw, 25vw"
                         className="object-cover object-top"
                         style={{ objectFit: "cover", objectPosition: "top center" }}

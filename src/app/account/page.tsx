@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
 import type { AccountPayload } from "@/lib/account";
 import { buildLoginHref } from "@/lib/auth-redirect";
+import { toCardImage } from "@/lib/card-image";
 import { firstNameFromFullName, formatDisplayDate } from "@/lib/format";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -530,10 +531,10 @@ export default function AccountPage() {
                       >
                         <div className="acc-saved-img him-card-media">
                           <Image
-                            src={item.image}
+                            src={toCardImage(item.image)}
                             alt={item.name}
                             fill
-                            quality={80}
+                            quality={75}
                             sizes="(max-width: 768px) 50vw, 28vw"
                             className="object-cover object-top"
                             style={{ objectFit: "cover", objectPosition: "top center" }}

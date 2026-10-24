@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
+import { toCardImage } from "@/lib/card-image";
 
 function PlayBadge() {
   return (
@@ -188,7 +189,7 @@ export default function PdpSingle({
     root.querySelectorAll<HTMLVideoElement>("video[data-pdp-media]").forEach((vid) => {
       const idx = Number(vid.dataset.pdpIndex);
       if (idx === activeImg) {
-        void vid.play().catch(() => {});
+        void vid.play().catch(() => { });
       } else {
         vid.pause();
       }
@@ -313,7 +314,6 @@ export default function PdpSingle({
                           poster={item.poster}
                           muted
                           playsInline
-                          controls
                           loop
                           preload="metadata"
                           aria-label={`${PRODUCT.name} video`}
@@ -456,7 +456,6 @@ export default function PdpSingle({
                         poster={item.poster}
                         muted
                         playsInline
-                        controls
                         loop
                         preload="metadata"
                         aria-label={`${PRODUCT.name} video`}
@@ -613,10 +612,10 @@ export default function PdpSingle({
               >
                 <div className="pdp-related-img">
                   <Image
-                    src={r.image}
+                    src={toCardImage(r.image)}
                     alt={r.name}
                     fill
-                    quality={70}
+                    quality={75}
                     sizes="(max-width: 768px) 33vw, 12vw"
                     className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                   />

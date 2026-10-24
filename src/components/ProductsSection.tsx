@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import ProductCardMedia from "@/components/ProductCardMedia";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -44,6 +45,7 @@ type CarouselProduct = {
   name: string;
   price: string;
   image: string;
+  images?: string[];
   swatches: string[];
   id?: number;
   priceCents?: number;
@@ -78,6 +80,27 @@ function ChevronIcon({ dir }: { dir: "left" | "right" }) {
   return (
     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       {dir === "left" ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg
+      width="12"
+      height="9"
+      viewBox="0 0 14 10"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: "inline-block", verticalAlign: "middle" }}
+    >
+      <path
+        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -272,15 +295,13 @@ function ExistingProductsGrid() {
                 className="him-card-media relative w-full overflow-hidden"
                 style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
               >
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
+                <ProductCardMedia
+                  name={product.name}
+                  image={product.image}
+                  images={product.images}
                   priority={index < 3}
-                  quality={95}
+                  quality={75}
                   sizes="(max-width: 768px) 70vw, 28vw"
-                  className="object-cover object-top"
-                  style={{ objectFit: "cover", objectPosition: "top center" }}
                 />
 
                 {/* WISHLIST — plain icon, no circle */}
@@ -1044,7 +1065,7 @@ function ProvisionsSection() {
                   e.currentTarget.style.background = "#ffffff";
                 }}
               >
-                EXPLORE NOW&nbsp; →
+                EXPLORE NOW&nbsp; <ArrowIcon />
               </button>
             </Link>
           </div>

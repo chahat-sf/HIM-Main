@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
+import { toCardImage } from "@/lib/card-image";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
 
 function PlayBadge() {
@@ -184,7 +185,7 @@ export default function PdpOutfit({
     const vid = videoRef.current;
     if (!vid) return;
     if (activeImg === videoIndex && videoIndex >= 0) {
-      void vid.play().catch(() => {});
+      void vid.play().catch(() => { });
     } else {
       vid.pause();
     }
@@ -291,7 +292,6 @@ export default function PdpOutfit({
                         poster={item.poster}
                         muted
                         playsInline
-                        controls
                         loop
                         preload="metadata"
                         aria-label={`${PRODUCT.name} video`}
@@ -495,10 +495,10 @@ export default function PdpOutfit({
                   <Link key={r.slug} href={`/collection/${r.slug}`} className="pdp-related-card group">
                     <div className="pdp-related-img">
                       <Image
-                        src={r.image}
+                        src={toCardImage(r.image)}
                         alt={r.name}
                         fill
-                        quality={70}
+                        quality={75}
                         sizes="(max-width: 768px) 33vw, 12vw"
                         className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                       />

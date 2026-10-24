@@ -9,6 +9,7 @@ import { useSession } from "@/hooks/useSession";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import { toCardImage } from "@/lib/card-image";
 
 // ─── Style constants ────────────────────────────────────────────────────────
 
@@ -50,6 +51,8 @@ function toSearchProduct(p: CatalogProduct): SearchProduct {
     colors: p.swatches,
   };
 }
+
+
 
 // Banner at the bottom of the popup. Swap the image for your own "edit" photo.
 const EDIT_IMAGE = "/homepage/navbar-image.webp";
@@ -321,10 +324,10 @@ export default function Navbar() {
               >
                 <div className="him-sp-card-img him-card-media">
                   <Image
-                    src={p.image}
+                    src={toCardImage(p.image)}
                     alt={p.name}
                     fill
-                    quality={80}
+                    quality={75}
                     sizes="(max-width: 768px) 45vw, 22vw"
                     className="object-cover object-top"
                     style={{ objectFit: "cover", objectPosition: "top center" }}

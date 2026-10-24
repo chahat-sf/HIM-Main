@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import { toCardImage } from "@/lib/card-image";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -259,10 +260,10 @@ export default function CartPage() {
                         className="cart-item-thumb him-card-media"
                       >
                         <Image
-                          src={item.image}
+                          src={toCardImage(item.image)}
                           alt={item.name}
                           fill
-                          quality={70}
+                          quality={75}
                           sizes="88px"
                           className="object-cover object-top"
                           style={{ objectFit: "cover", objectPosition: "top center" }}
@@ -436,10 +437,10 @@ export default function CartPage() {
                 >
                   <div className="cart-rec-img him-card-media">
                     <Image
-                      src={item.image}
+                      src={toCardImage(item.image)}
                       alt={item.name}
                       fill
-                      quality={80}
+                      quality={75}
                       sizes="(max-width: 768px) 50vw, 28vw"
                       className="object-cover object-top"
                       style={{ objectFit: "cover", objectPosition: "top center" }}

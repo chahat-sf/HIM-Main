@@ -9,6 +9,7 @@ import RouteLoading from "@/components/RouteLoading";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
+import ProductCardMedia from "@/components/ProductCardMedia";
 import { useWishlist } from "@/hooks/useWishlist";
 
 // ─── Shared arrow SVG ───────────────────────────────────────────────
@@ -64,14 +65,12 @@ function ProductCard({ product }: { product: CatalogProduct }) {
     <Link href={`/collection/${product.slug}`} className="product-card group" style={{ textDecoration: "none" }}>
       {/* Image */}
       <div className="product-card-img him-card-media">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          quality={70}
+        <ProductCardMedia
+          name={product.name}
+          image={product.image}
+          images={product.images}
+          quality={75}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover object-top"
-          style={{ objectFit: "cover", objectPosition: "top center" }}
         />
         <button
           type="button"
@@ -189,14 +188,14 @@ function CollectionPageInner() {
         {/* ── HERO BANNER ─────────────────────────────────────────── */}
         <div className="collection-hero">
           <Image
-            src="/products/red-man-image.webp"
+            src="/products/collection-hero.webp"
             alt="All New Essentials"
             fill
             priority
-            quality={70}
+            quality={80}
             sizes="100vw"
             className="object-cover"
-            style={{ objectPosition: "50% 30%" }}
+            style={{ objectPosition: "22% 40%" }}
           />
           {/* overlay */}
           <div className="collection-hero-overlay" />

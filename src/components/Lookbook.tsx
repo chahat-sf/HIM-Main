@@ -32,17 +32,17 @@ const lookbooks = [
 function Arrow() {
   return (
     <svg
-      width="14"
-      height="10"
+      className="summer-feature-cta-arrow"
+      width="12"
+      height="9"
       viewBox="0 0 14 10"
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <path
         d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
         stroke="currentColor"
-        strokeWidth="0.8"
+        strokeWidth="1"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -156,8 +156,10 @@ export default function Lookbook() {
             </p>
 
             <Link href="/collection" className="summer-feature-link">
-              <span>OUR BRAND</span>
-              <Arrow />
+              <span className="summer-feature-cta">
+                <span className="summer-feature-cta-label">OUR BRAND</span>
+                <Arrow />
+              </span>
             </Link>
           </div>
         </div>
@@ -428,24 +430,43 @@ export default function Lookbook() {
 
         .summer-feature-link {
           display: inline-flex;
-          align-items: center;
-          gap: 6px;
+          flex-shrink: 0;
           margin-top: 16px;
-          padding-bottom: 3px;
+          text-decoration: none;
+          color: inherit;
+        }
+
+        .summer-feature-cta {
+          display: inline-flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+          padding-bottom: 4px;
           border-bottom: 1px solid #292724;
           color: #292724;
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 8px;
-          font-weight: 600;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.1em;
           line-height: 1;
-          letter-spacing: 0.3px;
           text-decoration: none;
           text-transform: uppercase;
-          transition: opacity 180ms ease;
+          white-space: nowrap;
+          transition: opacity 160ms ease;
         }
 
-        .summer-feature-link:hover {
-          opacity: 0.6;
+        .summer-feature-cta-label {
+          display: inline;
+        }
+
+        .summer-feature-cta :global(.summer-feature-cta-arrow) {
+          display: block;
+          flex-shrink: 0;
+        }
+
+        .summer-feature-cta:hover {
+          opacity: 0.55;
         }
 
         /* TABLET */
