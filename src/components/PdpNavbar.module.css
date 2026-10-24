@@ -10,7 +10,7 @@
   height: var(--pdp-nav-h);
   box-sizing: border-box;
   background: #fff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #d9d9d9;
   color: #111;
 }
 
@@ -124,6 +124,7 @@
 }
 
 @media (max-width: 768px) {
+
   /* logo row 56px + explore strip 36px */
   .nav {
     --pdp-nav-h: 92px;
