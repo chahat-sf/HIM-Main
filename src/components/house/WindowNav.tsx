@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Group, Matrix4, Vector3, type PerspectiveCamera } from "three";
@@ -159,11 +160,9 @@ function SceneHtml({
 }
 
 function Chevron({ direction }: { direction: "left" | "right" }) {
-  const path = direction === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6";
+  const Icon = direction === "left" ? ChevronLeft : ChevronRight;
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={path} />
-    </svg>
+    <Icon size={16} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
   );
 }
 

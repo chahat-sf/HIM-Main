@@ -3,6 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  ShoppingBag,
+} from "lucide-react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
@@ -50,60 +57,6 @@ type CarouselProduct = {
   id?: number;
   priceCents?: number;
 };
-
-function HeartIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-    </svg>
-  );
-}
-
-function BagIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 7h12l1 13H5L6 7Z" />
-      <path d="M9 10V6a3 3 0 0 1 6 0v4" />
-    </svg>
-  );
-}
-
-function ChevronIcon({ dir }: { dir: "left" | "right" }) {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {dir === "left" ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg
-      width="12"
-      height="9"
-      viewBox="0 0 14 10"
-      fill="none"
-      aria-hidden="true"
-      style={{ display: "inline-block", verticalAlign: "middle" }}
-    >
-      <path
-        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function ExistingProductsGrid() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -253,10 +206,10 @@ function ExistingProductsGrid() {
 
         <div className="flex items-center" style={{ gap: "8px" }}>
           <button type="button" aria-label="Previous" style={arrowStyle} onClick={() => scrollByCard(-1)}>
-            <ChevronIcon dir="left" />
+            <ChevronLeft size={10} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
           </button>
           <button type="button" aria-label="Next" style={arrowStyle} onClick={() => scrollByCard(1)}>
-            <ChevronIcon dir="right" />
+            <ChevronRight size={10} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
           </button>
         </div>
       </div>
@@ -339,7 +292,13 @@ function ExistingProductsGrid() {
                     });
                   }}
                 >
-                  <HeartIcon filled={inWishlist(product.slug)} />
+                  <Heart
+                    size={13}
+                    strokeWidth={1.25}
+                    absoluteStrokeWidth={false}
+                    fill={inWishlist(product.slug) ? "currentColor" : "none"}
+                    aria-hidden
+                  />
                 </button>
               </div>
             </Link>
@@ -416,7 +375,7 @@ function ExistingProductsGrid() {
                     opacity: 0.8,
                   }}
                 >
-                  <BagIcon />
+                  <ShoppingBag size={11} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                 </Link>
               </div>
 
@@ -1065,7 +1024,14 @@ function ProvisionsSection() {
                   e.currentTarget.style.background = "#ffffff";
                 }}
               >
-                EXPLORE NOW&nbsp; <ArrowIcon />
+                EXPLORE NOW&nbsp;{" "}
+                <ArrowRight
+                  size={12}
+                  strokeWidth={1.25}
+                  absoluteStrokeWidth={false}
+                  aria-hidden
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                />
               </button>
             </Link>
           </div>

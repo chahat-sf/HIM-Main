@@ -2,6 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Minus,
+  Play,
+  Plus,
+} from "lucide-react";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
@@ -15,31 +23,14 @@ import { toCardImage } from "@/lib/card-image";
 function PlayBadge() {
   return (
     <span className="pdp-thumb-play" aria-hidden="true">
-      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-        <path d="M3 1.5v9l8-4.5L3 1.5Z" />
-      </svg>
+      <Play size={10} strokeWidth={1.25} absoluteStrokeWidth={false} fill="currentColor" />
     </span>
   );
 }
 
 function PlusIcon({ open }: { open: boolean }) {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <line
-        x1="6"
-        y1="0"
-        x2="6"
-        y2="12"
-        stroke="currentColor"
-        strokeWidth="1"
-        style={{
-          opacity: open ? 0 : 1,
-          transition: "opacity 350ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-      />
-      <line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" strokeWidth="1" />
-    </svg>
-  );
+  const Icon = open ? Minus : Plus;
+  return <Icon size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />;
 }
 
 function Stars({ rating }: { rating: number }) {
@@ -330,21 +321,7 @@ export default function PdpSingle({
                       aria-label="Previous image"
                       onClick={() => goCarousel(-1)}
                     >
-                      <svg
-                        width="10"
-                        height="16"
-                        viewBox="0 0 10 16"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M8.5 1L1.5 8l7 7"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      <ChevronLeft size={14} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                     </button>
                     <button
                       type="button"
@@ -352,21 +329,7 @@ export default function PdpSingle({
                       aria-label="Next image"
                       onClick={() => goCarousel(1)}
                     >
-                      <svg
-                        width="10"
-                        height="16"
-                        viewBox="0 0 10 16"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M1.5 1L8.5 8l-7 7"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      <ChevronRight size={14} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                     </button>
                   </>
                 )}
@@ -559,17 +522,13 @@ export default function PdpSingle({
                   });
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
+                <Heart
+                  size={18}
+                  strokeWidth={1.25}
+                  absoluteStrokeWidth={false}
                   fill={wishlisted ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  aria-hidden="true"
-                >
-                  <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-                </svg>
+                  aria-hidden
+                />
               </button>
             </div>
             {bagError && <p className="pdp-bag-error">{bagError}</p>}

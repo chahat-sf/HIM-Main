@@ -2,6 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Minus,
+  Play,
+  Plus,
+  RotateCcw,
+  RotateCw,
+} from "lucide-react";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
@@ -16,44 +26,19 @@ import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
 function PlayBadge() {
   return (
     <span className="pdp-thumb-play" aria-hidden="true">
-      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-        <path d="M3 1.5v9l8-4.5L3 1.5Z" />
-      </svg>
+      <Play size={10} strokeWidth={1.25} absoluteStrokeWidth={false} fill="currentColor" />
     </span>
   );
 }
 
-// ─── Rotate arrows for the 360 control ──────────────────────────────
 function RotateIcon({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden="true"
-      style={{ transform: direction === "right" ? "scaleX(-1)" : undefined }}
-    >
-      <path
-        d="M4 2.5L1.75 4.75L4 7M2 4.75H7.25C8.90685 4.75 10.25 6.09315 10.25 7.75C10.25 9.40685 8.90685 10.75 7.25 10.75H5.5"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  const Icon = direction === "left" ? RotateCcw : RotateCw;
+  return <Icon size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />;
 }
 
-// ─── Plus / Minus icon for accordions ───────────────────────────────
 function PlusIcon({ open }: { open: boolean }) {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" strokeWidth="1"
-        style={{ opacity: open ? 0 : 1, transition: "opacity 350ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
-      <line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" strokeWidth="1" />
-    </svg>
-  );
+  const Icon = open ? Minus : Plus;
+  return <Icon size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />;
 }
 
 // ─── Star rating ─────────────────────────────────────────────────────
@@ -309,9 +294,7 @@ export default function PdpOutfit({
                       onClick={() => rotate(-1)}
                       aria-label="Previous image"
                     >
-                      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-                        <path d="M7 1L1 7L7 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <ChevronLeft size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                     </button>
                     <button
                       type="button"
@@ -319,9 +302,7 @@ export default function PdpOutfit({
                       onClick={() => rotate(1)}
                       aria-label="Next image"
                     >
-                      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-                        <path d="M1 1L7 7L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <ChevronRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                     </button>
                   </>
                 )}
@@ -451,17 +432,13 @@ export default function PdpOutfit({
                   });
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
+                <Heart
+                  size={18}
+                  strokeWidth={1.25}
+                  absoluteStrokeWidth={false}
                   fill={wishlisted ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  aria-hidden="true"
-                >
-                  <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-                </svg>
+                  aria-hidden
+                />
               </button>
             </div>
             {bagError && <p className="pdp-bag-error">{bagError}</p>}

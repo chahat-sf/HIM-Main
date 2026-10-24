@@ -4,12 +4,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  ArrowRight,
+  Heart,
+  Plus,
+  Search,
+  ShoppingBag,
+  User,
+  X,
+} from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
+
+const ICON_STROKE = 1.25;
 
 // ─── Style constants ────────────────────────────────────────────────────────
 
@@ -57,120 +68,6 @@ function toSearchProduct(p: CatalogProduct): SearchProduct {
 // Banner at the bottom of the popup. Swap the image for your own "edit" photo.
 const EDIT_IMAGE = "/homepage/navbar-image.webp";
 const EDIT_LINK = "/collection";
-
-// ─── Icons ─────────────────────────────────────────────────────────────────
-
-function SearchIcon({ size = 17 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 5 5" />
-    </svg>
-  );
-}
-
-function WishlistIcon() {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-    >
-      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-    >
-      <circle cx="12" cy="8" r="3.2" />
-      <path d="M5.5 20c.8-3.8 3.1-5.8 6.5-5.8s5.7 2 6.5 5.8" />
-    </svg>
-  );
-}
-
-function BagIcon() {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-    >
-      <path d="M5 8.5h14l-1 12H6l-1-12Z" />
-      <path d="M9 9V6.5a3 3 0 0 1 6 0V9" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-    >
-      <path d="M5 5l14 14M19 5L5 19" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      width="9"
-      height="9"
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-      strokeLinecap="round"
-    >
-      <path d="M6 1v10M1 6h10" />
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 12h16M14 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 // ─── Single nav link (shared by desktop and phone lists) ───────────────────
 
@@ -282,7 +179,7 @@ export default function Navbar() {
           onSubmit={(e) => e.preventDefault()} // no redirect
         >
           <span className="him-sp-bar-icon" aria-hidden="true">
-            <SearchIcon size={14} />
+            <Search size={14} strokeWidth={ICON_STROKE} aria-hidden />
           </span>
 
           <input
@@ -305,7 +202,7 @@ export default function Navbar() {
             aria-label="Close search"
           >
             <span>ESC</span>
-            <CloseIcon />
+            <X size={12} strokeWidth={1.6} aria-hidden />
           </button>
         </form>
 
@@ -333,7 +230,7 @@ export default function Navbar() {
                     style={{ objectFit: "cover", objectPosition: "top center" }}
                   />
                   <span className="him-sp-plus" aria-hidden="true">
-                    <PlusIcon />
+                    <Plus size={9} strokeWidth={ICON_STROKE} aria-hidden />
                   </span>
                 </div>
                 <p className="him-sp-card-name">{p.name}</p>
@@ -380,7 +277,7 @@ export default function Navbar() {
               tabIndex={searchOpen ? 0 : -1}
               onClick={close}
             >
-              EXPLORE NOW <ArrowIcon />
+              EXPLORE NOW <ArrowRight size={12} strokeWidth={1.6} aria-hidden />
             </Link>
           </div>
         </div>
@@ -448,7 +345,7 @@ export default function Navbar() {
               className="him-icon-btn"
               onClick={() => setSearchOpen(true)}
             >
-              <SearchIcon />
+              <Search size={17} strokeWidth={ICON_STROKE} aria-hidden />
             </button>
 
             <Link
@@ -460,7 +357,7 @@ export default function Navbar() {
               }
               className="him-icon-btn him-cart-btn"
             >
-              <WishlistIcon />
+              <Heart size={17} strokeWidth={ICON_STROKE} aria-hidden />
               {wishlistCount > 0 && (
                 <span className="him-cart-count" aria-hidden="true">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
@@ -469,7 +366,7 @@ export default function Navbar() {
             </Link>
 
             <Link href={accountHref} aria-label="Account" className="him-icon-btn">
-              <UserIcon />
+              <User size={17} strokeWidth={ICON_STROKE} aria-hidden />
             </Link>
 
             <Link
@@ -481,7 +378,7 @@ export default function Navbar() {
               }
               className="him-icon-btn him-cart-btn"
             >
-              <BagIcon />
+              <ShoppingBag size={17} strokeWidth={ICON_STROKE} aria-hidden />
               {itemCount > 0 && (
                 <span className="him-cart-count" aria-hidden="true">
                   {itemCount > 99 ? "99+" : itemCount}

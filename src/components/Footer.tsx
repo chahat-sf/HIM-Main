@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 
@@ -29,45 +30,17 @@ const LEGAL_LINKS: FooterLink[] = [
 
 type AccordionKey = "help" | "links" | "social" | "legal" | null;
 
-function ArrowIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="m6 12 4-4-4-4"
-        stroke="currentColor"
-        strokeWidth="1.1"
-      />
-    </svg>
-  );
-}
-
 function AccordionChevron({ open }: { open: boolean }) {
   return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden="true"
+    <ChevronRight
+      size={12}
+      strokeWidth={1.25}
+      aria-hidden
       style={{
         transform: open ? "rotate(90deg)" : "rotate(0deg)",
         transition: "transform 180ms ease",
       }}
-    >
-      <path
-        d="m4 2 4 4-4 4"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
 
@@ -246,7 +219,7 @@ export default function Footer() {
                 aria-label="Subscribe"
                 disabled={submitting}
               >
-                <ArrowIcon />
+                <ArrowRight size={14} strokeWidth={1.25} aria-hidden />
               </button>
             </div>
             <p className="him-footer-newsletter-copy">

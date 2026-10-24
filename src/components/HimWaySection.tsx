@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 
 const VALUES = [
   {
@@ -17,27 +18,6 @@ const VALUES = [
     body: "For every side of you.",
   },
 ] as const;
-
-function Arrow() {
-  return (
-    <svg
-      className="him-way-cta-arrow"
-      width="12"
-      height="9"
-      viewBox="0 0 14 10"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 /** Editorial closer for the collection listing — THE HIM WAY. */
 export default function HimWaySection() {
@@ -61,7 +41,13 @@ export default function HimWaySection() {
           >
             <span className="him-way-cta">
               <span className="him-way-cta-label">EXPLORE MORE</span>
-              <Arrow />
+              <ArrowRight
+                className="him-way-cta-arrow"
+                size={12}
+                strokeWidth={1.25}
+                absoluteStrokeWidth={false}
+                aria-hidden
+              />
             </span>
           </a>
         </header>

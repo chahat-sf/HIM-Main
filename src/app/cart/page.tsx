@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight, Minus, Plus, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
@@ -39,75 +40,6 @@ function fmt(n: number) {
   return "₹ " + n.toLocaleString("en-IN");
 }
 
-function CloseIcon() {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M5 5l14 14M19 5L5 19" />
-    </svg>
-  );
-}
-
-function MinusIcon() {
-  return (
-    <svg
-      width="9"
-      height="9"
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M2 6h8" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      width="9"
-      height="9"
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 2v8M2 6h8" />
-    </svg>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 12h16M14 6l6 6-6 6" />
-    </svg>
-  );
-}
-
 function Stepper({
   qty,
   onMinus,
@@ -120,11 +52,11 @@ function Stepper({
   return (
     <div className="cart-stepper">
       <button type="button" onClick={onMinus} aria-label="Decrease quantity">
-        <MinusIcon />
+        <Minus size={9} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
       </button>
       <span>{qty}</span>
       <button type="button" onClick={onPlus} aria-label="Increase quantity">
-        <PlusIcon />
+        <Plus size={9} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
       </button>
     </div>
   );
@@ -310,7 +242,7 @@ export default function CartPage() {
                           aria-label={`Remove ${item.name}`}
                           className="cart-item-remove"
                         >
-                          <CloseIcon />
+                          <X size={10} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                         </button>
                         <p className="cart-item-price">
                           {fmt(item.price * item.qty)}
@@ -398,14 +330,16 @@ export default function CartPage() {
 
                 {isAuthenticated ? (
                   <Link href="#" className="cart-btn-primary">
-                    PROCEED TO CHECKOUT <ArrowIcon />
+                    PROCEED TO CHECKOUT{" "}
+                    <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                   </Link>
                 ) : (
                   <Link
                     href="/login?next=%2Fcart"
                     className="cart-btn-primary"
                   >
-                    LOGIN TO CHECKOUT <ArrowIcon />
+                    LOGIN TO CHECKOUT{" "}
+                    <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                   </Link>
                 )}
                 <Link href="/collection" className="cart-btn-secondary">

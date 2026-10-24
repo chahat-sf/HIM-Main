@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -59,22 +60,13 @@ function SectionHeader({
 
 function Chevron() {
   return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 10 10"
-      fill="none"
-      aria-hidden="true"
+    <ChevronRight
+      size={10}
+      strokeWidth={1.25}
+      absoluteStrokeWidth={false}
+      aria-hidden
       style={{ flexShrink: 0, opacity: 0.55 }}
-    >
-      <path
-        d="M3.5 1.5L7 5L3.5 8.5"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
 

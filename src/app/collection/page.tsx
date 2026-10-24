@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight, Heart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HimWaySection from "@/components/HimWaySection";
@@ -11,21 +12,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
 import { useWishlist } from "@/hooks/useWishlist";
-
-// ─── Shared arrow SVG ───────────────────────────────────────────────
-function Arrow() {
-  return (
-    <svg width="12" height="9" viewBox="0 0 14 10" fill="none" aria-hidden="true">
-      <path
-        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 const BASE_FILTERS = ["ALL"] as const;
 
@@ -39,22 +25,6 @@ function categoryHref(filter: string) {
   { label: "SUITS", href: "/collection?category=SUITS", image: "/lookbook/man-on-car.webp" },
   { label: "BLAZERS", href: "/collection?category=BLAZERS", image: "/lookbook/Where-The-Sun-Settles.webp" },
 ]; */
-
-function HeartIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-    </svg>
-  );
-}
 
 // ─── Single product card ─────────────────────────────────────────────
 function ProductCard({ product }: { product: CatalogProduct }) {
@@ -94,7 +64,13 @@ function ProductCard({ product }: { product: CatalogProduct }) {
             });
           }}
         >
-          <HeartIcon filled={wishlisted} />
+          <Heart
+            size={14}
+            strokeWidth={1.25}
+            absoluteStrokeWidth={false}
+            fill={wishlisted ? "currentColor" : "none"}
+            aria-hidden
+          />
         </button>
       </div>
 
@@ -245,7 +221,8 @@ function CollectionPageInner() {
         {/* ── LOAD MORE (hidden while catalog is small) ───────────────
         <div className="collection-load-more">
           <button type="button" className="load-more-btn">
-            LOAD MORE PRODUCTS &nbsp;<Arrow />
+            LOAD MORE PRODUCTS &nbsp;
+            <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
           </button>
         </div>
         */}
@@ -260,7 +237,7 @@ function CollectionPageInner() {
 
             <Link href="/lookbook" className="mwwi-view-all">
               <span>VIEW ALL</span>
-              <Arrow />
+              <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
             </Link>
           </div>
 
@@ -281,7 +258,7 @@ function CollectionPageInner() {
 
                 <div className="mwwi-label">
                   <span>{item.label}</span>
-                  <Arrow />
+                  <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                 </div>
               </Link>
             ))}

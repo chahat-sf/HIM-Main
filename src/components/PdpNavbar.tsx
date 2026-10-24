@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Heart, Search, ShoppingBag, User } from "lucide-react";
 import styles from "./PdpNavbar.module.css";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
@@ -12,40 +13,7 @@ const leftLinks = [{ label: "EXPLORE", href: "/collection" }];
 
 const rightLinks: { label: string; href: string }[] = [];
 
-function SearchIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 5 5" />
-    </svg>
-  );
-}
-
-function WishlistIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.2" />
-      <path d="M5.5 20c.8-3.8 3.1-5.8 6.5-5.8s5.7 2 6.5 5.8" />
-    </svg>
-  );
-}
-
-function BagIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-      <path d="M5 8.5h14l-1 12H6l-1-12Z" />
-      <path d="M9 9V6.5a3 3 0 0 1 6 0V9" />
-    </svg>
-  );
-}
+const ICON_STROKE = 1.25;
 
 function NavLink({ label, href }: { label: string; href: string }) {
   return (
@@ -98,7 +66,7 @@ export default function PdpNavbar() {
 
           <div className={styles.icons}>
             <Link href="/collection" aria-label="Search" className={styles.icon}>
-              <SearchIcon />
+              <Search size={17} strokeWidth={ICON_STROKE} aria-hidden />
             </Link>
             <Link
               href="/wishlist"
@@ -109,7 +77,7 @@ export default function PdpNavbar() {
               }
               className={`${styles.icon} ${styles.cartIcon}`}
             >
-              <WishlistIcon />
+              <Heart size={17} strokeWidth={ICON_STROKE} aria-hidden />
               {wishlistCount > 0 && (
                 <span className={styles.cartCount} aria-hidden="true">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
@@ -117,7 +85,7 @@ export default function PdpNavbar() {
               )}
             </Link>
             <Link href={accountHref} aria-label="Account" className={styles.icon}>
-              <UserIcon />
+              <User size={17} strokeWidth={ICON_STROKE} aria-hidden />
             </Link>
             <Link
               href="/cart"
@@ -128,7 +96,7 @@ export default function PdpNavbar() {
               }
               className={`${styles.icon} ${styles.cartIcon}`}
             >
-              <BagIcon />
+              <ShoppingBag size={17} strokeWidth={ICON_STROKE} aria-hidden />
               {itemCount > 0 && (
                 <span className={styles.cartCount} aria-hidden="true">
                   {itemCount > 99 ? "99+" : itemCount}

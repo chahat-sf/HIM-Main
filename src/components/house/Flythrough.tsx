@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { NoToneMapping } from "three";
+import { ShoppingBag } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import styles from "../ScrollSection.module.css";
@@ -712,21 +713,13 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             onClick={(event) => event.stopPropagation()}
             aria-label="Get this look"
           >
-            <svg
+            <ShoppingBag
               className={styles.rotateBtnIcon}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              size={16}
+              strokeWidth={1.25}
+              absoluteStrokeWidth={false}
               aria-hidden
-            >
-              <path d="M6 7h12l1 13H5L6 7Z" />
-              <path d="M9 10V6a3 3 0 0 1 6 0v4" />
-            </svg>
+            />
             <span>Get this look</span>
           </Link>
         )}

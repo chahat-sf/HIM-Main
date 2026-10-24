@@ -1,8 +1,8 @@
-
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const lookbooks = [
@@ -31,22 +31,13 @@ const lookbooks = [
 
 function Arrow() {
   return (
-    <svg
+    <ArrowRight
       className="summer-feature-cta-arrow"
-      width="12"
-      height="9"
-      viewBox="0 0 14 10"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M1 5H12.5M8.5 1L12.5 5L8.5 9"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      size={12}
+      strokeWidth={1.25}
+      absoluteStrokeWidth={false}
+      aria-hidden
+    />
   );
 }
 

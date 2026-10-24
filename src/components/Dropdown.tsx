@@ -7,6 +7,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
+import { ChevronDown } from "lucide-react";
 import styles from "./Dropdown.module.css";
 
 export type DropdownOption = {
@@ -34,22 +35,13 @@ function normalize(options: DropdownOption[] | string[]): DropdownOption[] {
 
 function Chevron({ open }: { open: boolean }) {
   return (
-    <svg
+    <ChevronDown
       className={`${styles.chevron}${open ? ` ${styles.chevronOpen}` : ""}`}
-      width="9"
-      height="6"
-      viewBox="0 0 9 6"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M1 1L4.5 4.5L8 1"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      size={9}
+      strokeWidth={1.25}
+      absoluteStrokeWidth={false}
+      aria-hidden
+    />
   );
 }
 
