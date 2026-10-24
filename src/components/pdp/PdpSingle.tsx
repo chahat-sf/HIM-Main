@@ -597,7 +597,7 @@ export default function PdpSingle({
         <section className="pdp-related" aria-labelledby="pdp-related-title">
           <div className="pdp-related-header">
             <h2 id="pdp-related-title" className="pdp-related-title">
-              Style it your way
+              Curated for You
             </h2>
             <Link href="/collection" className="pdp-view-all">
               VIEW ALL
