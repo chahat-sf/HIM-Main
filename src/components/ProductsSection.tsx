@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
-import { getCatalogProductBySlug, parseCatalogPriceRupees } from "@/lib/catalog";
+import type { CatalogProduct } from "@/lib/catalog-types";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -37,19 +37,17 @@ function lerpColor(hexA: string, hexB: string, t: number): string {
    BESTSELLERS CAROUSEL (matches Figma)
 ===================================================================== */
 
-const SWATCHES = ["#a3a3a3", "#7a1420"]; // Heather Grey, Burgundy — same colours as the product page
-
-// Names / prices match the product pages (PRODUCTS_DB in /collection/[slug]/page.tsx)
-const products = [
-  { slug: "textured-thermal-white-7", name: "THE ATTACHÉ", price: "₹38,000", image: "/bestseller/bs-image-1.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-8", name: "THE EXCEPTION", price: "₹36,000", image: "/bestseller/bs-image-2.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-9", name: "THE NOCTURE", price: "₹42,000", image: "/bestseller/bs-image-6.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-10", name: "THE ARCHIVIST", price: "₹44,000", image: "/bestseller/bs-image-4.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-11", name: "THE COMPOSURE", price: "₹52,000", image: "/bestseller/bs-image-5.webp", swatches: SWATCHES },
-  { slug: "textured-thermal-white-12", name: "THE LAST WORD", price: "₹36,000", image: "/bestseller/bs-image-3.webp", swatches: SWATCHES },
-];
-
 const CARD_GAP = 16;
+
+type CarouselProduct = {
+  slug: string;
+  name: string;
+  price: string;
+  image: string;
+  swatches: string[];
+  id?: number;
+  priceCents?: number;
+};
 
 function HeartIcon({ filled }: { filled?: boolean }) {
   return (
@@ -88,6 +86,32 @@ function ExistingProductsGrid() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
+  const [products, setProducts] = useState<CarouselProduct[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/products")
+      .then((res) => res.json())
+      .then((body: { items?: CatalogProduct[] }) => {
+        if (cancelled) return;
+        const items = (body.items ?? []).map((p) => ({
+          slug: p.slug,
+          name: p.name,
+          price: `₹${p.price.replace(/\.00$/, "")}`,
+          image: p.image,
+          swatches: p.swatches,
+          id: p.id,
+          priceCents: p.priceCents,
+        }));
+        setProducts(items);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Scroll-turn: dark -> light. Eased toward scroll target so the shift isn't stepped.
   useEffect(() => {
@@ -286,16 +310,13 @@ function ExistingProductsGrid() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const catalog = getCatalogProductBySlug(product.slug);
                     void toggleWishlist({
-                      productId: catalog?.id ?? null,
+                      productId: product.id ?? null,
                       slug: product.slug,
-                      name: catalog?.name ?? product.name,
-                      price: parseCatalogPriceRupees(
-                        catalog?.price ?? product.price,
-                      ),
-                      image: catalog?.image ?? product.image,
-                      swatches: catalog?.swatches ?? product.swatches,
+                      name: product.name,
+                      price: Math.round((product.priceCents ?? 0) / 100) || 0,
+                      image: product.image,
+                      swatches: product.swatches,
                     });
                   }}
                 >
@@ -337,22 +358,26 @@ function ExistingProductsGrid() {
                     + {product.color}
                   </p> */}
 
-                  {/* SWATCHES */}
-                  <div className="flex items-center" style={{ gap: "4px", marginTop: "6px" }}>
-                    {product.swatches.map((swatch, i) => (
-                      <span
-                        key={`${swatch}-${i}`}
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: swatch,
-                          display: "inline-block",
-                          flex: "0 0 auto",
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {product.swatches.length > 0 && (
+                    <div
+                      className="flex items-center"
+                      style={{ gap: "4px", marginTop: "6px" }}
+                    >
+                      {product.swatches.map((swatch, i) => (
+                        <span
+                          key={`${swatch}-${i}`}
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: swatch,
+                            display: "inline-block",
+                            flex: "0 0 auto",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* BAG BUTTON */}

@@ -231,11 +231,11 @@ export default function AccountPage() {
 
   const detailRows: [string, string][] = data
     ? [
-        ["Full Name", data.user.fullName],
-        ["Email", data.user.email],
-        ["Phone", dash(data.user.phone)],
-        ["Date of Birth", dash(formatDisplayDate(data.user.dateOfBirth))],
-      ]
+      ["Full Name", data.user.fullName],
+      ["Email", data.user.email],
+      ["Phone", dash(data.user.phone)],
+      ["Date of Birth", dash(formatDisplayDate(data.user.dateOfBirth))],
+    ]
     : [];
 
   return (
@@ -535,14 +535,16 @@ export default function AccountPage() {
                         </div>
                         <p className="acc-saved-name">{item.name}</p>
                         <p className="acc-saved-price">{item.price}</p>
-                        <div className="acc-saved-swatches">
-                          {item.swatches.map((c, i) => (
-                            <span
-                              key={`${item.slug}-${c}-${i}`}
-                              style={{ background: c }}
-                            />
-                          ))}
-                        </div>
+                        {item.swatches.length > 0 && (
+                          <div className="acc-saved-swatches">
+                            {item.swatches.map((c, i) => (
+                              <span
+                                key={`${item.slug}-${c}-${i}`}
+                                style={{ background: c }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </Link>
                     ))}
                   </div>

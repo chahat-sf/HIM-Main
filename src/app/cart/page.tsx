@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
+import type { CatalogProduct } from "@/lib/catalog-types";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -22,29 +23,13 @@ const GOLD_HOVER = "#d4b888";
 const GUTTER = "clamp(16px, 4vw, 60px)";
 const CONTENT_MAX = "1120px";
 
-const YOU_MAY_LIKE = [
-  {
-    slug: "textured-thermal-white-10",
-    name: "KNIT POLO",
-    price: "₹ 4,080",
-    image: "/products/man-image-103.webp",
-    swatches: ["#111", "#a3a3a3"],
-  },
-  {
-    slug: "textured-thermal-white-11",
-    name: "SIMON JACKET",
-    price: "₹ 7,880",
-    image: "/products/man-image-104.webp",
-    swatches: ["#111", "#7a1420"],
-  },
-  {
-    slug: "textured-thermal-white-12",
-    name: "EVERYDAY TROUSERS",
-    price: "₹ 5,440",
-    image: "/bestseller/bs-image-2.webp",
-    swatches: ["#a3a3a3", "#111", "#7a1420"],
-  },
-];
+type RecoItem = {
+  slug: string;
+  name: string;
+  price: string;
+  image: string;
+  swatches: string[];
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -169,6 +154,31 @@ export default function CartPage() {
   const [promo, setPromo] = useState("");
   const [giftMsg, setGiftMsg] = useState(false);
   const [giftText, setGiftText] = useState("");
+  const [youMayLike, setYouMayLike] = useState<RecoItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/products")
+      .then((res) => res.json())
+      .then((body: { items?: CatalogProduct[] }) => {
+        if (cancelled) return;
+        setYouMayLike(
+          (body.items ?? []).slice(0, 3).map((p) => ({
+            slug: p.slug,
+            name: p.name,
+            price: `₹ ${Math.round(p.priceCents / 100).toLocaleString("en-IN")}`,
+            image: p.image,
+            swatches: p.swatches,
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setYouMayLike([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const changeQty = (item: CartItem, delta: number) => {
     void updateQty(item.id, Math.max(1, item.qty + delta));
@@ -265,16 +275,23 @@ export default function CartPage() {
                           {item.name}
                         </Link>
                         <p className="cart-item-attrs">
-                          Size {item.size} &nbsp;|&nbsp; {item.color}
+                          Size {item.size}
+                          {item.color ? (
+                            <>
+                              &nbsp;|&nbsp; {item.color}
+                            </>
+                          ) : null}
                         </p>
-                        <div className="cart-item-swatches">
-                          {item.swatches.map((c, i) => (
-                            <span
-                              key={`${item.id}-${c}-${i}`}
-                              style={{ background: c }}
-                            />
-                          ))}
-                        </div>
+                        {item.swatches.length > 0 && (
+                          <div className="cart-item-swatches">
+                            {item.swatches.map((c, i) => (
+                              <span
+                                key={`${item.id}-${c}-${i}`}
+                                style={{ background: c }}
+                              />
+                            ))}
+                          </div>
+                        )}
 
                         <Stepper
                           qty={item.qty}
@@ -409,7 +426,7 @@ export default function CartPage() {
             </div>
 
             <div className="cart-recs-grid">
-              {YOU_MAY_LIKE.map((item) => (
+              {youMayLike.map((item) => (
                 <Link
                   key={item.slug}
                   href={`/collection/${item.slug}`}
@@ -430,14 +447,16 @@ export default function CartPage() {
                   </div>
                   <p className="cart-rec-name">{item.name}</p>
                   <p className="cart-rec-price">{item.price}</p>
-                  <div className="cart-item-swatches">
-                    {item.swatches.map((c, i) => (
-                      <span
-                        key={`${item.slug}-${c}-${i}`}
-                        style={{ background: c }}
-                      />
-                    ))}
-                  </div>
+                  {item.swatches.length > 0 && (
+                    <div className="cart-item-swatches">
+                      {item.swatches.map((c, i) => (
+                        <span
+                          key={`${item.slug}-${c}-${i}`}
+                          style={{ background: c }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </Link>
               ))}
             </div>
