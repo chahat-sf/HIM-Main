@@ -3,6 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { NoToneMapping } from "three";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import Link from "next/link";
 import styles from "../ScrollSection.module.css";
 import { CHARACTERS } from "./characters";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
@@ -674,6 +675,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           }}
         />
 
+        {/* Rotate control — paused for now
         {mode === "interior" && (
           <button
             type="button"
@@ -699,6 +701,34 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             </svg>
             <span>{interactLoading ? "Loading" : interactMode ? "Auto" : "Rotate"}</span>
           </button>
+        )}
+        */}
+
+        {mode === "interior" && (
+          <Link
+            href="/collection/textured-thermal-white-9"
+            className={styles.rotateBtn}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            aria-label="Shop the outfit"
+          >
+            <svg
+              className={styles.rotateBtnIcon}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M6 7h12l1 13H5L6 7Z" />
+              <path d="M9 10V6a3 3 0 0 1 6 0v4" />
+            </svg>
+            <span>Shop the Outfit</span>
+          </Link>
         )}
 
         <DragGuide visible={dragGuide && interactMode && !interactLoading} onDismiss={dismissDragGuide} />

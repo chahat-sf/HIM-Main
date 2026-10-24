@@ -5,14 +5,14 @@ import Navbar from "./Navbar";
 import { useHomeLoad } from "./HomeGate";
 
 /* ─────────────── Settings you can tweak ─────────────── */
-const FRAME_COUNT = 72;          // number of files in /public/homepage/frames
-const SCROLL_LENGTH_VH = 200;    // how long the lift takes to open (450 = 4.5 screens of scrolling)
-const HOLD_END = 0.08;           // last 8% of the scroll holds on the final frame
-const SMOOTHING = 0.1;           // 0.05 = very floaty, 0.2 = snappy (same speed on every screen)
-const ZOOM = 1;                  // 1 = fill screen. Use 1.16 for the extra zoom you had before
-const CONCURRENCY = 8;           // how many frames download at once
-const TEXT_FADE_END = 0.35;      // lift progress (0–1) where hero copy is fully faded out
-const TEXT_FADE_DRIFT = -14;     // px translateY at full fade
+const FRAME_COUNT = 125; // files in /public/homepage/frames
+const SCROLL_LENGTH_VH = 100; // how long the lift takes to open
+const HOLD_END = 0.08; // last 8% of the scroll holds on the final frame
+const SMOOTHING = 0.1; // 0.05 = very floaty, 0.2 = snappy
+const ZOOM = 1; // 1 = fill screen
+const CONCURRENCY = 8; // how many frames download at once
+const TEXT_FADE_END = 0.35; // lift progress (0–1) where hero copy is fully faded out
+const TEXT_FADE_DRIFT = -14; // px translateY at full fade
 
 // Memory handling: frames are freed once the hero is this many screens above the viewport,
 // and are loaded again as soon as the hero is within RELOAD_SCREENS of coming back.
@@ -45,24 +45,23 @@ export default function HeroSection() {
     if (!ctx) return;
 
     const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
+      "(prefers-reduced-motion: reduce)",
     ).matches;
 
     let disposed = false;
     let released = false;
-    let loadToken = 0; // bumping this cancels any running loaders
+    let loadToken = 0;
     const frames: (ImageBitmap | null)[] = Array(FRAME_COUNT).fill(null);
-    let current = 0; // position shown right now (can be between two frames)
-    let target = 0;  // position the scroll wants
+    let current = 0;
+    let target = 0;
     let lastPos = -1;
     let lastT = 0;
     let raf = 0;
 
-    /* Free the bitmaps when the hero is far off-screen (can be reloaded later) */
     const releaseFrames = () => {
       if (released) return;
       released = true;
-      loadToken++; // stop loaders
+      loadToken++;
       frames.forEach((f, i) => {
         f?.close();
         frames[i] = null;
@@ -72,7 +71,6 @@ export default function HeroSection() {
       lastT = 0;
     };
 
-    /* Nearest loaded frame — looks down first, then up (needed while reloading) */
     const getFrame = (index: number) => {
       for (let i = index; i >= 0; i--) {
         const f = frames[i];
@@ -107,7 +105,6 @@ export default function HeroSection() {
       lastPos = pos;
 
       paint(a, 1);
-      // Cross-fade into the next frame → motion looks continuous, not stepped
       if (blend > 0.02 && i + 1 < FRAME_COUNT) {
         const b = frames[i + 1];
         if (b) paint(b, blend);
@@ -135,7 +132,6 @@ export default function HeroSection() {
       }
     };
 
-    // Copy fade follows smoothed frame progress (same easing as the lift), not raw scroll.
     const applyCopyFade = () => {
       const copy = copyRef.current;
       if (!copy) return;
@@ -159,20 +155,16 @@ export default function HeroSection() {
         lastT = 0;
         return;
       }
-      // frame-rate independent easing
       current += diff * (1 - Math.pow(1 - SMOOTHING, dt * 60));
       draw();
       applyCopyFade();
       raf = requestAnimationFrame(tick);
     };
 
-    /* Load frames, decode off the main thread (ImageBitmap).
-       report = true only for the very first load (drives the loading screen).
-       descending = true when coming back from below, so the open end loads first. */
     const loadFrames = (report: boolean, descending: boolean) => {
       const token = ++loadToken;
       const order = Array.from({ length: FRAME_COUNT }, (_, k) =>
-        descending ? FRAME_COUNT - 1 - k : k
+        descending ? FRAME_COUNT - 1 - k : k,
       );
       let next = 0;
       let done = 0;
@@ -193,7 +185,7 @@ export default function HeroSection() {
                 return;
               }
               frames[i] = bmp;
-              if (!report) draw(true); // repaint as frames come back
+              if (!report) draw(true);
             } catch {
               /* skip a missing frame */
             }
@@ -216,13 +208,11 @@ export default function HeroSection() {
       const vh = window.innerHeight || 1;
 
       if (!released) {
-        // Hero is far above the viewport → free memory
         if (rect.bottom < -vh * RELEASE_SCREENS) {
           releaseFrames();
           return;
         }
       } else {
-        // Hero is getting close again → bring the frames back
         if (rect.bottom > -vh * RELOAD_SCREENS) {
           released = false;
           loadFrames(false, true);
@@ -265,7 +255,6 @@ export default function HeroSection() {
       className="relative w-full"
       style={{ height: `${100 + SCROLL_LENGTH_VH}vh` }}
     >
-      {/* Pinned screen — stays in place while the lift opens */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
         <canvas
           ref={canvasRef}
@@ -275,10 +264,8 @@ export default function HeroSection() {
           role="img"
         />
 
-        {/* Overall subtle dark overlay */}
         <div className="absolute inset-0 bg-black/10 z-10 pointer-events-none" />
 
-        {/* Bottom shade */}
         <div
           className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none"
           style={{
@@ -288,7 +275,6 @@ export default function HeroSection() {
           }}
         />
 
-        {/* Left-side shade so the text stays readable */}
         <div
           className="absolute inset-y-0 left-0 z-10 pointer-events-none"
           style={{
@@ -298,7 +284,6 @@ export default function HeroSection() {
           }}
         />
 
-        {/* HERO TEXT — bottom left */}
         <div
           ref={copyRef}
           className="him-hero-copy absolute z-20"
@@ -338,14 +323,11 @@ export default function HeroSection() {
           </a>
         </div>
 
-        {/* Scroll hint */}
         <div
           ref={hintRef}
           className="absolute bottom-10 left-1/2 z-20 -translate-x-1/2 flex flex-col items-center gap-3 text-white/80 pointer-events-none transition-opacity duration-500"
-        >
-        </div>
+        />
 
-        {/* Navbar */}
         <Navbar />
       </div>
 
@@ -364,14 +346,12 @@ export default function HeroSection() {
           color: #fff;
         }
 
-        /* ───────── Hero text (left, bottom) ───────── */
-
-       .him-hero-copy {
-  left: clamp(20px, 5.9vw, 112px);
-  bottom: clamp(28px, 5vh, 60px);
-  max-width: min(90%, 560px);
-  color: #fff;
-}
+        .him-hero-copy {
+          left: clamp(20px, 5.9vw, 112px);
+          bottom: clamp(28px, 5vh, 60px);
+          max-width: min(90%, 560px);
+          color: #fff;
+        }
 
 .him-hero-label {
   display: block;

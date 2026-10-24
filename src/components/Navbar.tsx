@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildLoginHref } from "@/lib/auth-redirect";
@@ -200,13 +199,12 @@ function NavLink({ label, href }: { label: string; href: string }) {
 // ─── Navbar ─────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
-  const pathname = usePathname() || "/";
   const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
   const accountHref = isAuthenticated
     ? "/account"
-    : buildLoginHref(pathname);
+    : buildLoginHref("/account");
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -321,15 +319,15 @@ export default function Navbar() {
                 tabIndex={searchOpen ? 0 : -1}
                 onClick={close}
               >
-                <div className="him-sp-card-img">
+                <div className="him-sp-card-img him-card-media">
                   <Image
                     src={p.image}
                     alt={p.name}
                     fill
                     quality={80}
                     sizes="(max-width: 768px) 45vw, 22vw"
-                    className="object-cover"
-                    style={{ objectPosition: "center 18%" }}
+                    className="object-cover object-top"
+                    style={{ objectFit: "cover", objectPosition: "top center" }}
                   />
                   <span className="him-sp-plus" aria-hidden="true">
                     <PlusIcon />
@@ -704,13 +702,7 @@ export default function Navbar() {
           background: #101a2e;
         }
 
-        .him-sp-card-img img {
-          transition: transform 700ms ease-out;
-        }
-
-        .him-sp-card:hover .him-sp-card-img img {
-          transform: scale(1.04);
-        }
+        /* Hover zoom handled by global .him-card-media */
 
         .him-sp-plus {
           position: absolute;

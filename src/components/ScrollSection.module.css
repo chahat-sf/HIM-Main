@@ -686,6 +686,8 @@
   left: clamp(16px, 4vw, 48px);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 45px);
   transform: translateY(-10px);
+  text-decoration: none;
+  color: var(--ivory);
 }
 
 .nextBtn {

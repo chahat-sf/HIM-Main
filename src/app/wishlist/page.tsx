@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteLoading from "@/components/RouteLoading";
 import { useWishlist } from "@/hooks/useWishlist";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -23,6 +24,10 @@ function fmt(n: number) {
 
 export default function WishlistPage() {
   const { items, loading, remove } = useWishlist();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
 
   return (
     <>
@@ -53,9 +58,7 @@ export default function WishlistPage() {
         </section>
 
         <div className="wish-body">
-          {loading ? (
-            <p className="wish-empty-title">Loading your wishlist…</p>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="wish-empty">
               <p className="wish-empty-title">Your wishlist is empty.</p>
               <Link href="/collection" className="wish-btn">
@@ -78,7 +81,7 @@ export default function WishlistPage() {
                   <article key={item.id} className="wish-card">
                     <Link
                       href={`/collection/${item.slug}`}
-                      className="wish-card-img"
+                      className="wish-card-img him-card-media"
                     >
                       <Image
                         src={item.image}
@@ -86,7 +89,8 @@ export default function WishlistPage() {
                         fill
                         quality={80}
                         sizes="(max-width: 768px) 50vw, 25vw"
-                        className="object-cover object-center"
+                        className="object-cover object-top"
+                        style={{ objectFit: "cover", objectPosition: "top center" }}
                       />
                     </Link>
                     <div className="wish-card-meta">

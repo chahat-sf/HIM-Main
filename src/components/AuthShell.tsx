@@ -35,7 +35,7 @@ export default function AuthShell({
       <Navbar />
       <main className="auth-page">
         <div className="auth-split">
-          <section className="auth-media" aria-hidden="true">
+          <section className="auth-media him-hero-media" aria-hidden="true">
             <Image
               src={imageSrc}
               alt=""
@@ -43,8 +43,8 @@ export default function AuthShell({
               priority
               quality={80}
               sizes="(max-width: 900px) 100vw, 50vw"
-              className="object-cover"
-              style={{ objectPosition: "center 20%" }}
+              className="object-cover object-top"
+              style={{ objectFit: "cover", objectPosition: "top center" }}
             />
             <div className="auth-media-overlay" />
             <div className="auth-media-copy">

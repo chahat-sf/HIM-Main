@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteLoading from "@/components/RouteLoading";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
@@ -61,14 +62,15 @@ function ProductCard({ product }: { product: CatalogProduct }) {
   return (
     <Link href={`/collection/${product.slug}`} className="product-card group" style={{ textDecoration: "none" }}>
       {/* Image */}
-      <div className="product-card-img">
+      <div className="product-card-img him-card-media">
         <Image
           src={product.image}
           alt={product.name}
           fill
           quality={70}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
+          className="object-cover object-top"
+          style={{ objectFit: "cover", objectPosition: "top center" }}
         />
         <button
           type="button"
@@ -173,6 +175,10 @@ function CollectionPageInner() {
     router.replace(categoryHref(filter), { scroll: false });
   };
 
+  if (loading) {
+    return <RouteLoading />;
+  }
+
   return (
     <>
       <Navbar />
@@ -222,7 +228,7 @@ function CollectionPageInner() {
             ))}
           </div>
           <span className="collection-count">
-            {loading ? "…" : `${filtered.length} PRODUCTS`}
+            {`${filtered.length} PRODUCTS`}
           </span>
         </div>
 
@@ -233,12 +239,13 @@ function CollectionPageInner() {
           ))}
         </div>
 
-        {/* ── LOAD MORE ────────────────────────────────────────────── */}
+        {/* ── LOAD MORE (hidden while catalog is small) ───────────────
         <div className="collection-load-more">
           <button type="button" className="load-more-btn">
             LOAD MORE PRODUCTS &nbsp;<Arrow />
           </button>
         </div>
+        */}
 
         {/* ── MORE WAYS TO WEAR IT ─────────────────────────────────── */}
         <section className="mwwi-section">
@@ -257,14 +264,15 @@ function CollectionPageInner() {
           <div className="mwwi-strip">
             {EXPLORE_ITEMS.map((item) => (
               <Link key={item.label} href={item.href} className="mwwi-item group">
-                <div className="mwwi-img">
+                <div className="mwwi-img him-card-media">
                   <Image
                     src={item.image}
                     alt={item.label}
                     fill
                     quality={70}
                     sizes="(max-width: 768px) 70vw, 25vw"
-                    className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
+                    className="object-cover object-top"
+                    style={{ objectFit: "cover", objectPosition: "top center" }}
                   />
                 </div>
 
@@ -412,11 +420,13 @@ function CollectionPageInner() {
         .collection-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1px;
-          background: rgba(0,0,0,0.08);
-          padding: 1px;
+          column-gap: clamp(8px, 1vw, 12px);
+          row-gap: 30px;
+          background: transparent;
+          padding: 0;
           margin: 0 clamp(16px, 4vw, 56px);
           margin-top: 24px;
+          margin-bottom: clamp(40px, 5vw, 64px);
         }
 
         .product-card {
@@ -424,6 +434,8 @@ function CollectionPageInner() {
           background: #fff;
           cursor: pointer;
           overflow: hidden;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          box-sizing: border-box;
         }
 
         .product-card-img {
@@ -513,7 +525,7 @@ function CollectionPageInner() {
 
         /* ── MORE WAYS TO WEAR IT ── */
         .mwwi-section {
-          padding: clamp(10px, 2.5vw, 68px) clamp(16px, 4vw, 56px) clamp(48px, 5vw, 80px);
+          padding: clamp(40px, 5vw, 68px) clamp(16px, 4vw, 56px) clamp(48px, 5vw, 80px);
           background: #f6f5f3;
           border-top: 1px solid rgba(0,0,0,0.08);
         }
@@ -625,6 +637,8 @@ function CollectionPageInner() {
         @media (max-width: 768px) {
           .collection-grid {
             grid-template-columns: repeat(2, 1fr);
+            column-gap: 8px;
+            row-gap: 24px;
             margin: 0 12px;
             margin-top: 16px;
           }
@@ -654,6 +668,8 @@ function CollectionPageInner() {
         @media (max-width: 480px) {
           .collection-grid {
             grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
           }
         }
       `}</style>

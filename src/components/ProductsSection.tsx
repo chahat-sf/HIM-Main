@@ -201,20 +201,17 @@ function ExistingProductsGrid() {
   return (
     <section
       ref={sectionRef}
-      className="w-full"
+      className="bestsellers-section w-full"
       style={
         {
           backgroundColor: "#080604",
-          borderLeft: "25px solid #000",
-          borderRight: "25px solid #000",
-          padding: "0 30px 56px",
           ["--fg" as string]: TEXT_LIGHT,
         } as React.CSSProperties
       }
     >
       {/* SECTION HEADER */}
       <div
-        className="flex items-center justify-between"
+        className="bestsellers-header flex items-center justify-between"
         style={{ height: "72px" }}
       >
         <h2
@@ -272,7 +269,7 @@ function ExistingProductsGrid() {
               aria-hidden="true"
             >
               <div
-                className="relative w-full overflow-hidden"
+                className="him-card-media relative w-full overflow-hidden"
                 style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
               >
                 <Image
@@ -282,7 +279,8 @@ function ExistingProductsGrid() {
                   priority={index < 3}
                   quality={95}
                   sizes="(max-width: 768px) 70vw, 28vw"
-                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                  className="object-cover object-top"
+                  style={{ objectFit: "cover", objectPosition: "top center" }}
                 />
 
                 {/* WISHLIST — plain icon, no circle */}
@@ -419,6 +417,11 @@ function ExistingProductsGrid() {
       </div>
 
       <style jsx>{`
+        .bestsellers-section {
+          border-left: 25px solid #000;
+          border-right: 25px solid #000;
+          padding: 0 30px 56px;
+        }
         .bestsellers-scroller {
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -434,11 +437,37 @@ function ExistingProductsGrid() {
           min-width: 0;
         }
         @media (max-width: 1024px) {
+          /* Left inset lives on the section (doesn’t scroll away).
+             Scroller bleeds to the right edge; padding-right only after last slide. */
+          .bestsellers-section {
+            border-left-width: 12px;
+            border-right-width: 0;
+            padding: 0 0 40px 16px;
+          }
+          .bestsellers-header {
+            padding-right: 16px;
+          }
+          .bestsellers-scroller {
+            padding-left: 0;
+            padding-right: 16px;
+          }
           .bestsellers-card {
             width: calc((100% - ${CARD_GAP}px) / 2.3);
           }
         }
         @media (max-width: 640px) {
+          .bestsellers-section {
+            border-left-width: 0;
+            border-right-width: 0;
+            padding: 0 0 32px 14px;
+          }
+          .bestsellers-header {
+            padding-right: 14px;
+          }
+          .bestsellers-scroller {
+            padding-left: 0;
+            padding-right: 14px;
+          }
           .bestsellers-card {
             width: 72%;
           }

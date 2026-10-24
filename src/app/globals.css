@@ -14,3 +14,43 @@ body {
   background: #1a120c;
   color: #fff;
 }
+
+/* Non-PDP product cards: cover + slight overscan to crop asset letterboxing */
+.him-card-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.him-card-media>img,
+.him-card-media img {
+  object-fit: cover !important;
+  object-position: top center !important;
+  transform: scale(1.08);
+  transform-origin: top center;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .him-card-media img,
+.him-card-media:hover img {
+  transform: scale(1.12);
+}
+
+/* Page heroes (cart / account / auth): cover + overscan, no hover zoom */
+.him-hero-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.him-hero-media>img,
+.him-hero-media img {
+  object-fit: cover !important;
+  object-position: top center !important;
+  transform: scale(1.1);
+  transform-origin: top center;
+}
+
+.him-hero-media--center>img,
+.him-hero-media--center img {
+  object-position: center 45% !important;
+  transform-origin: center center;
+}

@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
-import { productDetailsProse } from "@/lib/catalog-types";
 
 function PlusIcon({ open }: { open: boolean }) {
   return (
@@ -41,12 +40,14 @@ function Stars({ rating }: { rating: number }) {
 
 function Accordion({
   label,
+  defaultOpen = false,
   children,
 }: {
   label: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={`pdp-accordion${open ? " open" : ""}`}>
       <button
@@ -79,14 +80,14 @@ export default function PdpSingle({
   const slug = product.slug;
   const PRODUCT = {
     name: product.name,
+    title: product.title,
     price: product.price,
     description: product.description,
     colors: product.colors,
     sizes: product.sizes,
     images: product.images,
-    details: productDetailsProse(product),
-    sizeFit: product.sizeFit,
-    shipping: product.shipping,
+    details: product.details,
+    fabric: product.fabric,
   };
 
   const [selectedColor, setSelectedColor] = useState(
@@ -201,6 +202,7 @@ export default function PdpSingle({
         swatches: PRODUCT.colors.map((c) => c.hex),
       });
       setAdded(true);
+      setSelectedSize("");
       window.setTimeout(() => setAdded(false), 2000);
     } catch {
       setBagError("Unable to add to bag. Please try again.");
@@ -354,7 +356,7 @@ export default function PdpSingle({
                     role="option"
                     aria-selected={activeImg === i}
                     aria-label={`View image ${i + 1}`}
-                    className={`pdp-thumb${activeImg === i ? " active" : ""}`}
+                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}`}
                     onClick={() => scrollToShot(i)}
                   >
                     <Image
@@ -363,7 +365,8 @@ export default function PdpSingle({
                       fill
                       quality={60}
                       sizes="80px"
-                      className="object-cover object-center"
+                      className="object-cover object-top"
+                      style={{ objectFit: "cover", objectPosition: "top center" }}
                     />
                   </button>
                 ))}
@@ -402,6 +405,9 @@ export default function PdpSingle({
           {/* Right: same buy box as outfit — sticky while left scrolls */}
           <div className="pdp-right pdp-single-right">
             <h1 className="pdp-title">{PRODUCT.name}</h1>
+            {PRODUCT.title ? (
+              <p className="pdp-subtitle">{PRODUCT.title}</p>
+            ) : null}
             <p className="pdp-price">Rs. {PRODUCT.price}</p>
 
             <div className="pdp-divider" />
@@ -504,14 +510,18 @@ export default function PdpSingle({
             {bagError && <p className="pdp-bag-error">{bagError}</p>}
 
             <div className="pdp-accordions">
-              <Accordion label="Details">
-                <p>{PRODUCT.details}</p>
+              <Accordion label={`About ${PRODUCT.title}`} defaultOpen>
+                {PRODUCT.description && <p>{PRODUCT.description}</p>}
+                {PRODUCT.details.length > 0 && (
+                  <ul className="pdp-details-list">
+                    {PRODUCT.details.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
               </Accordion>
-              <Accordion label="Size & Fit">
-                <p>{PRODUCT.sizeFit}</p>
-              </Accordion>
-              <Accordion label="Shipping">
-                <p>{PRODUCT.shipping}</p>
+              <Accordion label="Fabric">
+                <p>{PRODUCT.fabric}</p>
               </Accordion>
             </div>
           </div>
@@ -585,12 +595,18 @@ export default function PdpSingle({
           align-items: start;
         }
 
-        /* Breadcrumbs — compact Kith-style caps */
+        /* Breadcrumbs — compact Kith-style caps; full-bleed section rule */
         .pdp-s-crumbs {
           position: relative;
           z-index: 1;
-          padding: 14px calc(24 * var(--u)) 10px;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 18px calc(24 * var(--u));
           background: #fff;
+          /* Kith breadcrumb band: border-t above crumbs */
+          border-top: 1px solid #d9d9d9;
+          /* Collapse with PdpNavbar’s bottom edge into one crisp rule */
+          margin-top: -1px;
         }
 
         .pdp-s-crumbs-list {
@@ -651,7 +667,7 @@ export default function PdpSingle({
           display: flex;
           flex-direction: column;
           gap: 6px;
-          padding: 12px 10px;
+          padding: 0 10px 12px;
           max-height: calc(100svh - var(--pdp-nav-h));
           overflow-y: auto;
           scrollbar-width: none;
@@ -720,8 +736,8 @@ export default function PdpSingle({
           width: 100%;
           max-width: none;
           box-sizing: border-box;
-          padding: calc(96 * var(--u)) calc(96 * var(--u)) calc(96 * var(--u))
-            calc(96 * var(--u));
+          /* Top flush with gallery; side/bottom keep buy-box breathing room */
+          padding: 0 calc(96 * var(--u)) calc(96 * var(--u));
         }
 
         .pdp-right > * {
@@ -793,20 +809,30 @@ export default function PdpSingle({
           color: var(--pdp-ink);
         }
 
-        .pdp-price {
-          margin: calc(14 * var(--u)) 0 0;
+        .pdp-subtitle {
+          margin: calc(10 * var(--u)) 0 0;
           font-family: var(--pdp-sans);
-          font-size: 11px;
-          font-weight: 300;
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.35;
           letter-spacing: 0.04em;
           color: var(--pdp-muted);
+        }
+
+        .pdp-price {
+          margin: calc(16 * var(--u)) 0 0;
+          font-family: var(--pdp-sans);
+          font-size: max(16px, calc(20 * var(--u)));
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          color: var(--pdp-ink);
         }
 
         .pdp-divider {
           width: 100%;
           height: 1px;
           background: var(--pdp-rule);
-          margin: calc(38 * var(--u)) 0 calc(46 * var(--u));
+          margin: calc(18 * var(--u)) 0 calc(22 * var(--u));
         }
 
         .pdp-field-label {
@@ -1031,6 +1057,33 @@ export default function PdpSingle({
           margin: 0;
         }
 
+        .pdp-details-list {
+          list-style: none;
+          margin: 12px 0 0;
+          padding: 0;
+        }
+
+        .pdp-details-list li {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .pdp-details-list li::before {
+          content: "";
+          flex-shrink: 0;
+          width: 8px;
+          height: 8px;
+          margin-top: 0.55em;
+          background: currentColor;
+          -webkit-mask: url("/brand/loader-star.svg") center / contain no-repeat;
+          mask: url("/brand/loader-star.svg") center / contain no-repeat;
+        }
+
+        .pdp-details-list li + li {
+          margin-top: 6px;
+        }
+
         .pdp-related {
           max-width: none;
           margin: 0;
@@ -1147,7 +1200,7 @@ export default function PdpSingle({
           }
 
           .pdp-s-crumbs {
-            padding: 14px 16px 12px;
+            padding: 16px;
           }
 
           .pdp-columns {
@@ -1298,7 +1351,7 @@ export default function PdpSingle({
 
           .pdp-single .pdp-thumbs {
             width: 60px;
-            padding: 10px 8px;
+            padding: 0 8px 10px;
           }
 
           .pdp-single .pdp-thumb {

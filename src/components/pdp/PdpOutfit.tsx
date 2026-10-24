@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
-import { productDetailsProse } from "@/lib/catalog-types";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
 
 // ─── Rotate arrows for the 360 control ──────────────────────────────
@@ -55,8 +54,18 @@ function Stars({ rating }: { rating: number }) {
 }
 
 // ─── Accordion row ───────────────────────────────────────────────────
-function Accordion({ label, focus, children }: { label: string; focus?: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+function Accordion({
+  label,
+  focus,
+  defaultOpen = false,
+  children,
+}: {
+  label: string;
+  focus?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={`pdp-accordion${open ? " open" : ""}`} data-pdp-focus={focus}>
       <button
@@ -86,14 +95,14 @@ export default function PdpOutfit({
   const slug = product.slug;
   const PRODUCT = {
     name: product.name,
+    title: product.title,
     price: product.price,
     description: product.description,
     colors: product.colors,
     sizes: product.sizes,
     images: product.images,
-    details: productDetailsProse(product),
-    sizeFit: product.sizeFit,
-    shipping: product.shipping,
+    details: product.details,
+    fabric: product.fabric,
   };
 
   const [selectedColor, setSelectedColor] = useState(
@@ -182,6 +191,7 @@ export default function PdpOutfit({
         swatches: PRODUCT.colors.map((c) => c.hex),
       });
       setAdded(true);
+      setSelectedSize("");
       window.setTimeout(() => setAdded(false), 2000);
     } catch {
       setBagError("Unable to add to bag. Please try again.");
@@ -209,7 +219,7 @@ export default function PdpOutfit({
                     role="option"
                     aria-selected={activeImg === i}
                     aria-label={`View image ${i + 1}`}
-                    className={`pdp-thumb${activeImg === i ? " active" : ""}`}
+                    className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}`}
                     onClick={() => setActiveImg(i)}
                   >
                     <Image
@@ -218,7 +228,8 @@ export default function PdpOutfit({
                       fill
                       quality={60}
                       sizes="80px"
-                      className="object-cover object-center"
+                      className="object-cover object-top"
+                      style={{ objectFit: "cover", objectPosition: "top center" }}
                     />
                   </button>
                 ))}
@@ -304,6 +315,9 @@ export default function PdpOutfit({
           {/* ── RIGHT: PRODUCT INFO PANEL ──────────────── */}
           <div className="pdp-right" ref={rightRef}>
             <h1 className="pdp-title" data-pdp-focus="intro">{PRODUCT.name}</h1>
+            {PRODUCT.title ? (
+              <p className="pdp-subtitle">{PRODUCT.title}</p>
+            ) : null}
             <p className="pdp-price">Rs. {PRODUCT.price}</p>
 
             <div className="pdp-divider" />
@@ -405,14 +419,18 @@ export default function PdpOutfit({
 
             {/* Accordions */}
             <div className="pdp-accordions">
-              <Accordion label="Details" focus="details">
-                <p>{PRODUCT.details}</p>
+              <Accordion label={`About ${PRODUCT.title}`} focus="details" defaultOpen>
+                {PRODUCT.description && <p>{PRODUCT.description}</p>}
+                {PRODUCT.details.length > 0 && (
+                  <ul className="pdp-details-list">
+                    {PRODUCT.details.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
               </Accordion>
-              <Accordion label="Size & Fit" focus="sizeFit">
-                <p>{PRODUCT.sizeFit}</p>
-              </Accordion>
-              <Accordion label="Shipping" focus="shipping">
-                <p>{PRODUCT.shipping}</p>
+              <Accordion label="Fabric" focus="fabric">
+                <p>{PRODUCT.fabric}</p>
               </Accordion>
             </div>
 
@@ -508,7 +526,7 @@ export default function PdpOutfit({
           display: flex;
           flex-direction: column;
           gap: 6px;
-          padding: 12px 10px;
+          padding: 0 10px 12px;
           overflow-y: auto;
           scrollbar-width: none;
           background: #fff;
@@ -631,7 +649,8 @@ export default function PdpOutfit({
           width: 100%;
           max-width: none;
           box-sizing: border-box;
-          padding: calc(96 * var(--u)) calc(96 * var(--u)) calc(96 * var(--u)) calc(96 * var(--u));
+          /* Top flush with gallery; side/bottom keep buy-box breathing room */
+          padding: 0 calc(96 * var(--u)) calc(96 * var(--u));
         }
 
         .pdp-right > * {
@@ -677,20 +696,30 @@ export default function PdpOutfit({
           color: var(--pdp-ink);
         }
 
-        .pdp-price {
-          margin: calc(14 * var(--u)) 0 0;
+        .pdp-subtitle {
+          margin: calc(10 * var(--u)) 0 0;
           font-family: var(--pdp-sans);
-          font-size: 11px;
-          font-weight: 300;
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.35;
           letter-spacing: 0.04em;
           color: var(--pdp-muted);
+        }
+
+        .pdp-price {
+          margin: calc(16 * var(--u)) 0 0;
+          font-family: var(--pdp-sans);
+          font-size: max(16px, calc(20 * var(--u)));
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          color: var(--pdp-ink);
         }
 
         .pdp-divider {
           width: 100%;
           height: 1px;
           background: var(--pdp-rule);
-          margin: calc(38 * var(--u)) 0 calc(46 * var(--u));
+          margin: calc(18 * var(--u)) 0 calc(22 * var(--u));
         }
 
         .pdp-field-label {
@@ -921,6 +950,33 @@ export default function PdpOutfit({
 
         .pdp-accordion-body p {
           margin: 0;
+        }
+
+        .pdp-details-list {
+          list-style: none;
+          margin: 12px 0 0;
+          padding: 0;
+        }
+
+        .pdp-details-list li {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .pdp-details-list li::before {
+          content: "";
+          flex-shrink: 0;
+          width: 8px;
+          height: 8px;
+          margin-top: 0.55em;
+          background: currentColor;
+          -webkit-mask: url("/brand/loader-star.svg") center / contain no-repeat;
+          mask: url("/brand/loader-star.svg") center / contain no-repeat;
+        }
+
+        .pdp-details-list li + li {
+          margin-top: 6px;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1231,7 +1287,7 @@ export default function PdpOutfit({
 
           .pdp-thumbs {
             width: 60px;
-            padding: 10px 8px;
+            padding: 0 8px 10px;
           }
 
           .pdp-thumb {

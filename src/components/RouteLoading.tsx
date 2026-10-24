@@ -1,15 +1,13 @@
-import Image from "next/image";
-
-const GATE_BG =
-	"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
-
 type RouteLoadingProps = {
 	/** When used as a fadeable overlay; omit for static loading.tsx shells. */
 	visible?: boolean;
 	className?: string;
 };
 
-/** Branded full-screen wait — same surface language as HomeGate. */
+const GATE_BG =
+	"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
+
+/** Branded full-screen wait — HIM loader GIF on HomeGate surface. */
 export default function RouteLoading({ visible = true, className = "" }: RouteLoadingProps) {
 	return (
 		<div
@@ -17,29 +15,25 @@ export default function RouteLoading({ visible = true, className = "" }: RouteLo
 			aria-busy={visible}
 			aria-live="polite"
 			aria-label="Loading"
-			className={`fixed inset-0 z-100 flex flex-col items-center justify-center transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"
+			className={`fixed inset-0 z-100 flex items-center justify-center transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0 pointer-events-none"
 				} ${className}`}
 			style={{ background: GATE_BG }}
 		>
-			<Image
-				src="/apple-touch-icon.png"
+			{/* Native <img> so animated GIF frames play (next/image can flatten). */}
+			{/* eslint-disable-next-line @next/next/no-img-element */}
+			<img
+				src="/brand/him-loader.gif"
 				alt=""
-				width={72}
-				height={72}
-				priority
-				unoptimized
+				width={160}
+				height={284}
 				aria-hidden
-				style={{ borderRadius: 12 }}
-			/>
-			<p
-				className="m-0 mt-5 text-[11px] tracking-[0.22em] uppercase"
+				draggable={false}
 				style={{
-					fontFamily: "var(--font-room-sans), system-ui, sans-serif",
-					color: "rgba(244, 231, 204, 0.55)",
+					width: "min(160px, 28vw)",
+					height: "auto",
+					objectFit: "contain",
 				}}
-			>
-				Loading
-			</p>
+			/>
 		</div>
 	);
 }
