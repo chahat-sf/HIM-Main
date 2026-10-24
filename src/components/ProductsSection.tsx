@@ -201,13 +201,10 @@ function ExistingProductsGrid() {
   return (
     <section
       ref={sectionRef}
-      className="w-full"
+      className="bestsellers-section w-full"
       style={
         {
           backgroundColor: "#080604",
-          borderLeft: "25px solid #000",
-          borderRight: "25px solid #000",
-          padding: "0 30px 56px",
           ["--fg" as string]: TEXT_LIGHT,
         } as React.CSSProperties
       }
@@ -420,6 +417,11 @@ function ExistingProductsGrid() {
       </div>
 
       <style jsx>{`
+        .bestsellers-section {
+          border-left: 25px solid #000;
+          border-right: 25px solid #000;
+          padding: 0 30px 56px;
+        }
         .bestsellers-scroller {
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -435,11 +437,21 @@ function ExistingProductsGrid() {
           min-width: 0;
         }
         @media (max-width: 1024px) {
+          .bestsellers-section {
+            border-left-width: 12px;
+            border-right-width: 12px;
+            padding: 0 16px 40px;
+          }
           .bestsellers-card {
             width: calc((100% - ${CARD_GAP}px) / 2.3);
           }
         }
         @media (max-width: 640px) {
+          .bestsellers-section {
+            border-left-width: 0;
+            border-right-width: 0;
+            padding: 0 14px 32px;
+          }
           .bestsellers-card {
             width: 72%;
           }
