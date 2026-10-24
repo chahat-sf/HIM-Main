@@ -10,7 +10,7 @@ import { useSession } from "@/hooks/useSession";
 type FooterLink = { label: string; href: string };
 
 const HELP_LINKS: FooterLink[] = [
-  { label: "CONTACT", href: "/collection" },
+  { label: "CONTACT", href: "/contact" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
@@ -18,8 +18,10 @@ const LINKS_BASE: FooterLink[] = [
 ];
 
 const SOCIAL_LINKS: FooterLink[] = [
-  { label: "INSTAGRAM", href: "#" },
-  { label: "YOUTUBE", href: "#" },
+  {
+    label: "INSTAGRAM",
+    href: "https://www.instagram.com/itshimworld?utm_source=ig_web_button_share_sheet&rpxt=ZDNlZDc0MzIxNw==",
+  },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [
@@ -293,7 +295,13 @@ export default function Footer() {
               <ul className="him-footer-col-list">
                 {SOCIAL_LINKS.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href}>{link.label}</Link>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.label}
+                    </a>
                   </li>
                 ))}
               </ul>

@@ -122,7 +122,7 @@ export default function ProductCardMedia({
               objectFit: "cover",
               objectPosition: "top center",
               opacity: active ? 1 : 0,
-              transition: `opacity ${FADE_MS}ms ease`,
+              transition: `opacity ${FADE_MS}ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1)`,
               zIndex: active ? 1 : 0,
             }}
             onLoad={() => markLoaded(src)}
