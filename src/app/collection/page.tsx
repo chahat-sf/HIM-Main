@@ -203,11 +203,12 @@ function CollectionPageInner() {
           <div className="collection-hero-text">
             <span className="collection-hero-label">ALL NEW ESSENTIALS</span>
             <h1 className="collection-hero-title">
-              Everyday<br />Essentials,<br />Built Different.
+              Essential Pieces,
+              <br />
+              Elevated by Design.
             </h1>
             <p className="collection-hero-desc">
-              Explore our full range of essentials designed for comfort,
-              quality and a life in motion. Timeless pieces for the modern man.
+              Where thoughtful design meets timeless sophistication. Every piece reflects a commitment to quality, comfort, and the art of dressing well.
             </p>
           </div>
         </div>
@@ -338,16 +339,24 @@ function CollectionPageInner() {
         }
 
         .collection-hero-title {
-          margin: 0;
-          font-family: "Cormorant Garamond", Georgia, serif;
-          font-size: clamp(32px, 4.5vw, 64px);
-          font-weight: 400;
-          line-height: 1.02;
-          letter-spacing: -0.5px;
-          text-transform: uppercase;
-          color: #fff;
-          max-width: 520px;
-        }
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(30px, 4.5vw, 64px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.collection-hero-title span {
+  display: block;
+  white-space: nowrap;
+}
 
         .collection-hero-desc {
           margin: 16px 0 0;
