@@ -9,12 +9,10 @@ import { useSession } from "@/hooks/useSession";
 type FooterLink = { label: string; href: string };
 
 const HELP_LINKS: FooterLink[] = [
-  { label: "HELP CENTER", href: "/collection" },
   { label: "CONTACT", href: "/collection" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
-  { label: "REVIEWS", href: "/collection" },
   { label: "ACCOUNT", href: "/login" },
 ];
 

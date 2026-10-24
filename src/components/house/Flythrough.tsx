@@ -710,7 +710,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             className={styles.rotateBtn}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
-            aria-label="Shop the outfit"
+            aria-label="Get this look"
           >
             <svg
               className={styles.rotateBtnIcon}
@@ -727,7 +727,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
               <path d="M6 7h12l1 13H5L6 7Z" />
               <path d="M9 10V6a3 3 0 0 1 6 0v4" />
             </svg>
-            <span>Shop the Outfit</span>
+            <span>Get this look</span>
           </Link>
         )}
 
