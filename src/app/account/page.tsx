@@ -6,7 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteLoading from "@/components/RouteLoading";
 import type { AccountPayload } from "@/lib/account";
+import { buildLoginHref } from "@/lib/auth-redirect";
 import { firstNameFromFullName, formatDisplayDate } from "@/lib/format";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -107,10 +109,12 @@ export default function AccountPage() {
     async function load() {
       setLoading(true);
       setError("");
+      let redirected = false;
       try {
         const res = await fetch("/api/account", { credentials: "include" });
         if (res.status === 401) {
-          router.replace("/login");
+          redirected = true;
+          router.replace(buildLoginHref("/account"));
           return;
         }
         if (!res.ok) {
@@ -129,7 +133,8 @@ export default function AccountPage() {
           setError(err instanceof Error ? err.message : "Unable to load account.");
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        // Stay on RouteLoading while navigating away on 401.
+        if (!cancelled && !redirected) setLoading(false);
       }
     }
 
@@ -238,12 +243,19 @@ export default function AccountPage() {
     ]
     : [];
 
+  if (loading) {
+    return <RouteLoading />;
+  }
+
   return (
     <>
       <Navbar />
 
       <main className="acc-page">
-        <section className="acc-hero" aria-label="My Account">
+        <section
+          className="acc-banner him-hero-media him-hero-media--center"
+          aria-label="My Account"
+        >
           <Image
             src="/products/man-image-103.webp"
             alt=""
@@ -252,50 +264,43 @@ export default function AccountPage() {
             quality={80}
             sizes="100vw"
             className="object-cover"
-            style={{ objectPosition: "center 18%" }}
+            style={{ objectFit: "cover", objectPosition: "center 20%" }}
           />
-          <div className="acc-hero-overlay" />
-          <div className="acc-hero-content">
-            <h1 className="acc-hero-title">MY ACCOUNT</h1>
-            <p className="acc-hero-sub">
-              A MORE CONSIDERED WARDROBE
-              <br />
-              BEGINS HERE.
-            </p>
-          </div>
-        </section>
 
-        <section className="acc-welcome" aria-label="Welcome">
-          <Image
-            src="/products/man-image-103.webp"
-            alt=""
-            fill
-            quality={70}
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: "center 40%", opacity: 0.42 }}
-          />
-          <div className="acc-welcome-dim" />
-          <div className="acc-welcome-inner">
-            <div className="acc-welcome-top">
-              <p className="acc-welcome-label">WELCOME BACK</p>
-              <button type="button" className="acc-signout" onClick={onSignOut}>
-                Sign out
-              </button>
+          <div className="acc-hero">
+            <div className="acc-hero-overlay" />
+            <div className="acc-hero-content">
+              <h1 className="acc-hero-title">MY ACCOUNT</h1>
+              <p className="acc-hero-sub">
+                A MORE CONSIDERED WARDROBE
+                <br />
+                BEGINS HERE.
+              </p>
             </div>
-            <h2 className="acc-welcome-name">{welcomeName}</h2>
-            <p className="acc-welcome-tagline">
-              {"A more considered wardrobe,\nfor wherever the day takes you."}
-            </p>
+          </div>
+
+          <div className="acc-welcome">
+            <div className="acc-welcome-dim" />
+            <div className="acc-welcome-inner">
+              <div className="acc-welcome-top">
+                <p className="acc-welcome-label">WELCOME BACK</p>
+                <button type="button" className="acc-signout" onClick={onSignOut}>
+                  Sign out
+                </button>
+              </div>
+              <h2 className="acc-welcome-name">{welcomeName}</h2>
+              <p className="acc-welcome-tagline">
+                {"A more considered wardrobe,\nfor wherever the day takes you."}
+              </p>
+            </div>
           </div>
         </section>
 
         <div className="acc-body">
-          {loading && <p className="acc-empty">Loading your account…</p>}
-          {error && !loading && <p className="acc-error">{error}</p>}
+          {error && <p className="acc-error">{error}</p>}
           {formError && <p className="acc-error">{formError}</p>}
 
-          {data && !loading && (
+          {data && (
             <>
               <div className="acc-two-col">
                 <Card>
@@ -523,14 +528,15 @@ export default function AccountPage() {
                         href={`/collection/${item.slug}`}
                         className="acc-saved-card"
                       >
-                        <div className="acc-saved-img">
+                        <div className="acc-saved-img him-card-media">
                           <Image
                             src={item.image}
                             alt={item.name}
                             fill
                             quality={80}
                             sizes="(max-width: 768px) 50vw, 28vw"
-                            className="object-cover object-center"
+                            className="object-cover object-top"
+                            style={{ objectFit: "cover", objectPosition: "top center" }}
                           />
                         </div>
                         <p className="acc-saved-name">{item.name}</p>
@@ -564,20 +570,32 @@ export default function AccountPage() {
           color: ${INK};
         }
 
-        .acc-hero {
+        .acc-banner {
           position: relative;
-          height: clamp(240px, 34vw, 420px);
           overflow: hidden;
           background: #000;
+        }
+        /* % position shifts crop into the photo; px offsets leave a black gap */
+        .acc-banner.him-hero-media > img,
+        .acc-banner.him-hero-media img {
+          object-position: center 20% !important;
+          transform-origin: center center;
+        }
+
+        .acc-hero {
+          position: relative;
+          z-index: 1;
+          height: clamp(240px, 34vw, 420px);
+          overflow: hidden;
         }
         .acc-hero-overlay {
           position: absolute;
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(0, 0, 0, 0.2) 0%,
-            rgba(0, 0, 0, 0.55) 55%,
-            rgba(0, 0, 0, 0.85) 100%
+            rgba(0, 0, 0, 0.12) 0%,
+            rgba(0, 0, 0, 0.28) 55%,
+            rgba(0, 0, 0, 0.4) 100%
           );
           pointer-events: none;
         }
@@ -615,6 +633,7 @@ export default function AccountPage() {
 
         .acc-welcome {
           position: relative;
+          z-index: 1;
           overflow: hidden;
           border-top: 1px solid ${BORDER};
           border-bottom: 1px solid ${BORDER};
@@ -623,7 +642,12 @@ export default function AccountPage() {
         .acc-welcome-dim {
           position: absolute;
           inset: 0;
-          background: rgba(0, 0, 0, 0.55);
+          background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.45) 0%,
+            rgba(0, 0, 0, 0.62) 45%,
+            rgba(0, 0, 0, 0.82) 100%
+          );
           pointer-events: none;
         }
         .acc-welcome-inner {

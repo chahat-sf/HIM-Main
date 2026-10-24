@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteLoading from "@/components/RouteLoading";
 import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
@@ -190,13 +191,17 @@ export default function CartPage() {
   const total = subtotal + shipping + tax;
   const itemCount = cart.reduce((acc, i) => acc + i.qty, 0);
 
+  if (loading) {
+    return <RouteLoading />;
+  }
+
   return (
     <>
       <Navbar />
 
       <main className="cart-page">
         {/* ── HERO ── */}
-        <section className="cart-hero" aria-label="My Cart">
+        <section className="cart-hero him-hero-media him-hero-media--center" aria-label="My Cart">
           <Image
             src="/products/man-image-104.webp"
             alt=""
@@ -205,7 +210,7 @@ export default function CartPage() {
             quality={80}
             sizes="100vw"
             className="object-cover"
-            style={{ objectPosition: "center 22%" }}
+            style={{ objectFit: "cover", objectPosition: "center 30%" }}
           />
           <div className="cart-hero-overlay" />
           <div className="cart-hero-content">
@@ -221,11 +226,7 @@ export default function CartPage() {
 
         {/* ── BODY ── */}
         <div className="cart-body">
-          {loading ? (
-            <div className="cart-empty">
-              <p className="cart-empty-title">Loading your bag…</p>
-            </div>
-          ) : cart.length === 0 ? (
+          {cart.length === 0 ? (
             <div className="cart-empty">
               <p className="cart-empty-title">Your bag is empty.</p>
               <Link href="/collection" className="cart-btn-secondary">
@@ -255,7 +256,7 @@ export default function CartPage() {
                     >
                       <Link
                         href={`/collection/${item.slug}`}
-                        className="cart-item-thumb"
+                        className="cart-item-thumb him-card-media"
                       >
                         <Image
                           src={item.image}
@@ -263,7 +264,8 @@ export default function CartPage() {
                           fill
                           quality={70}
                           sizes="88px"
-                          className="object-cover object-center"
+                          className="object-cover object-top"
+                          style={{ objectFit: "cover", objectPosition: "top center" }}
                         />
                       </Link>
 
@@ -432,14 +434,15 @@ export default function CartPage() {
                   href={`/collection/${item.slug}`}
                   className="cart-rec-card"
                 >
-                  <div className="cart-rec-img">
+                  <div className="cart-rec-img him-card-media">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
                       quality={80}
                       sizes="(max-width: 768px) 50vw, 28vw"
-                      className="object-cover object-center"
+                      className="object-cover object-top"
+                      style={{ objectFit: "cover", objectPosition: "top center" }}
                     />
                     <span className="cart-rec-plus" aria-hidden="true">
                       +
@@ -479,6 +482,11 @@ export default function CartPage() {
           height: clamp(220px, 28vw, 380px);
           overflow: hidden;
           background: #000;
+        }
+        .cart-hero.him-hero-media > img,
+        .cart-hero.him-hero-media img {
+          object-position: center 30% !important;
+          transform-origin: center center;
         }
         .cart-hero-overlay {
           position: absolute;

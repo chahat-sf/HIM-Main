@@ -272,7 +272,7 @@ function ExistingProductsGrid() {
               aria-hidden="true"
             >
               <div
-                className="relative w-full overflow-hidden"
+                className="him-card-media relative w-full overflow-hidden"
                 style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
               >
                 <Image
@@ -282,7 +282,8 @@ function ExistingProductsGrid() {
                   priority={index < 3}
                   quality={95}
                   sizes="(max-width: 768px) 70vw, 28vw"
-                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                  className="object-cover object-top"
+                  style={{ objectFit: "cover", objectPosition: "top center" }}
                 />
 
                 {/* WISHLIST — plain icon, no circle */}

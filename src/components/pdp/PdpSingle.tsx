@@ -201,6 +201,7 @@ export default function PdpSingle({
         swatches: PRODUCT.colors.map((c) => c.hex),
       });
       setAdded(true);
+      setSelectedSize("");
       window.setTimeout(() => setAdded(false), 2000);
     } catch {
       setBagError("Unable to add to bag. Please try again.");

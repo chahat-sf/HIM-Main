@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import styles from "./PdpNavbar.module.css";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
@@ -57,13 +56,12 @@ function NavLink({ label, href }: { label: string; href: string }) {
 }
 
 export default function PdpNavbar() {
-  const pathname = usePathname();
   const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
   const accountHref = isAuthenticated
     ? "/account"
-    : buildLoginHref(pathname);
+    : buildLoginHref("/account");
 
   return (
     <nav className={styles.nav} aria-label="Primary">

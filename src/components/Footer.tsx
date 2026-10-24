@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 
@@ -71,7 +70,6 @@ function AccordionChevron({ open }: { open: boolean }) {
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [open, setOpen] = useState<AccordionKey>(null);
-  const pathname = usePathname() || "/";
   const { isAuthenticated } = useSession();
 
   const LINKS = useMemo(
@@ -80,11 +78,11 @@ export default function Footer() {
         link.label === "ACCOUNT"
           ? {
             ...link,
-            href: isAuthenticated ? "/account" : buildLoginHref(pathname),
+            href: isAuthenticated ? "/account" : buildLoginHref("/account"),
           }
           : link,
       ),
-    [isAuthenticated, pathname],
+    [isAuthenticated],
   );
 
   const toggle = (key: AccordionKey) => {
