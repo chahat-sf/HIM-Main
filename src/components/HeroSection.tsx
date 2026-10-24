@@ -7,6 +7,17 @@ import { useHomeLoad } from "./HomeGate";
 const HERO_VIDEO = "/homepage/Hero-video-Section.mp4";
 /** Slightly before EOS so browsers still have a decodable frame to paint. */
 const HOLD_EPS = 0.05;
+/** Seconds before end when we peek the next section. */
+const SCROLL_LEAD_S = 1;
+/** Fraction of viewport height to scroll down. */
+const SCROLL_FRAC = 0.07;
+/** Duration of the eased peek scroll (ms). */
+const SCROLL_MS = 1400;
+/** Skip auto-scroll if the user already left the hero. */
+const USER_SCROLL_FRAC = 0.15;
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,9 +40,26 @@ export default function HeroSection() {
     let started = false;
     let pendingStart = false;
     let finished = false;
+    let scrolledAway = false;
+    let scrollRaf = 0;
 
     const holdTime = () =>
       Math.max(0, (Number.isFinite(duration) ? duration : 0) - HOLD_EPS);
+
+    const scrollPeek = () => {
+      const from = window.scrollY;
+      const delta = window.innerHeight * SCROLL_FRAC;
+      const start = performance.now();
+
+      const tick = (now: number) => {
+        if (disposed) return;
+        const t = Math.min(1, (now - start) / SCROLL_MS);
+        window.scrollTo(0, from + delta * easeInOutCubic(t));
+        if (t < 1) scrollRaf = requestAnimationFrame(tick);
+      };
+
+      scrollRaf = requestAnimationFrame(tick);
+    };
 
     /** True once the full clip is in the buffer — avoids mid-play stalls. */
     const isFullyBuffered = () => {
@@ -81,6 +109,7 @@ export default function HeroSection() {
       started = true;
       pendingStart = false;
       finished = false;
+      scrolledAway = false;
       // Only seek if needed — a seek-to-0 hitch right before play feels choppy.
       try {
         if (video.currentTime > 0.02) video.currentTime = 0;
@@ -117,6 +146,16 @@ export default function HeroSection() {
       restoreHoldFrame();
     };
 
+    const onTimeUpdate = () => {
+      if (disposed || !started || finished || scrolledAway || reduceMotion) return;
+      if (!duration || duration <= 0) return;
+      const remaining = duration - video.currentTime;
+      if (remaining > SCROLL_LEAD_S) return;
+      scrolledAway = true;
+      if (window.scrollY > window.innerHeight * USER_SCROLL_FRAC) return;
+      scrollPeek();
+    };
+
     const onVisibility = () => {
       if (document.visibilityState === "visible") restoreHoldFrame();
     };
@@ -140,6 +179,7 @@ export default function HeroSection() {
     video.addEventListener("canplaythrough", markReady);
     video.addEventListener("progress", reportBuffered);
     video.addEventListener("ended", onEnded);
+    video.addEventListener("timeupdate", onTimeUpdate);
     window.addEventListener("him-start", playOnce);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pageshow", onPageShow);
@@ -150,6 +190,7 @@ export default function HeroSection() {
 
     return () => {
       disposed = true;
+      cancelAnimationFrame(scrollRaf);
       window.removeEventListener("him-start", playOnce);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", onPageShow);
@@ -157,6 +198,7 @@ export default function HeroSection() {
       video.removeEventListener("canplaythrough", markReady);
       video.removeEventListener("progress", reportBuffered);
       video.removeEventListener("ended", onEnded);
+      video.removeEventListener("timeupdate", onTimeUpdate);
       video.pause();
     };
   }, []);
