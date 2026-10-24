@@ -87,6 +87,9 @@ export default function HeroSection() {
       } catch {
         /* ignore seek errors before metadata */
       }
+      // Unmute on gate click — same user gesture as him-start, so browsers allow audio.
+      video.muted = false;
+      video.removeAttribute("muted");
       void video.play().catch(() => {
         /* autoplay can still fail; gate click usually unlocks */
       });
@@ -127,7 +130,7 @@ export default function HeroSection() {
       reportBuffered();
     };
 
-    video.muted = true;
+    video.muted = false;
     video.playsInline = true;
     video.preload = "auto";
     video.loop = false;
@@ -169,7 +172,6 @@ export default function HeroSection() {
           WebkitBackfaceVisibility: "hidden",
         }}
         src={HERO_VIDEO}
-        muted
         playsInline
         preload="auto"
         aria-label="HIM — Luxury wood-panelled corridor with a lift opening"
