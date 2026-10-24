@@ -2,21 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import styles from "./PdpNavbar.module.css";
+import { buildLoginHref } from "@/lib/auth-redirect";
+import { useSession } from "@/hooks/useSession";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 
-const leftLinks = [
-  { label: "JEANS", href: "/collection?category=JEANS" },
-  { label: "SHIRTS", href: "/collection?category=SHIRTS" },
-  { label: "TSHIRTS", href: "/collection?category=TSHIRTS" },
-  { label: "LOOKBOOK", href: "/collection" },
-];
+const leftLinks = [{ label: "EXPLORE", href: "/collection" }];
 
-const rightLinks = [
-  { label: "BRAND", href: "/" },
-  { label: "REWARDS", href: "/" },
-];
+const rightLinks: { label: string; href: string }[] = [];
 
 function SearchIcon() {
   return (
@@ -62,8 +57,13 @@ function NavLink({ label, href }: { label: string; href: string }) {
 }
 
 export default function PdpNavbar() {
+  const pathname = usePathname();
+  const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
+  const accountHref = isAuthenticated
+    ? "/account"
+    : buildLoginHref(pathname);
 
   return (
     <nav className={styles.nav} aria-label="Primary">
@@ -88,13 +88,15 @@ export default function PdpNavbar() {
         </Link>
 
         <div className={styles.right}>
-          <ul className={`${styles.links} ${styles.desktopLinks}`}>
-            {rightLinks.map((link) => (
-              <li key={link.label}>
-                <NavLink {...link} />
-              </li>
-            ))}
-          </ul>
+          {rightLinks.length > 0 && (
+            <ul className={`${styles.links} ${styles.desktopLinks}`}>
+              {rightLinks.map((link) => (
+                <li key={link.label}>
+                  <NavLink {...link} />
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className={styles.icons}>
             <Link href="/collection" aria-label="Search" className={styles.icon}>
@@ -116,7 +118,7 @@ export default function PdpNavbar() {
                 </span>
               )}
             </Link>
-            <Link href="/login" aria-label="Account" className={styles.icon}>
+            <Link href={accountHref} aria-label="Account" className={styles.icon}>
               <UserIcon />
             </Link>
             <Link

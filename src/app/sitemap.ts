@@ -1,10 +1,17 @@
 import type { MetadataRoute } from "next";
-import { PRODUCT_SLUGS } from "@/lib/products";
+import { listProductSlugs } from "@/lib/catalog";
 
 const BASE = "https://him.world";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-	const products = PRODUCT_SLUGS.map((slug) => ({
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+	let slugs: string[] = [];
+	try {
+		slugs = await listProductSlugs();
+	} catch {
+		slugs = [];
+	}
+
+	const products = slugs.map((slug) => ({
 		url: `${BASE}/collection/${slug}`,
 		lastModified: new Date(),
 		changeFrequency: "weekly" as const,
@@ -12,9 +19,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
 	}));
 
 	return [
-		{ url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
-		{ url: `${BASE}/house`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-		{ url: `${BASE}/collection`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+		{
+			url: BASE,
+			lastModified: new Date(),
+			changeFrequency: "weekly",
+			priority: 1,
+		},
+		{
+			url: `${BASE}/house`,
+			lastModified: new Date(),
+			changeFrequency: "monthly",
+			priority: 0.8,
+		},
+		{
+			url: `${BASE}/collection`,
+			lastModified: new Date(),
+			changeFrequency: "weekly",
+			priority: 0.9,
+		},
 		...products,
 	];
 }

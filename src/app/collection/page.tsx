@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { CatalogProduct } from "@/lib/catalog-types";
+import { useWishlist } from "@/hooks/useWishlist";
 
 // ─── Shared arrow SVG ───────────────────────────────────────────────
 function Arrow() {
@@ -22,36 +24,40 @@ function Arrow() {
   );
 }
 
-// ─── Product data ────────────────────────────────────────────────────
-// Import product data
-import productsData from "@/data/products.json";
+const BASE_FILTERS = ["ALL"] as const;
 
-const SWATCHES = ["#c97a1a", "#9ca3af", "#1f2937"]; // amber, grey, navy
-
-// Use imported products
-const PRODUCTS = productsData;
-
-const FILTERS = ["ALL", "SHIRTS", "TSHIRTS", "JEANS"] as const;
-type Filter = (typeof FILTERS)[number];
-
-function parseCategory(raw: string | null): Filter {
-  if (raw && (FILTERS as readonly string[]).includes(raw)) return raw as Filter;
-  return "ALL";
-}
-
-function categoryHref(filter: Filter) {
+function categoryHref(filter: string) {
   return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
 }
 
 const EXPLORE_ITEMS = [
   { label: "ALL MEN'S", href: "/collection", image: "/lookbook/man-on-lunch.webp" },
-  { label: "SHIRTS", href: "/collection?category=SHIRTS", image: "/lookbook/man-on-bike.webp" },
-  { label: "TSHIRTS", href: "/collection?category=TSHIRTS", image: "/lookbook/man-on-car.webp" },
-  { label: "JEANS", href: "/collection?category=JEANS", image: "/lookbook/Where-The-Sun-Settles.webp" },
+  { label: "JACKETS", href: "/collection?category=JACKETS", image: "/lookbook/man-on-bike.webp" },
+  { label: "SUITS", href: "/collection?category=SUITS", image: "/lookbook/man-on-car.webp" },
+  { label: "BLAZERS", href: "/collection?category=BLAZERS", image: "/lookbook/Where-The-Sun-Settles.webp" },
 ];
 
+function HeartIcon({ filled }: { filled?: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.7 4.7 0 0 1 8 4c1.8 0 3.2.9 4 2.2C12.8 4.9 14.2 4 16 4a4.7 4.7 0 0 1 4.8 4.8Z" />
+    </svg>
+  );
+}
+
 // ─── Single product card ─────────────────────────────────────────────
-function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
+function ProductCard({ product }: { product: CatalogProduct }) {
+  const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
+  const wishlisted = inWishlist(product.slug);
+
   return (
     <Link href={`/collection/${product.slug}`} className="product-card group" style={{ textDecoration: "none" }}>
       {/* Image */}
@@ -64,31 +70,59 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
         />
+        <button
+          type="button"
+          className={`product-card-wish${wishlisted ? " is-active" : ""}`}
+          aria-label={
+            wishlisted
+              ? `Remove ${product.name} from wishlist`
+              : `Add ${product.name} to wishlist`
+          }
+          aria-pressed={wishlisted}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void toggleWishlist({
+              productId: product.id,
+              slug: product.slug,
+              name: product.name,
+              price: Math.round(product.priceCents / 100) || 0,
+              image: product.image,
+              swatches: product.swatches,
+            });
+          }}
+        >
+          <HeartIcon filled={wishlisted} />
+        </button>
       </div>
 
       {/* Info */}
       <div className="product-card-body">
         <p className="product-card-name">{product.name}</p>
 
-        {/* SWATCHES */}
-        <div className="flex items-center" style={{ gap: "4px", marginTop: "6px" }}>
-          {product.swatches.map((swatch, i) => (
-            <span
-              key={`${swatch}-${i}`}
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: swatch,
-                border: "1px solid rgba(0,0,0,0.15)",
-                display: "inline-block",
-                flex: "0 0 auto",
-              }}
-            />
-          ))}
-        </div>
+        {product.swatches.length > 0 && (
+          <div
+            className="flex items-center"
+            style={{ gap: "4px", marginTop: "6px" }}
+          >
+            {product.swatches.map((swatch, i) => (
+              <span
+                key={`${swatch}-${i}`}
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: swatch,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  display: "inline-block",
+                  flex: "0 0 auto",
+                }}
+              />
+            ))}
+          </div>
+        )}
 
-        <p className="product-card-price">{product.price}</p>
+        <p className="product-card-price">₹{product.price}</p>
       </div>
     </Link>
   );
@@ -98,14 +132,44 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
 function CollectionPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeFilter = parseCategory(searchParams.get("category"));
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/products")
+      .then((res) => res.json())
+      .then((body: { items?: CatalogProduct[] }) => {
+        if (!cancelled) setProducts(body.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(() => {
+    const set = new Set(
+      products.map((p) => p.category).filter(Boolean),
+    );
+    return [...BASE_FILTERS, ...Array.from(set).sort()];
+  }, [products]);
+
+  const rawCategory = searchParams.get("category");
+  const activeFilter =
+    rawCategory && categories.includes(rawCategory) ? rawCategory : "ALL";
 
   const filtered =
     activeFilter === "ALL"
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === activeFilter);
+      ? products
+      : products.filter((p) => p.category === activeFilter);
 
-  const setActiveFilter = (filter: Filter) => {
+  const setActiveFilter = (filter: string) => {
     router.replace(categoryHref(filter), { scroll: false });
   };
 
@@ -145,7 +209,7 @@ function CollectionPageInner() {
         {/* ── FILTER BAR ──────────────────────────────────────────── */}
         <div className="collection-bar">
           <div className="collection-bar-left">
-            {FILTERS.map((f) => (
+            {categories.map((f) => (
               <button
                 key={f}
                 type="button"
@@ -156,7 +220,9 @@ function CollectionPageInner() {
               </button>
             ))}
           </div>
-          <span className="collection-count">{filtered.length} PRODUCTS</span>
+          <span className="collection-count">
+            {loading ? "…" : `${filtered.length} PRODUCTS`}
+          </span>
         </div>
 
         {/* ── PRODUCT GRID ─────────────────────────────────────────── */}
@@ -357,6 +423,33 @@ function CollectionPageInner() {
           aspect-ratio: 3 / 4;
           overflow: hidden;
           background: #f0ede8;
+        }
+
+        .product-card-wish {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 2;
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: none;
+          border-radius: 0;
+          background: rgba(255, 255, 255, 0.88);
+          color: #3a3a3a;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          transition: color 150ms ease, background 150ms ease, opacity 150ms ease;
+        }
+
+        .product-card-wish:hover {
+          background: #fff;
+          color: #111;
+        }
+
+        .product-card-wish.is-active {
+          color: #7a1420;
         }
 
         .product-card-body {

@@ -9,6 +9,7 @@ import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import type { CatalogProduct } from "@/lib/catalog-types";
 
 // ─── Style constants ────────────────────────────────────────────────────────
 
@@ -31,11 +32,6 @@ const rightLinks: { label: string; href: string }[] = [];
 
 // ─── Search popup content (edit these) ──────────────────────────────────────
 
-const CREAM = "#f3ead2";
-const TAN = "#5a4a38";
-const INK = "#2a2623";
-const BLUE = "#3a5aa8";
-
 type SearchProduct = {
   slug: string;
   name: string;
@@ -44,16 +40,17 @@ type SearchProduct = {
   colors: string[];
 };
 
-// The first 4 show as "Popular products". Typing in the box filters all of them.
-const SEARCH_PRODUCTS: SearchProduct[] = [
-  { slug: "textured-thermal-white-7", name: "Double-Breasted Blazer", price: "₹38,000", image: "/bestseller/bs-image-1.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-8", name: "Midnight Slim Blazer", price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
-  { slug: "textured-thermal-white-9", name: "Tailored Single-Breasted Coat", price: "₹42,000", image: "/bestseller/bs-image-3.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-10", name: "Velvet Trim Evening Jacket", price: "₹44,000", image: "/bestseller/bs-image-4.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-11", name: "Heritage Overcoat", price: "₹52,000", image: "/bestseller/bs-image-5.webp", colors: [CREAM, TAN, INK] },
-  { slug: "textured-thermal-white-12", name: "Midnight Slim Blazer II", price: "₹36,000", image: "/bestseller/bs-image-2.webp", colors: [CREAM, BLUE, INK] },
-];
 const POPULAR_COUNT = 4;
+
+function toSearchProduct(p: CatalogProduct): SearchProduct {
+  return {
+    slug: p.slug,
+    name: p.name,
+    price: `₹${p.price.replace(/\.00$/, "")}`,
+    image: p.image,
+    colors: p.swatches,
+  };
+}
 
 // Banner at the bottom of the popup. Swap the image for your own "edit" photo.
 const EDIT_IMAGE = "/homepage/navbar-image.webp";
@@ -214,9 +211,27 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/products")
+      .then((res) => res.json())
+      .then((body: { items?: CatalogProduct[] }) => {
+        if (!cancelled) {
+          setSearchProducts((body.items ?? []).map(toSearchProduct));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSearchProducts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const close = () => setSearchOpen(false);
 
@@ -244,9 +259,11 @@ export default function Navbar() {
 
   const trimmed = query.trim().toLowerCase();
   const results = useMemo(() => {
-    if (!trimmed) return SEARCH_PRODUCTS.slice(0, POPULAR_COUNT);
-    return SEARCH_PRODUCTS.filter((p) => p.name.toLowerCase().includes(trimmed));
-  }, [trimmed]);
+    if (!trimmed) return searchProducts.slice(0, POPULAR_COUNT);
+    return searchProducts.filter((p) =>
+      p.name.toLowerCase().includes(trimmed),
+    );
+  }, [trimmed, searchProducts]);
 
   const popup = (
     <div
@@ -320,11 +337,13 @@ export default function Navbar() {
                 </div>
                 <p className="him-sp-card-name">{p.name}</p>
                 <p className="him-sp-card-price">{p.price}</p>
-                <div className="him-sp-dots">
-                  {p.colors.map((c, i) => (
-                    <span key={`${c}-${i}`} style={{ background: c }} />
-                  ))}
-                </div>
+                {p.colors.length > 0 && (
+                  <div className="him-sp-dots">
+                    {p.colors.map((c, i) => (
+                      <span key={`${c}-${i}`} style={{ background: c }} />
+                    ))}
+                  </div>
+                )}
               </Link>
             ))}
           </div>
