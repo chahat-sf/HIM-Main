@@ -14,6 +14,11 @@ type ProductCardMediaProps = {
   sizes: string;
   priority?: boolean;
   quality?: number;
+  armed?: boolean;
+  /** When provided, the component operates in controlled mode (no auto-cycle). */
+  controlledIndex?: number;
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
 function uniqueCardSources(image: string, images?: string[]) {
@@ -31,18 +36,26 @@ export default function ProductCardMedia({
   sizes,
   priority = false,
   quality = 75,
+  armed: armedProp,
+  controlledIndex,
+  onPrev,
+  onNext,
 }: ProductCardMediaProps) {
   const sources = useMemo(
     () => uniqueCardSources(image, images),
     [image, images],
   );
   const multi = sources.length > 1;
+  const isControlled = controlledIndex !== undefined;
 
   const [hovering, setHovering] = useState(false);
-  const [armed, setArmed] = useState(false);
-  const [index, setIndex] = useState(0);
+  const [internalArmed, setInternalArmed] = useState(false);
+  const armed = armedProp ?? internalArmed;
+  const [autoIndex, setAutoIndex] = useState(0);
   const [loaded, setLoaded] = useState<Record<string, boolean>>({});
   const browserPreload = useRef(new Set<string>());
+
+  const index = isControlled ? controlledIndex! : autoIndex;
 
   const markLoaded = useCallback((src: string) => {
     setLoaded((prev) => (prev[src] ? prev : { ...prev, [src]: true }));
@@ -61,23 +74,24 @@ export default function ProductCardMedia({
     [markLoaded],
   );
 
-  // Warm the next frame while hovering; mount all layers once hover starts.
+  // Warm the next frame while hovering or armed; mount all layers once armed.
   useEffect(() => {
-    if (!hovering || !multi) return;
+    if ((!hovering && !armed) || !multi) return;
     sources.forEach(preloadSrc);
-  }, [hovering, multi, sources, preloadSrc]);
+  }, [hovering, armed, multi, sources, preloadSrc]);
 
   useEffect(() => {
-    if (!hovering || !multi) return;
+    if ((!hovering && !armed) || !multi) return;
     const next = sources[(index + 1) % sources.length];
     preloadSrc(next);
-  }, [hovering, multi, index, sources, preloadSrc]);
+  }, [hovering, armed, multi, index, sources, preloadSrc]);
 
+  // Auto-cycle only in uncontrolled mode
   useEffect(() => {
-    if (!hovering || !multi) return;
+    if (isControlled || !hovering || !multi) return;
 
     const id = window.setInterval(() => {
-      setIndex((current) => {
+      setAutoIndex((current) => {
         for (let step = 1; step <= sources.length; step += 1) {
           const candidate = (current + step) % sources.length;
           if (loaded[sources[candidate]]) return candidate;
@@ -87,22 +101,22 @@ export default function ProductCardMedia({
     }, INTERVAL_MS);
 
     return () => window.clearInterval(id);
-  }, [hovering, multi, sources, loaded]);
+  }, [isControlled, hovering, multi, sources, loaded]);
 
   useEffect(() => {
-    if (!hovering) setIndex(0);
-  }, [hovering]);
+    if (!hovering && !isControlled) setAutoIndex(0);
+  }, [hovering, isControlled]);
 
   // Mount gallery frames after first hover so the grid doesn't fetch every image up front.
   const visibleSources = armed && multi ? sources : sources.slice(0, 1);
-  const activeIndex = hovering ? index : 0;
+  const activeIndex = hovering || isControlled ? index : 0;
 
   return (
     <div
       className="product-card-media"
       onMouseEnter={() => {
         setHovering(true);
-        if (multi) setArmed(true);
+        if (multi) setInternalArmed(true);
       }}
       onMouseLeave={() => setHovering(false)}
     >

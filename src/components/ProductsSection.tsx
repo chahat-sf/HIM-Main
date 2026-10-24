@@ -46,6 +46,7 @@ function lerpColor(hexA: string, hexB: string, t: number): string {
 ===================================================================== */
 
 const CARD_GAP = 16;
+const SWIPE_MIN = 40; // px a drag must travel before it changes the image
 
 type CarouselProduct = {
   slug: string;
@@ -63,6 +64,122 @@ function ExistingProductsGrid() {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const [products, setProducts] = useState<CarouselProduct[]>([]);
+  // Per-card state, keyed by product slug
+  const [cardImgIndex, setCardImgIndex] = useState<Record<string, number>>({});
+  const [cardArmed, setCardArmed] = useState<Record<string, boolean>>({});
+
+  // Swipe tracking (mouse drag + touch swipe on the image)
+  const swipeRef = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    slug: string;
+    count: number;
+    active: boolean;
+  } | null>(null);
+  const swipedRef = useRef(false);
+
+  const getImgIndex = (slug: string) => cardImgIndex[slug] ?? 0;
+
+  const hoverTimers = useRef<Record<string, number>>({});
+
+  const stopAutoHover = (slug: string) => {
+    if (hoverTimers.current[slug]) {
+      window.clearInterval(hoverTimers.current[slug]);
+      delete hoverTimers.current[slug];
+    }
+  };
+
+  const startAutoHover = (slug: string, count: number) => {
+    if (count <= 1) return;
+    stopAutoHover(slug);
+    hoverTimers.current[slug] = window.setInterval(() => {
+      setCardImgIndex((prev) => {
+        const cur = prev[slug] ?? 0;
+        return { ...prev, [slug]: (cur + 1) % count };
+      });
+    }, 2000);
+  };
+
+  const armCard = (slug: string) =>
+    setCardArmed((p) => (p[slug] ? p : { ...p, [slug]: true }));
+
+  const goToImg = (slug: string, index: number) =>
+    setCardImgIndex((p) => ({ ...p, [slug]: index }));
+
+  const stepImg = (slug: string, count: number, dir: 1 | -1) => {
+    if (count <= 1) return;
+    setCardImgIndex((prev) => {
+      const cur = prev[slug] ?? 0;
+      return { ...prev, [slug]: (cur + dir + count) % count };
+    });
+  };
+
+  const onImgHoverScrub = (
+    e: React.MouseEvent<HTMLDivElement>,
+    slug: string,
+    count: number,
+  ) => {
+    if (count <= 1 || swipeRef.current?.active) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect.width) return;
+    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+    const targetIdx = Math.floor((x / rect.width) * count);
+    setCardImgIndex((prev) =>
+      prev[slug] === targetIdx ? prev : { ...prev, [slug]: targetIdx },
+    );
+  };
+
+  const onImgPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    slug: string,
+    count: number,
+  ) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    swipeRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      slug,
+      count,
+      active: false,
+    };
+    swipedRef.current = false;
+    armCard(slug); // make sure every frame is mounted before the first swipe
+  };
+
+  const onImgPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = swipeRef.current;
+    if (!s || s.id !== e.pointerId || s.active) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+      swipeRef.current = null; // vertical scroll — leave it to the page
+      return;
+    }
+    if (Math.abs(dx) >= 10 && Math.abs(dx) > Math.abs(dy)) {
+      s.active = true;
+      swipedRef.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+  };
+
+  const onImgPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = swipeRef.current;
+    if (!s || s.id !== e.pointerId) return;
+    swipeRef.current = null;
+    if (!s.active) return;
+    const dx = e.clientX - s.x;
+    if (Math.abs(dx) >= SWIPE_MIN) stepImg(s.slug, s.count, dx < 0 ? 1 : -1);
+    // keep "swiped" true just long enough to swallow the click that follows
+    window.setTimeout(() => {
+      swipedRef.current = false;
+    }, 0);
+  };
+
+  const onImgPointerCancel = () => {
+    swipeRef.current = null;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +192,7 @@ function ExistingProductsGrid() {
           name: p.name,
           price: `₹${p.price.replace(/\.00$/, "")}`,
           image: p.image,
+          images: p.images,
           swatches: p.swatches,
           id: p.id,
           priceCents: p.priceCents,
@@ -227,37 +345,165 @@ function ExistingProductsGrid() {
           overscrollBehaviorX: "contain",
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
-          touchAction: "pan-x",
+          touchAction: "pan-x pan-y",
           paddingBottom: "2px",
         }}
       >
-        {products.map((product, index) => (
-          <article
-            key={`${product.slug}-${index}`}
-            className="bestsellers-card group relative"
-            style={{ flex: "0 0 auto", scrollSnapAlign: "start", overflow: "visible" }}
-          >
-            {/* IMAGE — click goes to PDP */}
-            <Link
-              href={`/collection/${product.slug}`}
-              style={{ display: "block", textDecoration: "none" }}
-              tabIndex={-1}
-              aria-hidden="true"
-            >
-              <div
-                className="him-card-media relative w-full overflow-hidden"
-                style={{ aspectRatio: "3 / 4", background: "#e6e4df" }}
-              >
-                <ProductCardMedia
-                  name={product.name}
-                  image={product.image}
-                  images={product.images}
-                  priority={index < 3}
-                  quality={75}
-                  sizes="(max-width: 768px) 70vw, 28vw"
-                />
+        {products.map((product, index) => {
+          const allImages = (() => {
+            const raw: string[] = [];
+            if (product.image) raw.push(product.image);
+            if (product.images?.length) raw.push(...product.images);
+            return [...new Set(raw)];
+          })();
+          const hasMulti = allImages.length > 1;
+          const armed = !!cardArmed[product.slug];
+          const activeIdx = getImgIndex(product.slug);
 
-                {/* WISHLIST — plain icon, no circle */}
+          return (
+            <article
+              key={`${product.slug}-${index}`}
+              className="bestsellers-card group relative"
+              style={{ flex: "0 0 auto", scrollSnapAlign: "start", overflow: "visible" }}
+              onPointerEnter={(e) => {
+                if (e.pointerType === "mouse") {
+                  armCard(product.slug);
+                  startAutoHover(product.slug, allImages.length);
+                }
+              }}
+              onPointerLeave={(e) => {
+                if (e.pointerType === "mouse") {
+                  stopAutoHover(product.slug);
+                  goToImg(product.slug, 0);
+                }
+              }}
+            >
+              {/* IMAGE AREA — swipe / drag here to change the image */}
+              <div
+                className="bs-img-wrapper"
+                style={{
+                  position: "relative",
+                  aspectRatio: "3 / 4",
+                  // multi-image cards: horizontal gestures belong to the swipe, vertical still scrolls the page
+                  touchAction: hasMulti ? "pan-y" : "pan-x pan-y",
+                }}
+                onPointerDown={hasMulti ? (e) => onImgPointerDown(e, product.slug, allImages.length) : undefined}
+                onPointerMove={hasMulti ? onImgPointerMove : undefined}
+                onPointerUp={hasMulti ? onImgPointerUp : undefined}
+                onPointerCancel={hasMulti ? onImgPointerCancel : undefined}
+                onMouseMove={hasMulti ? (e) => onImgHoverScrub(e, product.slug, allImages.length) : undefined}
+                onClickCapture={(e) => {
+                  // a swipe must not open the product page
+                  if (swipedRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+              >
+                {/* Click the image → go to PDP */}
+                <Link
+                  href={`/collection/${product.slug}`}
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
+                  style={{
+                    display: "block",
+                    textDecoration: "none",
+                    position: "absolute",
+                    inset: 0,
+                  }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  <div
+                    className="him-card-media"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "#e6e4df",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <ProductCardMedia
+                      name={product.name}
+                      image={product.image}
+                      images={product.images}
+                      priority={index < 3}
+                      quality={75}
+                      sizes="(max-width: 768px) 70vw, 28vw"
+                      armed={armed}
+                      controlledIndex={hasMulti && armed ? activeIdx : undefined}
+                    />
+                  </div>
+                </Link>
+
+                {/* ── PREV / NEXT SWIPE BUTTONS ON HOVER ── */}
+                {hasMulti && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      className="bs-img-nav bs-img-nav--prev"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        stopAutoHover(product.slug);
+                        stepImg(product.slug, allImages.length, -1);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <ChevronLeft size={14} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      className="bs-img-nav bs-img-nav--next"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        stopAutoHover(product.slug);
+                        stepImg(product.slug, allImages.length, 1);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <ChevronRight size={14} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                    </button>
+                  </>
+                )}
+
+                {/* SLIDER BARS — shows the current image, hover/tap a bar to jump to it */}
+                {hasMulti && (
+                  <div
+                    className="bs-img-dots"
+                    role="tablist"
+                    aria-label={`${product.name} images`}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    {allImages.map((_, di) => (
+                      <button
+                        key={di}
+                        type="button"
+                        role="tab"
+                        aria-selected={di === activeIdx}
+                        aria-label={`Show image ${di + 1}`}
+                        className={`bs-img-dot${di === activeIdx ? " active" : ""}`}
+                        onMouseEnter={() => {
+                          armCard(product.slug);
+                          stopAutoHover(product.slug);
+                          goToImg(product.slug, di);
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          armCard(product.slug);
+                          stopAutoHover(product.slug);
+                          goToImg(product.slug, di);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* WISHLIST — outside Link → no navigation */}
                 <button
                   type="button"
                   aria-label={
@@ -277,10 +523,9 @@ function ExistingProductsGrid() {
                     background: "transparent",
                     color: inWishlist(product.slug) ? "#7a1420" : "#3a3a3a",
                     cursor: "pointer",
-                    zIndex: 2,
+                    zIndex: 5,
                   }}
                   onClick={(e) => {
-                    e.preventDefault();
                     e.stopPropagation();
                     void toggleWishlist({
                       productId: product.id ?? null,
@@ -301,99 +546,87 @@ function ExistingProductsGrid() {
                   />
                 </button>
               </div>
-            </Link>
 
-            {/* PRODUCT INFO */}
-            <div style={{ paddingTop: "10px", color: "var(--fg)" }}>
-              <div className="flex items-start justify-between" style={{ gap: "8px" }}>
-                <div>
+              {/* PRODUCT INFO */}
+              <div style={{ paddingTop: "10px", color: "var(--fg)" }}>
+                <div className="flex items-start justify-between" style={{ gap: "8px" }}>
+                  <div>
+                    <Link
+                      href={`/collection/${product.slug}`}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <p
+                        style={{
+                          margin: 0,
+                          fontFamily: "Inter, Arial, Helvetica, sans-serif",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {product.name}
+                      </p>
+                    </Link>
+
+                    {product.swatches.length > 0 && (
+                      <div
+                        className="flex items-center"
+                        style={{ gap: "4px", marginTop: "6px" }}
+                      >
+                        {product.swatches.map((swatch, i) => (
+                          <span
+                            key={`${swatch}-${i}`}
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              background: swatch,
+                              display: "inline-block",
+                              flex: "0 0 auto",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* BAG BUTTON */}
                   <Link
                     href={`/collection/${product.slug}`}
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {product.name}
-                    </p>
-                  </Link>
-
-                  {/* <p
+                    aria-label={`View ${product.name}`}
+                    className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                     style={{
-                      margin: "2px 0 0",
-                      fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                      fontSize: "10px",
-                      lineHeight: 1.3,
-                      opacity: 0.55,
+                      width: "20px",
+                      height: "23px",
+                      padding: 0,
+                      borderRadius: "3px",
+                      border: "1px solid var(--fg)",
+                      background: "transparent",
+                      color: "var(--fg)",
+                      flex: "0 0 auto",
+                      opacity: 0.8,
                     }}
                   >
-                    + {product.color}
-                  </p> */}
-
-                  {product.swatches.length > 0 && (
-                    <div
-                      className="flex items-center"
-                      style={{ gap: "4px", marginTop: "6px" }}
-                    >
-                      {product.swatches.map((swatch, i) => (
-                        <span
-                          key={`${swatch}-${i}`}
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            background: swatch,
-                            display: "inline-block",
-                            flex: "0 0 auto",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    <ShoppingBag size={11} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                  </Link>
                 </div>
 
-                {/* BAG BUTTON */}
-                <Link
-                  href={`/collection/${product.slug}`}
-                  aria-label={`View ${product.name}`}
-                  className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
+                {/* PRICE */}
+                <p
                   style={{
-                    width: "20px",
-                    height: "23px",
-                    padding: 0,
-                    borderRadius: "3px",
-                    border: "1px solid var(--fg)",
-                    background: "transparent",
-                    color: "var(--fg)",
-                    flex: "0 0 auto",
-                    opacity: 0.8,
+                    margin: "8px 0 0",
+                    fontFamily: "Inter, Arial, Helvetica, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    lineHeight: 1,
                   }}
                 >
-                  <ShoppingBag size={11} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
-                </Link>
+                  {product.price}
+                </p>
               </div>
-
-              {/* PRICE */}
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  lineHeight: 1,
-                }}
-              >
-                {product.price}
-              </p>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       <style jsx>{`
@@ -415,6 +648,96 @@ function ExistingProductsGrid() {
         .bestsellers-card {
           width: calc((100% - ${CARD_GAP * 3}px) / 3.3);
           min-width: 0;
+        }
+
+        /* ── Image swipe nav buttons on hover ── */
+        .bs-img-nav {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 5;
+          display: grid;
+          place-items: center;
+          width: 30px;
+          height: 30px;
+          padding: 0;
+          border: none;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.88);
+          color: #111;
+          cursor: pointer;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 180ms ease, background 150ms ease, transform 150ms ease;
+          box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(4px);
+        }
+        .bestsellers-card:hover .bs-img-nav {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .bs-img-nav:hover {
+          background: #fff;
+          transform: translateY(-50%) scale(1.06);
+        }
+        .bs-img-nav--prev { left: 8px; }
+        .bs-img-nav--next { right: 8px; }
+
+        /* ── Slider bars (also tappable) ── */
+        .bs-img-dots {
+          position: absolute;
+          bottom: 3px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 4;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 180ms ease;
+        }
+        .bestsellers-card:hover .bs-img-dots {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        /* touch screens have no hover — keep the bars visible */
+        @media (hover: none) {
+          .bs-img-dots {
+            opacity: 1;
+            pointer-events: auto;
+          }
+        }
+        .bs-img-dot {
+          position: relative;
+          width: 18px;
+          height: 14px; /* bigger tap area than the 2px bar */
+          padding: 0;
+          border: 0;
+          background: transparent;
+          cursor: pointer;
+          transition: width 200ms ease;
+        }
+        .bs-img-dot::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          height: 2px;
+          margin-top: -1px;
+          border-radius: 1px;
+          background: rgba(255, 255, 255, 0.45);
+          transition: background 200ms ease;
+        }
+        .bs-img-dot:hover::before {
+          background: rgba(255, 255, 255, 0.8);
+        }
+        .bs-img-dot.active {
+          width: 24px;
+        }
+        .bs-img-dot.active::before {
+          background: #fff;
         }
         @media (max-width: 1024px) {
           /* Left inset lives on the section (doesn’t scroll away).
@@ -506,7 +829,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/products/man-image-102.webp", // was man-image-109 (duplicate) — change if your file name differs
+    src: "/products/inner-images/man-image-103-2.jpg", // was man-image-109 (duplicate) — change if your file name differs
     alt: "Man in white outfit beside a car",
     aspectRatio: "3 / 4",
     offsetTop: "150px",

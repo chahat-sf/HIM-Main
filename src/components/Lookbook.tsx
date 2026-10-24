@@ -136,7 +136,7 @@ export default function Lookbook() {
 
         <div className="summer-feature-content">
           <div className="summer-feature-inner">
-            <span className="summer-feature-label">OUR APPROACH</span>
+            {/* <span className="summer-feature-label">OUR APPROACH</span> */}
 
             <h2>WHERE THE DAY UNFOLDS</h2>
 
@@ -148,8 +148,8 @@ export default function Lookbook() {
 
             <Link href="/collection" className="summer-feature-link">
               <span className="summer-feature-cta">
-                <span className="summer-feature-cta-label">OUR BRAND</span>
-                <Arrow />
+                {/* <span className="summer-feature-cta-label">OUR BRAND</span> */}
+                {/* <Arrow /> */}
               </span>
             </Link>
           </div>

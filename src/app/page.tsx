@@ -10,7 +10,9 @@ export default function Home() {
     <HomeGate>
       <main>
         <HeroSection />
-        <FlythroughLazy embedded />
+        <div data-music-trigger>
+          <FlythroughLazy embedded />
+        </div>
         <ProductsSection />
         <Lookbook />
         <Footer />
