@@ -936,7 +936,7 @@ function ProvisionsSection() {
                 margin: 0,
                 color: "#FFF",
                 fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "clamp(34px, 4.2vw, 58px)",
+                fontSize: "clamp(34px, 4.2vw, 55px)",
                 fontStyle: "normal",
                 fontWeight: 400,
                 lineHeight: 0.98,
@@ -945,9 +945,9 @@ function ProvisionsSection() {
                 maxWidth: "520px",
               }}
             >
-              Recharge With
+              Elevate Your
               <br />
-              HIM Provisions
+              Everyday with HIM
             </h2>
 
             {/* DESCRIPTION */}
@@ -961,7 +961,7 @@ function ProvisionsSection() {
                 lineHeight: "22px",
               }}
             >
-              Essentials for wherever the day takes you.
+              Simplicity looks good on HIM.
             </p>
 
             {/* BUTTON */}
