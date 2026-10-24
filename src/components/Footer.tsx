@@ -23,7 +23,13 @@ const SOCIAL_LINKS: FooterLink[] = [
   { label: "YOUTUBE", href: "#" },
 ];
 
-type AccordionKey = "help" | "links" | "social" | null;
+const LEGAL_LINKS: FooterLink[] = [
+  { label: "LEGALS", href: "/legals" },
+  { label: "TERMS OF SALE", href: "/terms-of-sale" },
+  { label: "PRIVACY POLICY", href: "/privacy-policy" },
+];
+
+type AccordionKey = "help" | "links" | "social" | "legal" | null;
 
 function ArrowIcon() {
   return (
@@ -250,9 +256,8 @@ export default function Footer() {
             </p>
             {statusMessage ? (
               <p
-                className={`him-footer-newsletter-status${
-                  status === "error" ? " is-error" : " is-success"
-                }`}
+                className={`him-footer-newsletter-status${status === "error" ? " is-error" : " is-success"
+                  }`}
                 role="status"
               >
                 {statusMessage}
@@ -260,6 +265,38 @@ export default function Footer() {
             ) : null}
           </form>
         </div>
+
+        {/* LEGAL AND COOKIES */}
+        <nav
+          className="him-footer-col him-footer-col--legal"
+          aria-label="Legal and cookies"
+        >
+          <button
+            type="button"
+            className="him-footer-col-toggle"
+            aria-expanded={open === "legal"}
+            onClick={() => toggle("legal")}
+          >
+            <span className="him-footer-col-title">LEGAL AND COOKIES</span>
+            <AccordionChevron open={open === "legal"} />
+          </button>
+          <p className="him-footer-col-title him-footer-col-title--desktop">
+            LEGAL AND COOKIES
+          </p>
+          <div
+            className={`him-footer-col-panel${open === "legal" ? " is-open" : ""}`}
+          >
+            <div className="him-footer-col-panel-inner">
+              <ul className="him-footer-col-list">
+                {LEGAL_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </nav>
 
         {/* SOCIAL */}
         <nav
@@ -329,10 +366,10 @@ export default function Footer() {
 
         .him-footer-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 32px 20px;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 32px 16px;
           align-items: start;
-          max-width: 1100px;
+          max-width: 1200px;
           margin: 0 auto;
           width: 100%;
         }
