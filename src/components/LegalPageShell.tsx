@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteLoading from "@/components/RouteLoading";
 
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 const SANS = 'var(--font-room-sans, "Helvetica Neue"), Helvetica, Arial, sans-serif';
@@ -14,7 +16,13 @@ const RULE = "rgba(245, 241, 233, 0.22)";
 export type LegalSection = {
   heading: string;
   /** One or more paragraphs */
-  body: string | string[];
+  body?: string | string[];
+  /** Bold label + following text (e.g. Personal Information: …) */
+  labeled?: { label: string; text: string }[];
+  /** Bullet list */
+  items?: string[];
+  /** Paragraphs after labeled blocks / lists */
+  after?: string | string[];
 };
 
 const CROSS_LINKS = [
@@ -30,10 +38,20 @@ export default function LegalPageShell({
   showDisclaimer = true,
 }: {
   title: string;
-  lead: string;
+  lead?: string;
   sections: LegalSection[];
   showDisclaimer?: boolean;
 }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  if (!ready) {
+    return <RouteLoading />;
+  }
+
   return (
     <>
       <Navbar />
@@ -41,19 +59,42 @@ export default function LegalPageShell({
         <header className="legal-hero">
           <p className="legal-eyebrow">LEGAL</p>
           <h1 className="legal-title">{title}</h1>
-          <p className="legal-lead">{lead}</p>
+          {lead ? <p className="legal-lead">{lead}</p> : null}
         </header>
 
         <div className="legal-body">
           {sections.map((section) => {
-            const paragraphs = Array.isArray(section.body)
-              ? section.body
-              : [section.body];
+            const toList = (value?: string | string[]) =>
+              value ? (Array.isArray(value) ? value : [value]) : [];
+            const paragraphs = toList(section.body);
+            const after = toList(section.after);
             return (
               <section key={section.heading} className="legal-section">
                 <h2 className="legal-section-title">{section.heading}</h2>
                 {paragraphs.map((paragraph, index) => (
-                  <p key={index} className="legal-section-body">
+                  <p key={`b-${index}`} className="legal-section-body">
+                    {paragraph}
+                  </p>
+                ))}
+                {section.labeled?.length ? (
+                  <dl className="legal-labeled">
+                    {section.labeled.map((entry) => (
+                      <div key={entry.label} className="legal-labeled-row">
+                        <dt>{entry.label}</dt>
+                        <dd>{entry.text}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : null}
+                {section.items?.length ? (
+                  <ul className="legal-list">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {after.map((paragraph, index) => (
+                  <p key={`a-${index}`} className="legal-section-body legal-section-body--after">
                     {paragraph}
                   </p>
                 ))}
@@ -156,8 +197,54 @@ export default function LegalPageShell({
           color: ${MUTED};
         }
 
-        .legal-section-body + .legal-section-body {
+        .legal-section-body + .legal-section-body,
+        .legal-section-body--after {
           margin-top: 14px;
+        }
+
+        .legal-labeled {
+          margin: 14px 0 0;
+          padding: 0;
+        }
+
+        .legal-labeled-row {
+          margin: 0 0 14px;
+        }
+
+        .legal-labeled-row:last-child {
+          margin-bottom: 0;
+        }
+
+        .legal-labeled-row dt {
+          margin: 0 0 4px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          color: ${INK};
+        }
+
+        .legal-labeled-row dd {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.7;
+          color: ${MUTED};
+        }
+
+        .legal-list {
+          margin: 14px 0 0;
+          padding: 0 0 0 1.15rem;
+          list-style: disc;
+        }
+
+        .legal-list li {
+          margin: 0 0 10px;
+          font-size: 14px;
+          line-height: 1.7;
+          color: ${MUTED};
+        }
+
+        .legal-list li:last-child {
+          margin-bottom: 0;
         }
 
         .legal-cross {

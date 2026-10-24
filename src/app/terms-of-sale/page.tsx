@@ -10,7 +10,6 @@ export default function TermsOfSalePage() {
   return (
     <LegalPageShell
       title="Terms of Sale"
-      lead="These Terms of Sale govern the purchase of products from HIM through our website and other authorised sales channels. By placing an order, you agree to the terms outlined below."
       showDisclaimer={false}
       sections={[
         {
