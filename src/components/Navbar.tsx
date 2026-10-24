@@ -293,7 +293,7 @@ export default function Navbar() {
       {/* TOP ROW — desktop: links / logo / links + icons.  Phone: logo + icons */}
       <div className="him-nav-row relative flex w-full items-center justify-between">
         {/* LEFT NAVIGATION (desktop only) */}
-        <ul
+        {/* <ul
           className="him-nav-desktop-links flex items-center list-none m-0 p-0"
           style={{ gap: "24px" }}
         >
@@ -302,7 +302,7 @@ export default function Navbar() {
               <NavLink {...link} />
             </li>
           ))}
-        </ul>
+        </ul> */}
 
         {/* CENTER LOGO */}
         <Link
@@ -334,7 +334,7 @@ export default function Navbar() {
           </ul>
 
           {/* ICONS — buttons, so nothing redirects */}
-          <div
+          {/* <div
             className="him-nav-icons flex items-center"
             style={{ color: LINK_COLOR }}
           >
@@ -385,18 +385,18 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* PHONE LINKS ROW — hidden on desktop */}
-      <ul className="him-nav-mobile-links list-none m-0 p-0">
+      {/* <ul className="him-nav-mobile-links list-none m-0 p-0">
         {[...leftLinks, ...rightLinks].map((link) => (
           <li key={link.label}>
             <NavLink {...link} />
           </li>
         ))}
-      </ul>
+      </ul> */}
 
       {/* Search popup — rendered on <body> so it always sits above everything */}
       {mounted && createPortal(popup, document.body)}
@@ -410,7 +410,7 @@ export default function Navbar() {
         }
 
         .him-nav-logo {
-          margin-left: -28px;
+          margin-left: -2px;
         }
 
         .him-nav-icons {

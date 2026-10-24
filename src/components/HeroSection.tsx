@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Navbar from "./Navbar";
 import { useHomeLoad } from "./HomeGate";
 
-const HERO_VIDEO = "/homepage/hero.mp4";
+const HERO_VIDEO = "/homepage/Hero-video-Section.mp4";
 /** Slightly before EOS so browsers still have a decodable frame to paint. */
 const HOLD_EPS = 0.05;
 

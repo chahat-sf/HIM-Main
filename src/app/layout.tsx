@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import NavigationOverlay from "@/components/NavigationOverlay";
+import BackgroundMusic from "@/components/BackgroundMusic";
 import "./globals.css";
 
 const spaceMono = Space_Mono({
@@ -60,6 +61,7 @@ export default function RootLayout({
 			<body className="font-sans antialiased">
 				{children}
 				<NavigationOverlay />
+				<BackgroundMusic />
 			</body>
 		</html>
 	);
