@@ -359,21 +359,16 @@ export default function HeroSection() {
     bottom: 36px;
   }
 
-  .him-hero-title {
-    font-size: clamp(34px, 10vw, 48px);
-    line-height: 0.92;
-  }
-
+  .him-hero-label,
+  .him-hero-title,
   .him-hero-text {
-    max-width: 260px;
-    font-size: 12px;
-    margin-top: 10px;
+    display: none;
   }
 
   .him-hero-btn {
     height: 36px;
     font-size: 10px;
-    margin-top: 14px;
+    margin-top: 0;
   }
 }
       `}</style>
