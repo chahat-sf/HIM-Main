@@ -79,12 +79,33 @@
 }
 
 .list {
+  --option-pad-y: 9px;
+  --option-font: 14px;
+  --option-lh: 1.15;
+  --option-gap: 4px;
+  --option-block: calc(var(--option-font) * var(--option-lh) + var(--option-pad-y) * 2);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--option-gap);
   margin: 0;
   padding: 0;
   list-style: none;
+  /* Show 3.5 options; rest scroll. */
+  max-height: calc(3.5 * var(--option-block) + 3 * var(--option-gap));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .option {
@@ -92,13 +113,13 @@
   box-sizing: border-box;
   display: block;
   width: 100%;
-  padding: 9px 12px;
+  padding: var(--option-pad-y) 12px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--option-font);
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1.15;
+  line-height: var(--option-lh);
   color: rgba(255, 255, 255, 0.55);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   transition:
@@ -119,43 +140,6 @@
 .option[aria-pressed="true"] {
   color: #fff;
   background: #5c5c5c;
-}
-
-.stats {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  padding-top: 2px;
-}
-
-.statRow {
-  display: grid;
-  grid-template-columns: 88px 1fr;
-  align-items: center;
-  gap: 10px;
-}
-
-.statLabel {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-
-.track {
-  height: 10px;
-  border-radius: 3px;
-  background: #121212;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.75);
-  overflow: hidden;
-}
-
-.fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #fff;
-  transform-origin: left center;
 }
 
 .launcher {
@@ -237,21 +221,12 @@
     font-size: 13px;
   }
 
+  .list {
+    --option-pad-y: 8px;
+    --option-font: 13px;
+  }
+
   .option {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .statRow {
-    grid-template-columns: 72px 1fr;
-    gap: 8px;
-  }
-
-  .statLabel {
-    font-size: 12px;
-  }
-
-  .track {
-    height: 8px;
+    padding: var(--option-pad-y) 10px;
   }
 }

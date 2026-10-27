@@ -378,6 +378,7 @@ export default function PdpSingle({
                       fill
                       quality={60}
                       sizes="80px"
+                      unoptimized
                       className="object-cover object-top"
                       style={{ objectFit: "cover", objectPosition: "top center" }}
                     />

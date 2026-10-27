@@ -6,11 +6,11 @@ import { ShoppingBag } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import styles from "../ScrollSection.module.css";
-import { CHARACTERS } from "./characters";
+import { OUTFITS, OUTFIT_COUNT, OUTFIT_NAMES } from "./characters";
 import CameraController, { type CameraCommand } from "./camera/CameraController";
 import SpeedBlur from "./camera/SpeedBlur";
 import DragGuide from "./DragGuide";
-import OutfitPanel, { OUTFIT_COUNT } from "./OutfitPanel";
+import OutfitPanel from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { useHomeLoad } from "../HomeGate";
@@ -21,7 +21,7 @@ import {
   roomPlay,
   scrub,
   setInteractMode,
-  showCharacter,
+  setOutfitVideo,
 } from "./rooms/Frames";
 import { ROOMS } from "./rooms/poses";
 
@@ -204,6 +204,79 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
     return () => io.disconnect();
   }, [embedded, ready]);
+
+  // Auto-align section 2 to the viewport when it enters and scroll settles.
+  // One snap per entry; re-arms only after the house is fully off-screen again.
+  useEffect(() => {
+    if (!embedded) return;
+    const html = document.documentElement;
+    const previousBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = "smooth";
+
+    const coverageOf = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const visible = Math.max(0, Math.min(vh, rect.bottom) - Math.max(0, rect.top));
+      return { rect, vh, coverage: visible / vh };
+    };
+
+    let armed = true;
+    const el0 = rootRef.current;
+    if (el0 && coverageOf(el0).coverage > 0) armed = false;
+
+    let idle = 0;
+    let snapping = false;
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let speed = 0;
+
+    const settle = () => {
+      const el = rootRef.current;
+      if (!el || snapping || !armed) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const { rect, vh, coverage } = coverageOf(el);
+      if (coverage <= 0) return;
+      // Already filling / aligned — consume the shot so we do not nudge again.
+      if (coverage > 0.97 || Math.abs(rect.top) < 10) {
+        armed = false;
+        return;
+      }
+      // Only ease in when the house is partly on screen.
+      if (coverage < 0.28) return;
+      // Leaving into products — do not yank back; stay armed until idle lands or leaves.
+      if (rect.top < -vh * 0.2 && coverage < 0.55) return;
+      armed = false;
+      snapping = true;
+      window.scrollTo({ top: window.scrollY + rect.top, behavior: "smooth" });
+      window.setTimeout(() => {
+        snapping = false;
+      }, 750);
+    };
+
+    const onScroll = () => {
+      const el = rootRef.current;
+      if (el && coverageOf(el).coverage <= 0) armed = true;
+
+      const now = performance.now();
+      const y = window.scrollY;
+      const dt = Math.max(1, now - lastT);
+      speed = Math.abs(y - lastY) / dt;
+      lastY = y;
+      lastT = now;
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        if (speed > 1.2) return;
+        settle();
+      }, 120);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      html.style.scrollBehavior = previousBehavior;
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(idle);
+    };
+  }, [embedded]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -472,20 +545,20 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         slide(indexRef.current + (event.key === "ArrowRight" ? 1 : -1));
         return;
       }
-      if (modeRef.current !== "interior" || ROOMS.length <= 1) return;
+      if (modeRef.current !== "interior") return;
       const n = Number.parseInt(event.key, 10);
-      if (n >= 1 && n <= OUTFIT_COUNT) chooseCharacter(n - 1);
+      if (n >= 1 && n <= OUTFIT_COUNT) chooseOutfit(n - 1);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  function chooseCharacter(character: number) {
-    if (modeRef.current !== "interior" || !CHARACTERS[character] || character >= OUTFIT_COUNT) return;
+  function chooseOutfit(outfitIndex: number) {
+    if (modeRef.current !== "interior" || !OUTFITS[outfitIndex]) return;
     const room = indexRef.current;
-    setPicked((current) => current.map((value, i) => (i === room ? character : value)));
+    setPicked((current) => current.map((value, i) => (i === room ? outfitIndex : value)));
     window.setTimeout(() => {
-      showCharacter(room, Math.round(CHARACTERS[character].start * frameCount(room)));
+      setOutfitVideo(room, OUTFITS[outfitIndex].video);
     }, 260);
   }
 
@@ -646,8 +719,8 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
               <OutfitPanel
                 selected={picked[index] ?? 0}
-                onSelect={chooseCharacter}
-                showOutfits={ROOMS.length > 1}
+                onSelect={chooseOutfit}
+                outfits={OUTFIT_NAMES}
               />
             </div>
             {ROOMS.length > 1 && (
@@ -717,7 +790,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
         {mode === "interior" && (
           <Link
-            href="/collection/textured-thermal-white-9"
+            href={`/collection/${OUTFITS[picked[index] ?? 0]?.slug ?? OUTFITS[0].slug}`}
             className={styles.rotateBtn}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}

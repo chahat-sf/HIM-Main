@@ -12,17 +12,19 @@ import {
 	SRGBColorSpace,
 	VideoTexture,
 } from "three";
+import { OUTFITS } from "../characters";
 import { BAY, ROOMS } from "./poses";
 import { FrameSequence, SEQUENCES } from "./sequence";
 
 const DEFAULT_FPS = 24;
 const DEFAULT_ASPECT = 2520 / 1080;
+const DEFAULT_IDLE_VIDEO = OUTFITS[0].video;
 
 type LodMode = "idle" | "interact";
 
-/** Idle = 2k auto-spin (video only). Interact = 1k drag scrub. */
+/** Idle = outfit reel (swappable). Interact = 1k drag scrub. */
 const LOD = {
-	idle: { video: "/house/window-2.mp4?v=1022c", asset: 1 },
+	idle: { video: DEFAULT_IDLE_VIDEO, asset: 1 },
 	interact: { video: "/house/window-1.mp4?v=1022a", asset: 0 },
 } as const;
 
@@ -115,12 +117,22 @@ type PlayState = {
 	dragging: boolean;
 	duration: number;
 	video: HTMLVideoElement | null;
+	/** Active idle outfit reel URL. */
+	idleVideo: string;
 	pendingTime: number | null;
 	seekLock: boolean;
 	sequence: FrameSequence;
 	usingFrames: boolean;
 	lodMode: LodMode;
 };
+
+function idleSrc(item: PlayState) {
+	return item.idleVideo || LOD.idle.video;
+}
+
+function lodVideo(item: PlayState, mode: LodMode) {
+	return mode === "idle" ? idleSrc(item) : LOD.interact.video;
+}
 
 function lodInfo(mode: LodMode) {
 	const { asset } = LOD[mode];
@@ -143,6 +155,7 @@ const play: PlayState[] = ROOMS.map(() => {
 		dragging: false,
 		duration: 0,
 		video: null,
+		idleVideo: DEFAULT_IDLE_VIDEO,
 		pendingTime: null,
 		seekLock: false,
 		sequence: makeSequence("idle"),
@@ -237,7 +250,7 @@ function applyLod(item: PlayState, mode: LodMode) {
 	if (video) {
 		const gen = ++lodGeneration;
 		video.pause();
-		video.src = LOD[mode].video;
+		video.src = lodVideo(item, mode);
 		video.load();
 		const onMeta = () => {
 			video.removeEventListener("loadedmetadata", onMeta);
@@ -259,6 +272,37 @@ function applyLod(item: PlayState, mode: LodMode) {
 		item.sequence.load();
 		item.sequence.warm(index);
 	}
+}
+
+/** Swap the idle outfit reel for a room. Plays immediately when in idle LOD. */
+export function setOutfitVideo(room: number, src: string) {
+	const item = play[room];
+	if (!item || !src || item.idleVideo === src) return;
+	item.idleVideo = src;
+	if (item.lodMode !== "idle") return;
+
+	const video = item.video;
+	if (!video) return;
+
+	const gen = ++lodGeneration;
+	item.dragging = false;
+	item.pendingTime = null;
+	item.seekLock = false;
+	item.pos = 0;
+	item.target = 0;
+	item.vel = item.fps;
+	video.pause();
+	video.src = src;
+	video.load();
+	const onMeta = () => {
+		video.removeEventListener("loadedmetadata", onMeta);
+		if (gen !== lodGeneration) return;
+		item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+		seekVideo(item, 0);
+		void video.play().catch(() => { });
+	};
+	video.addEventListener("loadedmetadata", onMeta);
+	if (video.readyState >= 1) onMeta();
 }
 
 /**
@@ -456,7 +500,7 @@ export function FramePlane({
 
 	useEffect(() => {
 		const item = play[room];
-		const src = LOD[item?.lodMode ?? "idle"].video;
+		const src = item ? lodVideo(item, item.lodMode) : DEFAULT_IDLE_VIDEO;
 		if (!src) return;
 		const video = makeVideo(src, "auto");
 		videoRef.current = video;

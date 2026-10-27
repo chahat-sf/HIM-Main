@@ -1,7 +1,39 @@
-/** Turntable character start fractions (0–1 of current LOD frame count). */
-export const CHARACTERS = [
-	{ id: "character-1", name: "Character 01", start: 0 },
-	{ id: "character-2", name: "Character 02", start: 209 / 241 },
-	{ id: "character-3", name: "Character 03", start: 181 / 241 },
-	{ id: "character-4", name: "Character 04", start: 32 / 241 },
+/** House window outfit plates (idle auto-spin reels). */
+export const OUTFITS = [
+	{
+		id: "nocturne",
+		name: "THE NOCTURNE",
+		slug: "textured-thermal-white-9",
+		video: "/products/videos/nocturne-reel.mp4",
+	},
+	{
+		id: "last-word",
+		name: "THE LAST WORD",
+		slug: "textured-thermal-white-12",
+		video: "/products/videos/last-word-reel.mp4",
+	},
+	{
+		id: "composure",
+		name: "THE COMPOSURE",
+		slug: "textured-thermal-white-11",
+		video: "/products/videos/composure-reel.mp4",
+	},
+	{
+		id: "archivist",
+		name: "THE ARCHIVIST",
+		slug: "textured-thermal-white-10",
+		video: "/products/videos/archivist-reel.mp4",
+	},
+	{
+		id: "encore",
+		name: "THE ENCORE",
+		slug: "the-encore",
+		video: "/products/videos/encore-reel.mp4",
+	},
 ] as const;
+
+export type Outfit = (typeof OUTFITS)[number];
+
+export const OUTFIT_COUNT = OUTFITS.length;
+
+export const OUTFIT_NAMES = OUTFITS.map((outfit) => outfit.name);
