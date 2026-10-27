@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toCardImage } from "@/lib/card-image";
+import ProgressiveImage from "@/components/ProgressiveImage";
+import { toHighImage, toMidImage } from "@/lib/product-image";
 
 const INTERVAL_MS = 2000;
 const FADE_MS = 480;
@@ -21,11 +21,11 @@ type ProductCardMediaProps = {
   onNext?: () => void;
 };
 
-function uniqueCardSources(image: string, images?: string[]) {
+function uniqueCatalogSources(image: string, images?: string[]) {
   const raw: string[] = [];
   if (image) raw.push(image);
   if (images?.length) raw.push(...images);
-  const mapped = raw.map(toCardImage).filter(Boolean);
+  const mapped = raw.map(toHighImage).filter(Boolean);
   return [...new Set(mapped)];
 }
 
@@ -35,14 +35,14 @@ export default function ProductCardMedia({
   images,
   sizes,
   priority = false,
-  quality = 90,
+  quality = 80,
   armed: armedProp,
   controlledIndex,
   onPrev,
   onNext,
 }: ProductCardMediaProps) {
   const sources = useMemo(
-    () => uniqueCardSources(image, images),
+    () => uniqueCatalogSources(image, images),
     [image, images],
   );
   const multi = sources.length > 1;
@@ -65,11 +65,13 @@ export default function ProductCardMedia({
     (src: string) => {
       if (!src || browserPreload.current.has(src)) return;
       browserPreload.current.add(src);
+      // Warm mid tier for hover gallery siblings (cards never fetch high).
+      const mid = toMidImage(src);
       const img = new window.Image();
       img.decoding = "async";
       img.onload = () => markLoaded(src);
       img.onerror = () => markLoaded(src);
-      img.src = src;
+      img.src = mid;
     },
     [markLoaded],
   );
@@ -123,15 +125,15 @@ export default function ProductCardMedia({
       {visibleSources.map((src, i) => {
         const active = sources.indexOf(src) === activeIndex;
         return (
-          <Image
+          <ProgressiveImage
             key={src}
             src={src}
+            maxTier="mid"
             alt={active ? name : ""}
             fill
             priority={priority && i === 0}
             quality={quality}
             sizes={sizes}
-            unoptimized
             className="object-cover object-top"
             style={{
               objectFit: "cover",
@@ -142,7 +144,7 @@ export default function ProductCardMedia({
               transition: `opacity ${FADE_MS}ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1)`,
               zIndex: active ? 1 : 0,
             }}
-            onLoad={() => markLoaded(src)}
+            onLoadingComplete={() => markLoaded(src)}
           />
         );
       })}

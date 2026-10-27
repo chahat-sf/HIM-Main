@@ -5,6 +5,7 @@ import type {
 	CatalogProduct,
 	PdpLayout,
 } from "@/lib/catalog-types";
+import { toHighImage } from "@/lib/product-image";
 
 export type {
 	CatalogColor,
@@ -70,8 +71,10 @@ function mapRow(row: ProductRow): CatalogProduct {
 	const swatchesFromDb = parseJsonArray<string>(row.swatches_json, []);
 	const swatches =
 		swatchesFromDb.length > 0 ? swatchesFromDb : colors.map((c) => c.hex);
-	const images = parseJsonArray<string>(row.images_json, []);
-	const image = row.image_url || images[0] || "/products/man-image-100.webp";
+	const images = parseJsonArray<string>(row.images_json, []).map(toHighImage);
+	const image = toHighImage(
+		row.image_url || images[0] || "/products/man-image-100.webp",
+	);
 
 	return {
 		id: row.id,

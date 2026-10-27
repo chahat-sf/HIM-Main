@@ -15,6 +15,7 @@ import {
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
+import ProgressiveImage from "@/components/ProgressiveImage";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -236,15 +237,28 @@ export default function PdpOutfit({
                     className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}${item.kind === "video" ? " is-video" : ""}`}
                     onClick={() => setActiveImg(i)}
                   >
-                    <Image
-                      src={item.kind === "image" ? item.src : item.poster}
-                      alt=""
-                      fill
-                      quality={60}
-                      sizes="80px"
-                      className="object-cover object-top"
-                      style={{ objectFit: "cover", objectPosition: "top center" }}
-                    />
+                    {item.kind === "image" ? (
+                      <ProgressiveImage
+                        src={item.src}
+                        maxTier="mid"
+                        alt=""
+                        fill
+                        quality={80}
+                        sizes="80px"
+                        className="object-cover object-top"
+                        style={{ objectFit: "cover", objectPosition: "top center" }}
+                      />
+                    ) : (
+                      <Image
+                        src={item.poster}
+                        alt=""
+                        fill
+                        quality={75}
+                        sizes="80px"
+                        className="object-cover object-top"
+                        style={{ objectFit: "cover", objectPosition: "top center" }}
+                      />
+                    )}
                     {item.kind === "video" ? <PlayBadge /> : null}
                   </button>
                 ))}
@@ -258,16 +272,17 @@ export default function PdpOutfit({
                 >
                   {MEDIA.map((item, i) =>
                     item.kind === "image" ? (
-                      <Image
+                      <ProgressiveImage
                         key={item.src}
                         src={item.src}
+                        maxTier="high"
                         alt={i === activeImg ? PRODUCT.name : ""}
                         fill
                         priority={i === 0}
-                        quality={95}
+                        quality={85}
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 36vw"
-                        unoptimized
-                        className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
+                        className="object-cover object-center"
+                        wrapperClassName={`pdp-main-img-frame${i === activeImg ? " active" : ""}`}
                       />
                     ) : (
                       <video

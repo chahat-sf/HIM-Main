@@ -1,8 +1,13 @@
 /**
- * Listing/card image path.
- * Currently returns the catalog master as-is (no downscaled /products/cards/ variant)
- * so product imagery stays sharp.
+ * Listing/card image path — mid-tier progressive variant.
+ * Re-exports from product-image for existing import sites.
  */
-export function toCardImage(src: string): string {
-	return src;
-}
+export {
+	toCardImage,
+	toHighImage,
+	toMidImage,
+	toLowImage,
+	productImageTiers,
+	type ImageTier,
+	type ProductImageTiers,
+} from "@/lib/product-image";

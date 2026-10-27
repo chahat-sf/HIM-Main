@@ -13,6 +13,7 @@ import {
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
+import ProgressiveImage from "@/components/ProgressiveImage";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -844,13 +845,13 @@ const COLLAGE_IMAGES: CollageImage[] = [
     offsetTop: "24px",
   },
   {
-    src: "/products/13.png",
+    src: "/products/13.webp",
     alt: "Man playing guitar reclined",
     aspectRatio: "3 / 4",
     offsetTop: "12px",
   },
   {
-    src: "/products/17.png",
+    src: "/products/17.webp",
     alt: "Couple against a blue sky",
     aspectRatio: "2 / 3",
     offsetTop: "24px",
@@ -862,13 +863,13 @@ const COLLAGE_IMAGES: CollageImage[] = [
     offsetTop: "24px",
   },
   {
-    src: "/products/22.png",
+    src: "/products/22.webp",
     alt: "Man against a stone wall",
     aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
-    src: "/products/29.png",
+    src: "/products/29.webp",
     alt: "Wide leg trousers, man walking",
     aspectRatio: "2 / 3",
     offsetTop: "12px",
@@ -1172,12 +1173,13 @@ function EditorialCollage() {
                     } as React.CSSProperties
                   }
                 >
-                  <Image
+                  <ProgressiveImage
                     src={img.src}
+                    maxTier="high"
                     alt={img.alt}
                     fill
                     priority={img.priority}
-                    quality={90}
+                    quality={85}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover object-center"
                     style={{

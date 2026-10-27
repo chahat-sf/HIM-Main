@@ -43,13 +43,15 @@ const PLATE_FRAG = /* glsl */ `
 uniform sampler2D map;
 uniform sampler2D maskMap;
 uniform float useMask;
+uniform float opacity;
 varying vec2 vUv;
 void main() {
 	vec4 color = texture2D(map, vUv);
-	float alpha = useMask > 0.5 ? texture2D(maskMap, vUv).r : 1.0;
+	float maskA = useMask > 0.5 ? texture2D(maskMap, vUv).r : 1.0;
+	float alpha = maskA * opacity;
 	if (alpha < 0.004) discard;
 	// Color was authored on black; lift soft-edge RGB toward straight alpha.
-	vec3 rgb = useMask > 0.5 ? color.rgb / max(alpha, 0.001) : color.rgb;
+	vec3 rgb = useMask > 0.5 ? color.rgb / max(maskA, 0.001) : color.rgb;
 	gl_FragColor = vec4(rgb, alpha);
 }
 `;
@@ -60,6 +62,7 @@ function makePlateMaterial() {
 			map: { value: null },
 			maskMap: { value: null },
 			useMask: { value: 0 },
+			opacity: { value: 1 },
 		},
 		vertexShader: PLATE_VERT,
 		fragmentShader: PLATE_FRAG,
@@ -68,6 +71,12 @@ function makePlateMaterial() {
 		toneMapped: false,
 	});
 }
+
+const OUTFIT_FADE_MS = 320;
+/** Prefer HAVE_FUTURE_DATA so the new plate can start without a stall. */
+const VIDEO_READY_STATE = 3;
+
+let outfitSwapGeneration = 0;
 
 type LodMode = "idle" | "interact";
 
@@ -186,6 +195,13 @@ type PlayState = {
 	idleMask: string | null;
 	/** Still background behind a masked cutout. */
 	idleBackground: string | null;
+	/** Plate opacity for outfit crossfades (0–1). */
+	fadeOpacity: number;
+	fadeFrom: number;
+	fadeTarget: number;
+	fadeStart: number;
+	fadeDuration: number;
+	fadeResolve: ((completed: boolean) => void) | null;
 	pendingTime: number | null;
 	seekLock: boolean;
 	sequence: FrameSequence;
@@ -226,6 +242,12 @@ const play: PlayState[] = ROOMS.map(() => {
 		idleVideo: DEFAULT_IDLE_VIDEO,
 		idleMask: DEFAULT_IDLE_MASK,
 		idleBackground: DEFAULT_IDLE_BG,
+		fadeOpacity: 1,
+		fadeFrom: 1,
+		fadeTarget: 1,
+		fadeStart: 0,
+		fadeDuration: OUTFIT_FADE_MS,
+		fadeResolve: null,
 		pendingTime: null,
 		seekLock: false,
 		sequence: makeSequence("idle"),
@@ -233,6 +255,96 @@ const play: PlayState[] = ROOMS.map(() => {
 		lodMode: "idle" as LodMode,
 	};
 });
+
+function easeInOutCubic(t: number) {
+	return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function waitFade(item: PlayState, target: number, durationMs = OUTFIT_FADE_MS): Promise<boolean> {
+	if (Math.abs(item.fadeOpacity - target) < 0.01) {
+		item.fadeOpacity = target;
+		item.fadeTarget = target;
+		item.fadeResolve?.(false);
+		item.fadeResolve = null;
+		return Promise.resolve(true);
+	}
+	item.fadeFrom = item.fadeOpacity;
+	item.fadeTarget = target;
+	item.fadeStart = performance.now();
+	item.fadeDuration = Math.max(1, durationMs);
+	return new Promise((resolve) => {
+		item.fadeResolve?.(false);
+		item.fadeResolve = resolve;
+	});
+}
+
+function tickFade(item: PlayState) {
+	if (!item.fadeResolve) return;
+	const t = Math.min(1, (performance.now() - item.fadeStart) / item.fadeDuration);
+	item.fadeOpacity = item.fadeFrom + (item.fadeTarget - item.fadeFrom) * easeInOutCubic(t);
+	if (t < 1) return;
+	item.fadeOpacity = item.fadeTarget;
+	const resolve = item.fadeResolve;
+	item.fadeResolve = null;
+	resolve(true);
+}
+
+function waitVideoReady(video: HTMLVideoElement, gen: number, isCurrent: () => boolean): Promise<boolean> {
+	if (video.readyState >= VIDEO_READY_STATE) return Promise.resolve(true);
+
+	return new Promise((resolve) => {
+		let settled = false;
+		const finish = (ok: boolean) => {
+			if (settled) return;
+			settled = true;
+			video.removeEventListener("loadeddata", onReady);
+			video.removeEventListener("canplay", onReady);
+			video.removeEventListener("canplaythrough", onReady);
+			window.clearTimeout(timeout);
+			resolve(ok);
+		};
+		const onReady = () => {
+			if (!isCurrent() || gen !== outfitSwapGeneration) {
+				finish(false);
+				return;
+			}
+			if (video.readyState >= VIDEO_READY_STATE || video.readyState >= 2) finish(true);
+		};
+		video.addEventListener("loadeddata", onReady);
+		video.addEventListener("canplay", onReady);
+		video.addEventListener("canplaythrough", onReady);
+		const timeout = window.setTimeout(() => finish(isCurrent() && gen === outfitSwapGeneration), 8000);
+		if (video.readyState >= 2) onReady();
+	});
+}
+
+/** Warm the browser cache so the plate swap after fade-out is fast. */
+function preloadOutfitVideo(src: string): Promise<void> {
+	return new Promise((resolve) => {
+		const video = document.createElement("video");
+		video.crossOrigin = "anonymous";
+		video.muted = true;
+		video.playsInline = true;
+		video.preload = "auto";
+		let settled = false;
+		const finish = () => {
+			if (settled) return;
+			settled = true;
+			video.removeEventListener("canplay", finish);
+			video.removeEventListener("loadeddata", finish);
+			window.clearTimeout(timeout);
+			video.pause();
+			video.removeAttribute("src");
+			video.load();
+			resolve();
+		};
+		video.addEventListener("canplay", finish);
+		video.addEventListener("loadeddata", finish);
+		const timeout = window.setTimeout(finish, 8000);
+		video.src = src;
+		video.load();
+	});
+}
 
 export function frameCount(room: number) {
 	return Math.max(1, play[room]?.count ?? 1);
@@ -361,8 +473,8 @@ function applyLod(item: PlayState, mode: LodMode) {
 	}
 }
 
-/** Swap the idle outfit reel (+ optional luminance matte / set background). */
-export function setOutfitVideo(
+/** Swap the idle outfit reel with a fade, after the next clip is playable. */
+export async function setOutfitVideo(
 	room: number,
 	src: string,
 	mask: string | null = null,
@@ -373,21 +485,39 @@ export function setOutfitVideo(
 	if (item.idleVideo === src && item.idleMask === mask && item.idleBackground === background) {
 		return;
 	}
-	item.idleVideo = src;
-	item.idleMask = mask;
-	item.idleBackground = background;
-	if (item.lodMode !== "idle") return;
+	if (item.lodMode !== "idle") {
+		item.idleVideo = src;
+		item.idleMask = mask;
+		item.idleBackground = background;
+		return;
+	}
 
 	const video = item.video;
 	if (!video) return;
 
-	const gen = ++lodGeneration;
+	const gen = ++outfitSwapGeneration;
+	++lodGeneration;
+	const stillCurrent = () => gen === outfitSwapGeneration;
+
 	item.dragging = false;
 	item.pendingTime = null;
 	item.seekLock = false;
+
+	// Warm cache while the current plate fades out.
+	const preload = preloadOutfitVideo(src);
+	const fadedOut = await waitFade(item, 0, OUTFIT_FADE_MS);
+	if (!fadedOut || !stillCurrent()) return;
+
+	await preload;
+	if (!stillCurrent()) return;
+
+	item.idleVideo = src;
+	item.idleMask = mask;
+	item.idleBackground = background;
 	item.pos = 0;
 	item.target = 0;
 	item.vel = item.fps;
+
 	video.pause();
 	item.maskVideo?.pause();
 	video.src = src;
@@ -404,16 +534,19 @@ export function setOutfitVideo(
 		}
 	}
 
-	const onMeta = () => {
-		video.removeEventListener("loadedmetadata", onMeta);
-		if (gen !== lodGeneration) return;
-		item.duration = Number.isFinite(video.duration) ? video.duration : 0;
-		seekVideo(item, 0);
-		void video.play().catch(() => { });
-		if (mask && maskVideo) void maskVideo.play().catch(() => { });
-	};
-	video.addEventListener("loadedmetadata", onMeta);
-	if (video.readyState >= 1) onMeta();
+	const ready = await waitVideoReady(video, gen, stillCurrent);
+	if (!stillCurrent()) return;
+	if (!ready) {
+		// Still reveal whatever we have rather than staying black.
+	}
+
+	item.duration = Number.isFinite(video.duration) ? video.duration : 0;
+	seekVideo(item, 0);
+	void video.play().catch(() => { });
+	if (mask && maskVideo) void maskVideo.play().catch(() => { });
+
+	const fadedIn = await waitFade(item, 1, OUTFIT_FADE_MS);
+	if (!fadedIn || !stillCurrent()) return;
 }
 
 /**
@@ -614,8 +747,9 @@ export function FramePlane({
 		() =>
 			new MeshBasicMaterial({
 				toneMapped: false,
-				transparent: false,
-				depthWrite: true,
+				transparent: true,
+				depthWrite: false,
+				opacity: 1,
 			}),
 		[],
 	);
@@ -830,6 +964,9 @@ export function FramePlane({
 		else if (interact && !focused) sequence.trim();
 		if (focused && interact) ensurePreload(video);
 
+		tickFade(item);
+		mat.uniforms.opacity.value = item.fadeOpacity;
+
 		const plateZ = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
 		const useMask = !interact && Boolean(item.idleMask);
 		mat.uniforms.useMask.value = useMask ? 1 : 0;
@@ -850,6 +987,7 @@ export function FramePlane({
 			bgMesh.position.y = PLATE_Y;
 			bgMesh.position.z = plateZ - BG_Z_EPS;
 			bgMesh.scale.set(1, 1, 1);
+			bgMaterial.opacity = item.fadeOpacity;
 			if (item.idleBackground && item.idleBackground !== bgUrlRef.current) {
 				bgUrlRef.current = item.idleBackground;
 				const loader = new TextureLoader();

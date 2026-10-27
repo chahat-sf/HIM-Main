@@ -4,9 +4,9 @@ export const OUTFITS = [
 		id: "nocturne",
 		name: "THE NOCTURNE",
 		slug: "textured-thermal-white-9",
-		video: "/house/masked/outfit-1-color.mp4",
-		mask: "/house/masked/outfit-1-mask.mp4",
-		background: "/house/masked/room-bg.png",
+		video: "/products/videos/nocturne-reel.mp4",
+		mask: null,
+		background: null,
 	},
 	{
 		id: "last-word",

@@ -558,9 +558,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     const room = indexRef.current;
     const outfit = OUTFITS[outfitIndex];
     setPicked((current) => current.map((value, i) => (i === room ? outfitIndex : value)));
-    window.setTimeout(() => {
-      setOutfitVideo(room, outfit.video, outfit.mask ?? null, outfit.background ?? null);
-    }, 260);
+    void setOutfitVideo(room, outfit.video, outfit.mask ?? null, outfit.background ?? null);
   }
 
   function onWindowPointerDown(event: PointerEvent<HTMLElement>) {

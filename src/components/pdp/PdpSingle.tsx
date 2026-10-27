@@ -9,11 +9,18 @@ import {
   Minus,
   Play,
   Plus,
+  X,
 } from "lucide-react";
 import PdpNavbar from "@/components/PdpNavbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
-import { useEffect, useRef, useState } from "react";
+import ProgressiveImage from "@/components/ProgressiveImage";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
@@ -99,26 +106,38 @@ export default function PdpSingle({
   );
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImg, setActiveImg] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
   const shotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const lightboxRef = useRef<HTMLDivElement | null>(null);
+  const activeImgRef = useRef(0);
+  const carouselPointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
+  activeImgRef.current = activeImg;
   const { addItem } = useCart();
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
   const imageCount = MEDIA.length;
+  const lightboxImageIndices = MEDIA.reduce<number[]>((acc, item, i) => {
+    if (item.kind === "image") acc.push(i);
+    return acc;
+  }, []);
+  const lightboxCount = lightboxImageIndices.length;
+
+  const scrollCarouselTo = (index: number, behavior: ScrollBehavior = "smooth") => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior });
+  };
 
   const goCarousel = (step: number) => {
     if (imageCount < 1) return;
     setActiveImg((i) => {
       const next = (i + step + imageCount) % imageCount;
-      const el = carouselRef.current;
-      if (el) {
-        const w = el.clientWidth;
-        el.scrollTo({ left: next * w, behavior: "smooth" });
-      }
+      scrollCarouselTo(next);
       return next;
     });
   };
@@ -130,16 +149,102 @@ export default function PdpSingle({
     setActiveImg((i) => (next === i ? i : Math.max(0, Math.min(imageCount - 1, next))));
   };
 
+  const openLightbox = (mediaIndex: number) => {
+    if (MEDIA[mediaIndex]?.kind !== "image") return;
+    setActiveImg(mediaIndex);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => setLightboxOpen(false);
+
+  /** Tap opens lightbox; horizontal drag leaves native scroll-snap swipe alone. */
+  const onCarouselSlidePointerDown = (
+    e: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (e.button !== 0) return;
+    carouselPointerRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const onCarouselSlidePointerUp = (
+    e: ReactPointerEvent<HTMLDivElement>,
+    mediaIndex: number,
+  ) => {
+    const start = carouselPointerRef.current;
+    carouselPointerRef.current = null;
+    if (!start || MEDIA[mediaIndex]?.kind !== "image") return;
+    const dx = Math.abs(e.clientX - start.x);
+    const dy = Math.abs(e.clientY - start.y);
+    if (dx > 8 || dy > 8) return;
+    openLightbox(mediaIndex);
+  };
+
+  const onCarouselSlidePointerCancel = () => {
+    carouselPointerRef.current = null;
+  };
+
+  const goLightbox = (step: number) => {
+    if (lightboxCount < 1) return;
+    const curPos = lightboxImageIndices.indexOf(activeImgRef.current);
+    const pos =
+      ((curPos < 0 ? 0 : curPos) + step + lightboxCount) % lightboxCount;
+    const next = lightboxImageIndices[pos]!;
+    setActiveImg(next);
+    const el = lightboxRef.current;
+    if (el) el.scrollTo({ left: pos * el.clientWidth, behavior: "smooth" });
+    scrollCarouselTo(next, "auto");
+  };
+
+  const onLightboxScroll = () => {
+    const el = lightboxRef.current;
+    if (!el || el.clientWidth < 1 || lightboxCount < 1) return;
+    const pos = Math.round(el.scrollLeft / el.clientWidth);
+    const clamped = Math.max(0, Math.min(lightboxCount - 1, pos));
+    const next = lightboxImageIndices[clamped]!;
+    setActiveImg((i) => {
+      if (next === i) return i;
+      scrollCarouselTo(next, "auto");
+      return next;
+    });
+  };
+
   useEffect(() => {
     setSelectedColor(PRODUCT.colors[0]?.name ?? "");
     setSelectedSize("");
     setActiveImg(0);
+    setLightboxOpen(false);
     setAdded(false);
     setAdding(false);
     setBagError("");
     carouselRef.current?.scrollTo({ left: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowLeft") goLightbox(-1);
+      else if (e.key === "ArrowRight") goLightbox(1);
+    };
+    window.addEventListener("keydown", onKey);
+    // Sync lightbox scroll to the active image after paint
+    const id = requestAnimationFrame(() => {
+      const el = lightboxRef.current;
+      if (!el) return;
+      const pos = lightboxImageIndices.indexOf(activeImg);
+      if (pos < 0) return;
+      el.scrollTo({ left: pos * el.clientWidth, behavior: "auto" });
+    });
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+      cancelAnimationFrame(id);
+    };
+    // Only re-run lock/keys when open toggles; index sync on open is enough
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 769px)");
@@ -279,11 +384,27 @@ export default function PdpSingle({
                   {MEDIA.map((item, i) => (
                     <div
                       key={item.kind === "image" ? item.src : `video-${item.src}`}
-                      className="pdp-s-carousel-slide"
+                      className={`pdp-s-carousel-slide${item.kind === "image" ? " is-zoomable" : ""}`}
+                      onPointerDown={
+                        item.kind === "image"
+                          ? onCarouselSlidePointerDown
+                          : undefined
+                      }
+                      onPointerUp={
+                        item.kind === "image"
+                          ? (e) => onCarouselSlidePointerUp(e, i)
+                          : undefined
+                      }
+                      onPointerCancel={
+                        item.kind === "image"
+                          ? onCarouselSlidePointerCancel
+                          : undefined
+                      }
                     >
                       {item.kind === "image" ? (
-                        <Image
+                        <ProgressiveImage
                           src={item.src}
+                          maxTier="high"
                           alt={
                             i === 0
                               ? PRODUCT.name
@@ -291,11 +412,14 @@ export default function PdpSingle({
                           }
                           fill
                           priority={i === 0}
-                          quality={95}
+                          quality={85}
                           sizes="100vw"
-                          unoptimized
                           draggable={false}
-                          className="pdp-s-carousel-frame object-contain object-center"
+                          className="pdp-s-carousel-frame object-cover object-top"
+                          style={{
+                            objectFit: "cover",
+                            objectPosition: "top center",
+                          }}
                         />
                       ) : (
                         <video
@@ -372,16 +496,28 @@ export default function PdpSingle({
                     className={`pdp-thumb him-card-media${activeImg === i ? " active" : ""}${item.kind === "video" ? " is-video" : ""}`}
                     onClick={() => scrollToShot(i)}
                   >
-                    <Image
-                      src={item.kind === "image" ? item.src : item.poster}
-                      alt=""
-                      fill
-                      quality={60}
-                      sizes="80px"
-                      unoptimized
-                      className="object-cover object-top"
-                      style={{ objectFit: "cover", objectPosition: "top center" }}
-                    />
+                    {item.kind === "image" ? (
+                      <ProgressiveImage
+                        src={item.src}
+                        maxTier="mid"
+                        alt=""
+                        fill
+                        quality={80}
+                        sizes="80px"
+                        className="object-cover object-top"
+                        style={{ objectFit: "cover", objectPosition: "top center" }}
+                      />
+                    ) : (
+                      <Image
+                        src={item.poster}
+                        alt=""
+                        fill
+                        quality={75}
+                        sizes="80px"
+                        className="object-cover object-top"
+                        style={{ objectFit: "cover", objectPosition: "top center" }}
+                      />
+                    )}
                     {item.kind === "video" ? <PlayBadge /> : null}
                   </button>
                 ))}
@@ -398,20 +534,21 @@ export default function PdpSingle({
                     style={{ scrollMarginTop: "var(--pdp-nav-h)" }}
                   >
                     {item.kind === "image" ? (
-                      <Image
+                      <ProgressiveImage
                         src={item.src}
+                        maxTier="high"
                         alt={
                           i === 0
                             ? PRODUCT.name
                             : `${PRODUCT.name} view ${i + 1}`
                         }
-                        width={1200}
-                        height={1500}
+                        width={1600}
+                        height={2400}
                         priority={i < 2}
-                        quality={95}
+                        quality={85}
                         sizes="(max-width: 768px) 100vw, 40vw"
-                        unoptimized
                         className="pdp-single-shot-img"
+                        wrapperClassName="pdp-single-shot-img"
                       />
                     ) : (
                       <video
@@ -600,6 +737,91 @@ export default function PdpSingle({
       </main>
 
       <Footer />
+
+      {lightboxOpen && lightboxCount > 0 ? (
+        <div
+          className="pdp-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${PRODUCT.name} images`}
+          onClick={closeLightbox}
+        >
+          <button
+            type="button"
+            className="pdp-lightbox-close"
+            aria-label="Close gallery"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeLightbox();
+            }}
+          >
+            <X size={22} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+          </button>
+
+          <div
+            className="pdp-lightbox-viewport"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              ref={lightboxRef}
+              className="pdp-lightbox-stage"
+              onScroll={onLightboxScroll}
+            >
+              {lightboxImageIndices.map((mediaIndex, pos) => {
+                const item = MEDIA[mediaIndex]!;
+                if (item.kind !== "image") return null;
+                return (
+                  <div key={item.src} className="pdp-lightbox-slide">
+                    <ProgressiveImage
+                      src={item.src}
+                      maxTier="high"
+                      alt={
+                        pos === 0
+                          ? PRODUCT.name
+                          : `${PRODUCT.name} view ${pos + 1}`
+                      }
+                      fill
+                      priority={pos === 0}
+                      quality={90}
+                      sizes="100vw"
+                      draggable={false}
+                      className="pdp-lightbox-frame object-contain object-center"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {lightboxCount > 1 ? (
+              <>
+                <button
+                  type="button"
+                  className="pdp-lightbox-arrow pdp-lightbox-arrow--prev"
+                  aria-label="Previous image"
+                  onClick={() => goLightbox(-1)}
+                >
+                  <ChevronLeft size={20} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="pdp-lightbox-arrow pdp-lightbox-arrow--next"
+                  aria-label="Next image"
+                  onClick={() => goLightbox(1)}
+                >
+                  <ChevronRight size={20} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                </button>
+              </>
+            ) : null}
+          </div>
+
+          {lightboxCount > 1 ? (
+            <p className="pdp-lightbox-counter" aria-live="polite">
+              {Math.max(1, lightboxImageIndices.indexOf(activeImg) + 1)} /{" "}
+              {lightboxCount}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <style jsx global>{`
         .pdp-main {
@@ -1278,8 +1500,8 @@ export default function PdpSingle({
             aspect-ratio: 4 / 5;
             overflow-x: auto;
             overflow-y: hidden;
+            /* Avoid CSS scroll-behavior:smooth — it breaks native finger swipe */
             scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
             touch-action: pan-x;
             scrollbar-width: none;
@@ -1298,6 +1520,17 @@ export default function PdpSingle({
             scroll-snap-align: start;
             scroll-snap-stop: always;
             background: #e9e6e1;
+            touch-action: pan-x;
+            user-select: none;
+            -webkit-user-select: none;
+          }
+
+          .pdp-s-carousel-slide.is-zoomable {
+            cursor: zoom-in;
+          }
+
+          .pdp-s-carousel-slide .progressive-image {
+            pointer-events: none;
           }
 
           .pdp-s-carousel-frame {
@@ -1311,8 +1544,8 @@ export default function PdpSingle({
             inset: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            object-position: center;
+            object-fit: cover;
+            object-position: top center;
             pointer-events: auto;
             background: #e9e6e1;
           }
@@ -1399,6 +1632,122 @@ export default function PdpSingle({
           .pdp-related-grid {
             gap: 10px;
           }
+        }
+
+        /* Fullscreen image lightbox (opened from mobile carousel tap) */
+        .pdp-lightbox {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.94);
+          color: #fff;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .pdp-lightbox-close {
+          position: absolute;
+          top: max(12px, env(safe-area-inset-top));
+          right: max(12px, env(safe-area-inset-right));
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.85);
+          cursor: pointer;
+        }
+
+        .pdp-lightbox-close:hover,
+        .pdp-lightbox-close:active {
+          color: #fff;
+        }
+
+        .pdp-lightbox-viewport {
+          position: relative;
+          flex: 1 1 auto;
+          min-height: 0;
+          width: 100%;
+        }
+
+        .pdp-lightbox-stage {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          touch-action: pan-x;
+          scrollbar-width: none;
+          overscroll-behavior-x: contain;
+        }
+
+        .pdp-lightbox-stage::-webkit-scrollbar {
+          display: none;
+        }
+
+        .pdp-lightbox-slide {
+          position: relative;
+          flex: 0 0 100%;
+          width: 100%;
+          height: 100%;
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+        }
+
+        .pdp-lightbox-frame {
+          user-select: none;
+          -webkit-user-drag: none;
+          pointer-events: none;
+        }
+
+        .pdp-lightbox-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 56px;
+          padding: 0;
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.7);
+          cursor: pointer;
+        }
+
+        .pdp-lightbox-arrow:hover,
+        .pdp-lightbox-arrow:active {
+          color: #fff;
+        }
+
+        .pdp-lightbox-arrow--prev {
+          left: 4px;
+        }
+
+        .pdp-lightbox-arrow--next {
+          right: 4px;
+        }
+
+        .pdp-lightbox-counter {
+          flex: 0 0 auto;
+          margin: 0;
+          padding: 12px 16px max(20px, env(safe-area-inset-bottom));
+          text-align: center;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 12px;
+          letter-spacing: 0.14em;
+          color: rgba(255, 255, 255, 0.7);
         }
 
         @media (min-width: 769px) and (max-width: 1280px) {
