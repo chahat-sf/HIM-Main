@@ -104,27 +104,37 @@ export function useWishlist() {
 
   const toggle = useCallback(
     async (input: WishlistItemInput) => {
+      // Optimistic instant feedback
+      const prevItems = items;
+      const local = toggleLocalWishlistItem(input);
+      setItems(local.items);
+      notifyWishlistChanged();
+
       if (isAuthenticated) {
-        const res = await fetch("/api/wishlist", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...input, toggle: true }),
-        });
-        if (!res.ok) throw new Error("Unable to update wishlist");
-        const body = (await res.json()) as {
-          items?: WishlistItem[];
-          added?: boolean;
-        };
-        setItems(body.items ?? []);
-        notifyWishlistChanged();
-        return body.added ?? false;
+        try {
+          const res = await fetch("/api/wishlist", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...input, toggle: true }),
+          });
+          if (!res.ok) throw new Error("Unable to update wishlist");
+          const body = (await res.json()) as {
+            items?: WishlistItem[];
+            added?: boolean;
+          };
+          if (body.items) setItems(body.items);
+          notifyWishlistChanged();
+          return body.added ?? false;
+        } catch (err) {
+          setItems(prevItems);
+          notifyWishlistChanged();
+          throw err;
+        }
       }
-      const result = toggleLocalWishlistItem(input);
-      setItems(result.items);
-      return result.added;
+      return local.added;
     },
-    [isAuthenticated],
+    [isAuthenticated, items],
   );
 
   const slugSet = useMemo(

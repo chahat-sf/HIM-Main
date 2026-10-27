@@ -413,6 +413,7 @@ export default function PdpOutfit({
               </button>
               <button
                 type="button"
+                data-no-route-loader="true"
                 className={`pdp-wish-btn${wishlisted ? " is-active" : ""}`}
                 aria-label={
                   wishlisted ? "Remove from wishlist" : "Add to wishlist"

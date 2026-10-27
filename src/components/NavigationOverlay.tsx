@@ -53,14 +53,29 @@ function NavigationOverlayInner() {
 			if (event.defaultPrevented) return;
 			const target = event.target;
 			if (!(target instanceof Element)) return;
+			// Ignore clicks on buttons or elements marked to skip navigation loader
+			if (target.closest("button, [role='button'], input, select, textarea, [data-no-route-loader]")) {
+				return;
+			}
 			const anchor = target.closest("a");
 			if (!(anchor instanceof HTMLAnchorElement)) return;
+			if (anchor.hasAttribute("data-no-route-loader")) return;
 			if (!shouldHandleAnchor(anchor, event)) return;
+
 			window.clearTimeout(hideTimerRef.current);
 			shownAtRef.current = performance.now();
 			pendingRef.current = true;
 			setPending(true);
 			setVisible(true);
+
+			// Safety fallback: if navigation is cancelled or blocked, auto-dismiss
+			window.setTimeout(() => {
+				if (pendingRef.current) {
+					pendingRef.current = false;
+					setPending(false);
+					setVisible(false);
+				}
+			}, 4000);
 		};
 
 		document.addEventListener("click", onClick, true);
