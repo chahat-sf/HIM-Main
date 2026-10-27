@@ -32,18 +32,26 @@ function ProductCard({ product }: { product: CatalogProduct }) {
   const wishlisted = inWishlist(product.slug);
 
   return (
-    <Link href={`/collection/${product.slug}`} className="product-card group" style={{ textDecoration: "none" }}>
+    <article className="product-card group" style={{ position: "relative" }}>
       {/* Image */}
-      <div className="product-card-img him-card-media">
-        <ProductCardMedia
-          name={product.name}
-          image={product.image}
-          images={product.images}
-          quality={75}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+      <div className="product-card-img him-card-media" style={{ position: "relative" }}>
+        <Link
+          href={`/collection/${product.slug}`}
+          style={{ position: "absolute", inset: 0, display: "block" }}
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          <ProductCardMedia
+            name={product.name}
+            image={product.image}
+            images={product.images}
+            quality={75}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        </Link>
         <button
           type="button"
+          data-no-route-loader="true"
           className={`product-card-wish${wishlisted ? " is-active" : ""}`}
           aria-label={
             wishlisted
@@ -51,6 +59,7 @@ function ProductCard({ product }: { product: CatalogProduct }) {
               : `Add ${product.name} to wishlist`
           }
           aria-pressed={wishlisted}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -76,7 +85,12 @@ function ProductCard({ product }: { product: CatalogProduct }) {
 
       {/* Info */}
       <div className="product-card-body">
-        <p className="product-card-name">{product.name}</p>
+        <Link
+          href={`/collection/${product.slug}`}
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
+          <p className="product-card-name">{product.name}</p>
+        </Link>
 
         {product.swatches.length > 0 && (
           <div
@@ -102,7 +116,7 @@ function ProductCard({ product }: { product: CatalogProduct }) {
 
         <p className="product-card-price">₹{product.price}</p>
       </div>
-    </Link>
+    </article>
   );
 }
 
