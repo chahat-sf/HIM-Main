@@ -392,13 +392,13 @@ export default function Navbar() {
       </div>
 
       {/* PHONE LINKS ROW — hidden on desktop */}
-      <ul className="him-nav-mobile-links list-none m-0 p-0">
+      {/* <ul className="him-nav-mobile-links list-none m-0 p-0">
         {[...leftLinks, ...rightLinks].map((link) => (
           <li key={link.label}>
             <NavLink {...link} />
           </li>
         ))}
-      </ul>
+      </ul> */}
 
       {/* Search popup — rendered on <body> so it always sits above everything */}
       {mounted && createPortal(popup, document.body)}

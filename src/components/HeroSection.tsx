@@ -216,12 +216,13 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-dvh overflow-hidden bg-black">
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute top-0 h-full w-auto max-w-none"
         style={{
-          transform: "translateZ(0)",
+          left: "50%",
+          transform: "translate3d(-50%, 0, 0)",
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
         }}
