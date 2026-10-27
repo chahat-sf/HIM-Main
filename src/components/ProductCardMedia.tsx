@@ -35,7 +35,7 @@ export default function ProductCardMedia({
   images,
   sizes,
   priority = false,
-  quality = 75,
+  quality = 90,
   armed: armedProp,
   controlledIndex,
   onPrev,
@@ -131,11 +131,14 @@ export default function ProductCardMedia({
             priority={priority && i === 0}
             quality={quality}
             sizes={sizes}
+            unoptimized
             className="object-cover object-top"
             style={{
               objectFit: "cover",
               objectPosition: "top center",
               opacity: active ? 1 : 0,
+              // Keep transform transition from globals.css — do not override
+              // with opacity-only, or hover zoom snaps instead of easing.
               transition: `opacity ${FADE_MS}ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1)`,
               zIndex: active ? 1 : 0,
             }}

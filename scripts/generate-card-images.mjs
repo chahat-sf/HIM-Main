@@ -12,9 +12,9 @@ const sharp = require("sharp");
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public");
-const PRODUCTS_JSON = path.join(ROOT, "src/data/products.json");
-const MAX_WIDTH = 900;
-const WEBP_QUALITY = 72;
+const SEED = path.join(ROOT, "scripts/seed-products.mjs");
+const MAX_WIDTH = 1400;
+const WEBP_QUALITY = 90;
 
 async function walkProductFiles(dir, basePublic = "/products") {
   const sources = [];
@@ -38,21 +38,14 @@ async function collectSources() {
   const sources = new Set();
 
   try {
-    const raw = JSON.parse(await fs.readFile(PRODUCTS_JSON, "utf8"));
-    for (const product of raw) {
-      if (typeof product.image === "string" && product.image.startsWith("/products/")) {
-        sources.add(product.image);
-      }
-      if (Array.isArray(product.images)) {
-        for (const src of product.images) {
-          if (typeof src === "string" && src.startsWith("/products/")) {
-            sources.add(src);
-          }
-        }
-      }
+    const seed = await fs.readFile(SEED, "utf8");
+    for (const m of seed.matchAll(
+      /"(\/(?:products|THE-[A-Z0-9-]+|bestseller)\/[^"]+\.(?:webp|jpe?g|png))"/gi,
+    )) {
+      sources.add(m[1]);
     }
   } catch {
-    /* products.json optional */
+    /* seed optional for tree walk */
   }
 
   // Full tree so hover galleries have card-sized frames for every still.

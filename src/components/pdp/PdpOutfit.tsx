@@ -264,8 +264,9 @@ export default function PdpOutfit({
                         alt={i === activeImg ? PRODUCT.name : ""}
                         fill
                         priority={i === 0}
-                        quality={90}
+                        quality={95}
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 45vw, 36vw"
+                        unoptimized
                         className={`pdp-main-img-frame object-cover object-center${i === activeImg ? " active" : ""}`}
                       />
                     ) : (
@@ -476,7 +477,7 @@ export default function PdpOutfit({
                         src={toCardImage(r.image)}
                         alt={r.name}
                         fill
-                        quality={75}
+                        quality={90}
                         sizes="(max-width: 768px) 33vw, 12vw"
                         className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                       />

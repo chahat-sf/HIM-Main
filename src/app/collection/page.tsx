@@ -45,7 +45,7 @@ function ProductCard({ product }: { product: CatalogProduct }) {
             name={product.name}
             image={product.image}
             images={product.images}
-            quality={75}
+            quality={90}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </Link>

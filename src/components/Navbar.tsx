@@ -224,7 +224,7 @@ export default function Navbar() {
                     src={toCardImage(p.image)}
                     alt={p.name}
                     fill
-                    quality={75}
+                    quality={90}
                     sizes="(max-width: 768px) 45vw, 22vw"
                     className="object-cover object-top"
                     style={{ objectFit: "cover", objectPosition: "top center" }}

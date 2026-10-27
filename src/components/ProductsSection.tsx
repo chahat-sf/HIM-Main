@@ -428,7 +428,7 @@ function ExistingProductsGrid() {
                       image={product.image}
                       images={product.images}
                       priority={index < 3}
-                      quality={75}
+                      quality={90}
                       sizes="(max-width: 768px) 70vw, 28vw"
                       armed={armed}
                       controlledIndex={hasMulti && armed ? activeIdx : undefined}

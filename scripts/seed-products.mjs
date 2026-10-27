@@ -1,6 +1,7 @@
 /**
  * Upserts the HIM product catalog into MySQL.
- * Source of truth after seed: the database (Workbench / SQL). No products.json.
+ * Catalog migration source: this file only (then Workbench / SQL).
+ * Do not use src/data/products.json.
  */
 import mysql from "mysql2/promise";
 import fs from "node:fs";
@@ -58,7 +59,7 @@ const PRODUCTS = [
       "/products/inner-images/man-image-102-2.webp",
       "/products/inner-images/man-image-102-3.webp",
     ],
-    priceCents: 4200000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -92,7 +93,7 @@ const PRODUCTS = [
       "/products/inner-images/man-image-106-2.webp",
       "/products/inner-images/man-image-106-1.webp",
     ],
-    priceCents: 3600000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit: "Slim fit. Model is 6'0\" wearing size M. True to size.",
@@ -126,7 +127,7 @@ const PRODUCTS = [
       "/products/inner-images/man-image-104-2.webp",
       "/products/inner-images/man-image-104-3.webp",
     ],
-    priceCents: 5200000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit: "A structured silhouette with a sharp, understated profile.",
@@ -161,7 +162,7 @@ const PRODUCTS = [
       "/THE-ARCHIVIST/4.webp",
       "/THE-ARCHIVIST/5.webp",
     ],
-    priceCents: 4400000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -196,7 +197,7 @@ const PRODUCTS = [
       "/products/inner-images/man-image-101-2.webp",
       "/products/inner-images/man-image-101-3.webp",
     ],
-    priceCents: 3600000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -230,13 +231,86 @@ const PRODUCTS = [
       "/products/inner-images/man-image-100-1.webp",
       "/products/inner-images/man-image-100-2.jpg",
     ],
-    priceCents: 3800000,
+    priceCents: 0,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
       "A sharp, tailored silhouette designed for a refined and sophisticated look.",
     shipping: DEFAULT_SHIP,
     pdpLayout: "single",
+  },
+  {
+    id: 7,
+    slug: "the-afterglow",
+    name: "THE AFTERGLOW",
+    title: "Deep Plum Checked Wool Blazer",
+    fabric: "Wool with a refined texture and a classic checked pattern.",
+    description:
+      "The Deep Plum Checked Wool Blazer combines rich plum tones with classic checks and refined tailoring. Its distinctive colour and sophisticated silhouette create a look that lingers long after the moment has passed.",
+    marketingLine: "Long after the moment has passed.",
+    alternatives: ["The Vesper", "The Burgundy Hour", "The Twilight"],
+    details: [
+      "Premium wool fabric",
+      "Deep plum colour",
+      "Classic checked pattern",
+      "Refined, tailored silhouette",
+      "Double-breasted design",
+      "Rich, sophisticated finish",
+      "A blend of timeless elegance and contemporary style",
+    ],
+    category: "BLAZERS",
+    image: "/products/afterglow/1.webp",
+    images: [
+      "/products/afterglow/1.webp",
+      "/products/afterglow/2.webp",
+      "/products/afterglow/3.webp",
+      "/products/afterglow/4.webp",
+      "/products/afterglow/5.webp",
+    ],
+    priceCents: 0,
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    sizeFit:
+      "A sharp, tailored silhouette designed for a refined and sophisticated look.",
+    shipping: DEFAULT_SHIP,
+    pdpLayout: "single",
+    videoUrl: null,
+  },
+  {
+    id: 8,
+    slug: "the-encore",
+    name: "THE ENCORE",
+    title: "Embellished Red Velvet Jacket",
+    fabric: "Korean velvet with a rich texture and a smooth, refined finish.",
+    description:
+      "The Embellished Red Velvet Jacket combines a striking red finish with intricate embellishments and a bold silhouette. Designed to command attention, it brings theatrical flair and distinctive sophistication to eveningwear.",
+    marketingLine: "Some entrances deserve a second look.",
+    alternatives: ["The Redline", "The Scarlet Hour", "The Showstopper"],
+    details: [
+      "Premium Korean velvet",
+      "Rich red colour",
+      "Intricate embellishment detailing",
+      "Smooth, refined finish",
+      "Bold, statement-making design",
+      "Distinctive silhouette with a polished appearance",
+      "Designed for standout eveningwear and special occasions",
+    ],
+    category: "JACKETS",
+    image: "/products/encore/1.webp",
+    images: [
+      "/products/encore/1.webp",
+      "/products/encore/2.webp",
+      "/products/encore/3.webp",
+      "/products/encore/4.webp",
+    ],
+    priceCents: 0,
+    colors: DEFAULT_COLORS,
+    sizes: DEFAULT_SIZES,
+    sizeFit:
+      "A refined evening silhouette designed to make a statement through theatrical presence.",
+    shipping: DEFAULT_SHIP,
+    pdpLayout: "single",
+    videoUrl: "/products/videos/encore-reel.mp4",
   },
 ];
 
@@ -256,12 +330,12 @@ async function main() {
       `INSERT INTO products
         (id, slug, name, title, fabric, description, marketing_line,
          alternatives_json, details_json, category, image_url, images_json,
-         price_cents, swatches_json, colors_json, sizes_json, size_fit,
+         video_url, price_cents, swatches_json, colors_json, sizes_json, size_fit,
          shipping, pdp_layout)
        VALUES
         (:id, :slug, :name, :title, :fabric, :description, :marketingLine,
          CAST(:alternatives AS JSON), CAST(:details AS JSON), :category, :image,
-         CAST(:images AS JSON), :priceCents, CAST(:swatches AS JSON),
+         CAST(:images AS JSON), :videoUrl, :priceCents, CAST(:swatches AS JSON),
          CAST(:colors AS JSON), CAST(:sizes AS JSON), :sizeFit, :shipping,
          :pdpLayout)
        ON DUPLICATE KEY UPDATE
@@ -276,6 +350,7 @@ async function main() {
          category = VALUES(category),
          image_url = VALUES(image_url),
          images_json = VALUES(images_json),
+         video_url = VALUES(video_url),
          price_cents = VALUES(price_cents),
          swatches_json = VALUES(swatches_json),
          colors_json = VALUES(colors_json),
@@ -296,6 +371,7 @@ async function main() {
         category: p.category,
         image: p.image,
         images: JSON.stringify(p.images),
+        videoUrl: p.videoUrl ?? null,
         priceCents: p.priceCents,
         swatches: JSON.stringify(swatches),
         colors: JSON.stringify(p.colors),
