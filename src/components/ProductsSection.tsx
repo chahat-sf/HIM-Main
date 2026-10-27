@@ -506,6 +506,7 @@ function ExistingProductsGrid() {
                 {/* WISHLIST — outside Link → no navigation */}
                 <button
                   type="button"
+                  data-no-route-loader="true"
                   aria-label={
                     inWishlist(product.slug)
                       ? `Remove ${product.name} from wishlist`
@@ -525,7 +526,9 @@ function ExistingProductsGrid() {
                     cursor: "pointer",
                     zIndex: 5,
                   }}
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     void toggleWishlist({
                       productId: product.id ?? null,
@@ -815,7 +818,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/products/man-image-101.webp",
+    src: "/THE-ARCHIVIST/1.webp",
     alt: "Man in a trucker cap",
     aspectRatio: "4 / 5",
     offsetTop: "96px",
@@ -829,25 +832,25 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/products/inner-images/man-image-103-2.jpg", // was man-image-109 (duplicate) — change if your file name differs
+    src: "/THE-ARCHIVIST/2.webp", // was man-image-109 (duplicate) — change if your file name differs
     alt: "Man in white outfit beside a car",
     aspectRatio: "3 / 4",
     offsetTop: "150px",
   },
   {
-    src: "/products/man-image-103.webp",
+    src: "/THE-ARCHIVIST/5.webp",
     alt: "Man on a red sofa",
     aspectRatio: "4 / 3",
     offsetTop: "24px",
   },
   {
-    src: "/products/man-image-104.webp",
+    src: "/products/13.png",
     alt: "Man playing guitar reclined",
     aspectRatio: "3 / 4",
     offsetTop: "12px",
   },
   {
-    src: "/products/man-image-105.webp",
+    src: "/products/17.png",
     alt: "Couple against a blue sky",
     aspectRatio: "2 / 3",
     offsetTop: "24px",
@@ -859,13 +862,13 @@ const COLLAGE_IMAGES: CollageImage[] = [
     offsetTop: "24px",
   },
   {
-    src: "/products/man-image-106.webp",
+    src: "/products/22.png",
     alt: "Man against a stone wall",
     aspectRatio: "3 / 4",
     offsetTop: "36px",
   },
   {
-    src: "/products/man-image-107.webp",
+    src: "/products/29.png",
     alt: "Wide leg trousers, man walking",
     aspectRatio: "2 / 3",
     offsetTop: "12px",
