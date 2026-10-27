@@ -187,7 +187,7 @@ export default function HimWaySection() {
 
         .him-way-media :global(.him-way-img) {
           object-fit: cover;
-          object-position: center 28%;
+          object-position: left 28%;
         }
 
         .him-way-copy {
