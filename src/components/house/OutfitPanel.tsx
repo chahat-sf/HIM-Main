@@ -214,7 +214,10 @@ export default function OutfitPanel({
                   role="option"
                   aria-selected={selected === i}
                   aria-pressed={selected === i}
-                  onClick={() => onSelect(i)}
+                  onClick={() => {
+                    onSelect(i);
+                    collapse();
+                  }}
                   onPointerDown={(event) => event.stopPropagation()}
                 >
                   {name}

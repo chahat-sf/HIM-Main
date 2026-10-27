@@ -556,9 +556,10 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   function chooseOutfit(outfitIndex: number) {
     if (modeRef.current !== "interior" || !OUTFITS[outfitIndex]) return;
     const room = indexRef.current;
+    const outfit = OUTFITS[outfitIndex];
     setPicked((current) => current.map((value, i) => (i === room ? outfitIndex : value)));
     window.setTimeout(() => {
-      setOutfitVideo(room, OUTFITS[outfitIndex].video);
+      setOutfitVideo(room, outfit.video, outfit.mask ?? null, outfit.background ?? null);
     }, 260);
   }
 

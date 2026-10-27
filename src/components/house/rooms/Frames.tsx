@@ -9,7 +9,10 @@ import {
 	Mesh,
 	MeshBasicMaterial,
 	PlaneGeometry,
+	ShaderMaterial,
 	SRGBColorSpace,
+	Texture,
+	TextureLoader,
 	VideoTexture,
 } from "three";
 import { OUTFITS } from "../characters";
@@ -19,6 +22,52 @@ import { FrameSequence, SEQUENCES } from "./sequence";
 const DEFAULT_FPS = 24;
 const DEFAULT_ASPECT = 2520 / 1080;
 const DEFAULT_IDLE_VIDEO = OUTFITS[0].video;
+const DEFAULT_IDLE_MASK = OUTFITS[0].mask ?? null;
+const DEFAULT_IDLE_BG = OUTFITS[0].background ?? null;
+/** Room photo behind masked cutouts (1916×821). */
+const BG_ASPECT = 1916 / 821;
+/** Slightly behind the video plate so alpha reveals the set. */
+const BG_Z_EPS = 0.05;
+const PLATE_Y = 1.9;
+
+const PLATE_VERT = /* glsl */ `
+varying vec2 vUv;
+void main() {
+	vUv = uv;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+/** Color plate + optional luminance matte (white = keep). */
+const PLATE_FRAG = /* glsl */ `
+uniform sampler2D map;
+uniform sampler2D maskMap;
+uniform float useMask;
+varying vec2 vUv;
+void main() {
+	vec4 color = texture2D(map, vUv);
+	float alpha = useMask > 0.5 ? texture2D(maskMap, vUv).r : 1.0;
+	if (alpha < 0.004) discard;
+	// Color was authored on black; lift soft-edge RGB toward straight alpha.
+	vec3 rgb = useMask > 0.5 ? color.rgb / max(alpha, 0.001) : color.rgb;
+	gl_FragColor = vec4(rgb, alpha);
+}
+`;
+
+function makePlateMaterial() {
+	return new ShaderMaterial({
+		uniforms: {
+			map: { value: null },
+			maskMap: { value: null },
+			useMask: { value: 0 },
+		},
+		vertexShader: PLATE_VERT,
+		fragmentShader: PLATE_FRAG,
+		transparent: true,
+		depthWrite: false,
+		toneMapped: false,
+	});
+}
 
 type LodMode = "idle" | "interact";
 
@@ -36,6 +85,13 @@ const LOD = {
 const PLANE_Z = -4.12;
 /** Proven interior FOV fit × slight overscan so the plate fills the view. */
 const IMAGE_HEIGHT = 5.38 * 1.11;
+/**
+ * Masked portrait cutout: plain UVs (no cover overscan) sized to the visible
+ * window height so the figure matches room furniture (window-1 reference).
+ */
+const CUTOUT_HEIGHT = IMAGE_HEIGHT * 0.78;
+/** Nudge down so feet sit on the set floor. */
+const CUTOUT_Y = PLATE_Y - IMAGE_HEIGHT * 0.06;
 const OPENING_HEIGHT = 2.5;
 /** Legacy depth used only to size the oversized mesh. */
 const WINDOW_Z = 0.35;
@@ -106,6 +162,11 @@ function plateGeometry(aspect: number) {
 	return geo;
 }
 
+/** Full-bleed cutout (no UV overscan) — used for masked portrait figures. */
+function cutoutGeometry(aspect: number, height: number) {
+	return new PlaneGeometry(height * aspect, height);
+}
+
 type PlayState = {
 	/** Frame currently shown. */
 	pos: number;
@@ -117,8 +178,14 @@ type PlayState = {
 	dragging: boolean;
 	duration: number;
 	video: HTMLVideoElement | null;
+	/** Luminance matte video (optional; white = opaque). */
+	maskVideo: HTMLVideoElement | null;
 	/** Active idle outfit reel URL. */
 	idleVideo: string;
+	/** Active idle matte URL, or null for opaque plates. */
+	idleMask: string | null;
+	/** Still background behind a masked cutout. */
+	idleBackground: string | null;
 	pendingTime: number | null;
 	seekLock: boolean;
 	sequence: FrameSequence;
@@ -155,7 +222,10 @@ const play: PlayState[] = ROOMS.map(() => {
 		dragging: false,
 		duration: 0,
 		video: null,
+		maskVideo: null,
 		idleVideo: DEFAULT_IDLE_VIDEO,
+		idleMask: DEFAULT_IDLE_MASK,
+		idleBackground: DEFAULT_IDLE_BG,
 		pendingTime: null,
 		seekLock: false,
 		sequence: makeSequence("idle"),
@@ -199,6 +269,18 @@ function canSeek(video: HTMLVideoElement) {
 	return video.readyState >= 2 && video.seekable.length > 0;
 }
 
+function syncMaskTime(item: PlayState, t: number) {
+	const mask = item.maskVideo;
+	if (!mask || !item.idleMask || item.lodMode !== "idle") return;
+	if (!canSeek(mask) || mask.seeking) return;
+	if (Math.abs(mask.currentTime - t) <= 0.05) return;
+	try {
+		mask.currentTime = t;
+	} catch {
+		/* ignore */
+	}
+}
+
 function flushSeek(item: PlayState) {
 	const video = item.video;
 	if (!video || item.duration <= 0) return;
@@ -208,10 +290,12 @@ function flushSeek(item: PlayState) {
 	if (t == null) return;
 	if (Math.abs(video.currentTime - t) <= 0.5 / item.fps) {
 		item.pendingTime = null;
+		syncMaskTime(item, video.currentTime);
 		return;
 	}
 	item.seekLock = true;
 	video.currentTime = t;
+	syncMaskTime(item, t);
 }
 
 function seekVideo(item: PlayState, pos: number) {
@@ -259,8 +343,11 @@ function applyLod(item: PlayState, mode: LodMode) {
 			seekVideo(item, item.pos);
 			if (mode === "idle") {
 				void video.play().catch(() => { });
+				const mask = item.maskVideo;
+				if (mask && item.idleMask) void mask.play().catch(() => { });
 			} else {
 				video.pause();
+				item.maskVideo?.pause();
 			}
 		};
 		video.addEventListener("loadedmetadata", onMeta);
@@ -274,11 +361,21 @@ function applyLod(item: PlayState, mode: LodMode) {
 	}
 }
 
-/** Swap the idle outfit reel for a room. Plays immediately when in idle LOD. */
-export function setOutfitVideo(room: number, src: string) {
+/** Swap the idle outfit reel (+ optional luminance matte / set background). */
+export function setOutfitVideo(
+	room: number,
+	src: string,
+	mask: string | null = null,
+	background: string | null = null,
+) {
 	const item = play[room];
-	if (!item || !src || item.idleVideo === src) return;
+	if (!item || !src) return;
+	if (item.idleVideo === src && item.idleMask === mask && item.idleBackground === background) {
+		return;
+	}
 	item.idleVideo = src;
+	item.idleMask = mask;
+	item.idleBackground = background;
 	if (item.lodMode !== "idle") return;
 
 	const video = item.video;
@@ -292,14 +389,28 @@ export function setOutfitVideo(room: number, src: string) {
 	item.target = 0;
 	item.vel = item.fps;
 	video.pause();
+	item.maskVideo?.pause();
 	video.src = src;
 	video.load();
+
+	const maskVideo = item.maskVideo;
+	if (maskVideo) {
+		if (mask) {
+			maskVideo.src = mask;
+			maskVideo.load();
+		} else {
+			maskVideo.removeAttribute("src");
+			maskVideo.load();
+		}
+	}
+
 	const onMeta = () => {
 		video.removeEventListener("loadedmetadata", onMeta);
 		if (gen !== lodGeneration) return;
 		item.duration = Number.isFinite(video.duration) ? video.duration : 0;
 		seekVideo(item, 0);
 		void video.play().catch(() => { });
+		if (mask && maskVideo) void maskVideo.play().catch(() => { });
 	};
 	video.addEventListener("loadedmetadata", onMeta);
 	if (video.readyState >= 1) onMeta();
@@ -475,8 +586,10 @@ export function FramePlane({
 	onFirstFrame?: () => void;
 }) {
 	const meshRef = useRef<Mesh>(null);
-	const materialRef = useRef<MeshBasicMaterial>(null);
+	const bgMeshRef = useRef<Mesh>(null);
+	const materialRef = useRef<ShaderMaterial | null>(null);
 	const mapRef = useRef<VideoTexture | null>(null);
+	const maskMapRef = useRef<VideoTexture | null>(null);
 	const frameMapRef = useRef<CanvasTexture | null>(null);
 	const frameCtxRef = useRef<CanvasRenderingContext2D | null>(null);
 	const drawnRef = useRef<ImageBitmap | null>(null);
@@ -486,17 +599,76 @@ export function FramePlane({
 	const lastLodRef = useRef<LodMode | null>(null);
 	const aspectSetRef = useRef(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
+	const maskVideoRef = useRef<HTMLVideoElement | null>(null);
+	const bgUrlRef = useRef<string | null>(DEFAULT_IDLE_BG);
 	const announced = useRef(false);
 	const onFirstFrameRef = useRef(onFirstFrame);
 	onFirstFrameRef.current = onFirstFrame;
 	const [aspect, setAspect] = useState(DEFAULT_ASPECT);
-	const geometry = useMemo(() => plateGeometry(aspect), [aspect]);
+	const [bgMap, setBgMap] = useState<Texture | null>(null);
+	const coverGeometry = useMemo(() => plateGeometry(aspect), [aspect]);
+	const figureGeometry = useMemo(() => cutoutGeometry(aspect, CUTOUT_HEIGHT), [aspect]);
+	const bgGeometry = useMemo(() => plateGeometry(BG_ASPECT), []);
+	const material = useMemo(() => makePlateMaterial(), []);
+	const bgMaterial = useMemo(
+		() =>
+			new MeshBasicMaterial({
+				toneMapped: false,
+				transparent: false,
+				depthWrite: true,
+			}),
+		[],
+	);
+
+	useEffect(() => {
+		materialRef.current = material;
+		return () => {
+			coverGeometry.dispose();
+			figureGeometry.dispose();
+		};
+	}, [coverGeometry, figureGeometry, material]);
 
 	useEffect(() => {
 		return () => {
-			geometry.dispose();
+			bgGeometry.dispose();
+			material.dispose();
+			bgMaterial.dispose();
 		};
-	}, [geometry]);
+	}, [bgGeometry, material, bgMaterial]);
+
+	useEffect(() => {
+		bgMaterial.map = bgMap;
+		bgMaterial.needsUpdate = true;
+	}, [bgMap, bgMaterial]);
+
+	useEffect(() => {
+		let alive = true;
+		let loaded: Texture | null = null;
+		const url = DEFAULT_IDLE_BG;
+		if (!url) return;
+		const loader = new TextureLoader();
+		loader.load(
+			url,
+			(tex) => {
+				if (!alive) {
+					tex.dispose();
+					return;
+				}
+				tex.colorSpace = SRGBColorSpace;
+				tex.minFilter = LinearFilter;
+				tex.magFilter = LinearFilter;
+				tex.generateMipmaps = false;
+				loaded = tex;
+				setBgMap(tex);
+			},
+			undefined,
+			() => undefined,
+		);
+		return () => {
+			alive = false;
+			loaded?.dispose();
+		};
+	}, []);
 
 	useEffect(() => {
 		const item = play[room];
@@ -514,6 +686,26 @@ export function FramePlane({
 		map.wrapS = ClampToEdgeWrapping;
 		map.wrapT = ClampToEdgeWrapping;
 		mapRef.current = map;
+		material.uniforms.map.value = map;
+
+		const maskSrc = item?.idleMask ?? DEFAULT_IDLE_MASK;
+		const maskVideo = makeVideo(maskSrc || src, maskSrc ? "auto" : "metadata");
+		if (!maskSrc) {
+			maskVideo.removeAttribute("src");
+		}
+		maskVideoRef.current = maskVideo;
+		if (item) item.maskVideo = maskVideo;
+
+		const maskMap = new VideoTexture(maskVideo);
+		maskMap.colorSpace = SRGBColorSpace;
+		maskMap.minFilter = LinearFilter;
+		maskMap.magFilter = LinearFilter;
+		maskMap.generateMipmaps = false;
+		maskMap.wrapS = ClampToEdgeWrapping;
+		maskMap.wrapT = ClampToEdgeWrapping;
+		maskMapRef.current = maskMap;
+		material.uniforms.maskMap.value = maskMap;
+		material.uniforms.useMask.value = maskSrc ? 1 : 0;
 
 		const canvas = document.createElement("canvas");
 		const frameMap = new CanvasTexture(canvas);
@@ -527,12 +719,6 @@ export function FramePlane({
 		frameCtxRef.current = canvas.getContext("2d", { alpha: false });
 		drawnRef.current = null;
 		aspectSetRef.current = false;
-
-		const material = materialRef.current;
-		if (material) {
-			material.map = map;
-			material.needsUpdate = true;
-		}
 
 		const onMeta = () => {
 			if (item) {
@@ -552,6 +738,7 @@ export function FramePlane({
 
 		const onReady = () => {
 			void video.play().catch(() => { });
+			if (item?.idleMask) void maskVideo.play().catch(() => { });
 			announce();
 		};
 
@@ -561,6 +748,7 @@ export function FramePlane({
 				flushSeek(item);
 			}
 			map.needsUpdate = true;
+			maskMap.needsUpdate = true;
 		};
 
 		video.addEventListener("loadedmetadata", onMeta);
@@ -587,7 +775,6 @@ export function FramePlane({
 			frameMapRef.current = null;
 			frameCtxRef.current = null;
 			drawnRef.current = null;
-			if (material?.map === frameMap) material.map = null;
 			frameMap.dispose();
 			video.removeEventListener("loadedmetadata", onMeta);
 			video.removeEventListener("loadeddata", onReady);
@@ -596,26 +783,36 @@ export function FramePlane({
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
+			maskVideo.pause();
+			maskVideo.removeAttribute("src");
+			maskVideo.load();
 			if (item?.video === video) item.video = null;
+			if (item?.maskVideo === maskVideo) item.maskVideo = null;
 			if (item) {
 				item.pendingTime = null;
 				item.seekLock = false;
 			}
 			videoRef.current = null;
+			maskVideoRef.current = null;
 			mapRef.current = null;
-			if (material?.map === map) material.map = null;
+			maskMapRef.current = null;
+			material.uniforms.map.value = null;
+			material.uniforms.maskMap.value = null;
 			map.dispose();
+			maskMap.dispose();
 		};
-	}, [room]);
+	}, [room, material]);
 
 	useFrame((state, delta) => {
 		const map = mapRef.current;
+		const maskMap = maskMapRef.current;
 		const frameMap = frameMapRef.current;
 		const mesh = meshRef.current;
 		const video = videoRef.current;
+		const maskVideo = maskVideoRef.current;
 		const item = play[room];
-		const material = materialRef.current;
-		if (!map || !mesh || !video || !item || !material) return;
+		const mat = materialRef.current;
+		if (!map || !mesh || !video || !item || !mat) return;
 		const sequence = item.sequence;
 		const interact = item.lodMode === "interact";
 		if (drawnRef.current && !interact) drawnRef.current = null;
@@ -633,12 +830,45 @@ export function FramePlane({
 		else if (interact && !focused) sequence.trim();
 		if (focused && interact) ensurePreload(video);
 
+		const plateZ = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
+		const useMask = !interact && Boolean(item.idleMask);
+		mat.uniforms.useMask.value = useMask ? 1 : 0;
+
 		mesh.visible = focused;
-		if (mesh.geometry !== geometry) mesh.geometry = geometry;
-		mesh.position.z = focused ? coverPlaneZ(state.camera.position.z) : PLANE_Z;
+		// Cover geometry uses UV overscan for ultrawide plates. Portrait mattes need
+		// plain UVs at a human scale or the figure collapses to a speck.
+		const nextGeo = useMask ? figureGeometry : coverGeometry;
+		if (mesh.geometry !== nextGeo) mesh.geometry = nextGeo;
+		mesh.scale.set(1, 1, 1);
+		mesh.position.z = plateZ;
+		mesh.position.y = useMask ? CUTOUT_Y : PLATE_Y;
+
+		const bgMesh = bgMeshRef.current;
+		const showBg = focused && useMask && Boolean(item.idleBackground) && Boolean(bgMap);
+		if (bgMesh) {
+			bgMesh.visible = showBg;
+			bgMesh.position.y = PLATE_Y;
+			bgMesh.position.z = plateZ - BG_Z_EPS;
+			bgMesh.scale.set(1, 1, 1);
+			if (item.idleBackground && item.idleBackground !== bgUrlRef.current) {
+				bgUrlRef.current = item.idleBackground;
+				const loader = new TextureLoader();
+				loader.load(item.idleBackground, (tex) => {
+					tex.colorSpace = SRGBColorSpace;
+					tex.minFilter = LinearFilter;
+					tex.magFilter = LinearFilter;
+					tex.generateMipmaps = false;
+					setBgMap((prev) => {
+						prev?.dispose();
+						return tex;
+					});
+				});
+			}
+		}
 
 		if (!focused) {
 			if (!video.paused) video.pause();
+			if (maskVideo && !maskVideo.paused) maskVideo.pause();
 			if (item.usingFrames) {
 				item.usingFrames = false;
 				drawnRef.current = null;
@@ -653,6 +883,12 @@ export function FramePlane({
 				lastSeekFrameRef.current = frame;
 			} else if (item.pendingTime != null) {
 				flushSeek(item);
+			}
+		};
+
+		const bindMap = (tex: CanvasTexture | VideoTexture) => {
+			if (mat.uniforms.map.value !== tex) {
+				mat.uniforms.map.value = tex;
 			}
 		};
 
@@ -671,6 +907,7 @@ export function FramePlane({
 			const ctx = frameCtxRef.current;
 			if (bitmap && ctx) {
 				if (!video.paused) video.pause();
+				maskVideo?.pause();
 				item.usingFrames = true;
 				item.pendingTime = null;
 				if (bitmap !== drawnRef.current) {
@@ -687,47 +924,46 @@ export function FramePlane({
 					frameMap.needsUpdate = true;
 					drawnRef.current = bitmap;
 				}
-				if (material.map !== frameMap) {
-					material.map = frameMap;
-					material.needsUpdate = true;
-				}
+				bindMap(frameMap);
 				return;
 			}
 
 			// Hold last good canvas frame while the ring catches up — never flash frame 0.
 			if (item.usingFrames && drawnRef.current) {
 				if (!video.paused) video.pause();
-				if (material.map !== frameMap) {
-					material.map = frameMap;
-					material.needsUpdate = true;
-				}
+				maskVideo?.pause();
+				bindMap(frameMap);
 				return;
 			}
 			item.usingFrames = false;
 		}
 
-		if (material.map !== map) {
-			material.map = map;
-			material.needsUpdate = true;
-		}
+		bindMap(map);
 
 		if (item.dragging) {
 			if (!video.paused) video.pause();
+			maskVideo?.pause();
 			syncVideoSeek(false);
-			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
+			if (!item.seekLock && !video.seeking) {
+				map.needsUpdate = true;
+				if (maskMap) maskMap.needsUpdate = true;
+			}
 			return;
 		}
 
 		if (reduceMotionCached) {
 			if (!video.paused) video.pause();
+			maskVideo?.pause();
 			item.vel = 0;
 			map.needsUpdate = true;
+			if (maskMap) maskMap.needsUpdate = true;
 			return;
 		}
 
 		// Interact (mobile / ring miss): video seek, no auto-spin.
 		if (interact) {
 			if (!video.paused) video.pause();
+			maskVideo?.pause();
 			item.vel = 0;
 			syncVideoSeek(false);
 			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
@@ -737,30 +973,59 @@ export function FramePlane({
 		const coasting = Math.abs(item.vel - item.fps) > 8;
 		if (coasting) {
 			if (!video.paused) video.pause();
+			maskVideo?.pause();
 			item.vel += (item.fps - item.vel) * (1 - Math.exp(-delta * 2.2));
 			item.pos += item.vel * delta;
 			if (item.duration > 0) {
 				item.pos = wrapTime(item.pos / item.fps, item.duration) * item.fps;
 			}
 			seekVideo(item, item.pos);
-			if (!item.seekLock && !video.seeking) map.needsUpdate = true;
+			if (!item.seekLock && !video.seeking) {
+				map.needsUpdate = true;
+				if (maskMap) maskMap.needsUpdate = true;
+			}
 			return;
 		}
 
 		item.vel = item.fps;
 		if (video.paused) void video.play().catch(() => { });
+		if (useMask && maskVideo) {
+			if (maskVideo.paused) void maskVideo.play().catch(() => { });
+			if (
+				canSeek(maskVideo) &&
+				!maskVideo.seeking &&
+				Math.abs(maskVideo.currentTime - video.currentTime) > 0.08
+			) {
+				try {
+					maskVideo.currentTime = video.currentTime;
+				} catch {
+					/* ignore */
+				}
+			}
+			if (maskMap) maskMap.needsUpdate = true;
+		}
+		map.needsUpdate = true;
 		if (item.duration > 0) item.pos = video.currentTime * item.fps;
 	});
 
 	return (
-		<mesh
-			ref={meshRef}
-			visible={room === 0}
-			position={[0, 1.9, PLANE_Z]}
-			geometry={geometry}
-			raycast={() => null}
-		>
-			<meshBasicMaterial ref={materialRef} toneMapped={false} />
-		</mesh>
+		<>
+			<mesh
+				ref={bgMeshRef}
+				visible={false}
+				position={[0, 1.9, PLANE_Z - BG_Z_EPS]}
+				geometry={bgGeometry}
+				material={bgMaterial}
+				raycast={() => null}
+			/>
+			<mesh
+				ref={meshRef}
+				visible={room === 0}
+				position={[0, PLATE_Y, PLANE_Z]}
+				geometry={coverGeometry}
+				material={material}
+				raycast={() => null}
+			/>
+		</>
 	);
 }
