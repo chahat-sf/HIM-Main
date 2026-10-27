@@ -1141,7 +1141,7 @@ function EditorialCollage() {
               return (
                 <div
                   key={`${img.src}-${imgIndex}`}
-                  className="collage-float relative w-full overflow-hidden"
+                  className="collage-float-item relative w-full overflow-hidden"
                   style={
                     {
                       aspectRatio: img.aspectRatio || "3 / 4",
@@ -1207,9 +1207,10 @@ function EditorialCollage() {
           }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .collage-float {
+        @media (prefers-reduced-motion: reduce), (pointer: coarse), (max-width: 768px) {
+          .collage-float-item {
             animation: none !important;
+            will-change: auto !important;
           }
         }
       `}</style>

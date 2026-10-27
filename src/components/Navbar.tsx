@@ -114,7 +114,9 @@ export default function Navbar() {
 
   useEffect(() => setMounted(true), []);
 
+  // Load catalog only when search opens (avoids /api/products on every page).
   useEffect(() => {
+    if (!searchOpen || searchProducts.length > 0) return;
     let cancelled = false;
     void fetch("/api/products")
       .then((res) => res.json())
@@ -129,7 +131,7 @@ export default function Navbar() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [searchOpen, searchProducts.length]);
 
   const close = () => setSearchOpen(false);
 
@@ -390,13 +392,13 @@ export default function Navbar() {
       </div>
 
       {/* PHONE LINKS ROW — hidden on desktop */}
-      {/* <ul className="him-nav-mobile-links list-none m-0 p-0">
+      <ul className="him-nav-mobile-links list-none m-0 p-0">
         {[...leftLinks, ...rightLinks].map((link) => (
           <li key={link.label}>
             <NavLink {...link} />
           </li>
         ))}
-      </ul> */}
+      </ul>
 
       {/* Search popup — rendered on <body> so it always sits above everything */}
       {mounted && createPortal(popup, document.body)}

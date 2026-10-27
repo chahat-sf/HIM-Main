@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { ResultSetHeader } from "mysql2";
 import { getDb } from "@/lib/db";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { isEmail } from "@/lib/validation";
 
 type ContactBody = {
 	name?: string;
@@ -9,16 +11,18 @@ type ContactBody = {
 	message?: string;
 };
 
-const SUBJECTS = new Set([
-	"order",
-	"styling",
-	"returns",
-	"press",
-	"other",
-]);
+const SUBJECTS = new Set(["order", "styling", "returns", "press", "other"]);
 
 export async function POST(request: Request) {
 	try {
+		const ip = clientIp(request);
+		if (!rateLimit(`contact:${ip}`, { limit: 8, windowMs: 60_000 })) {
+			return NextResponse.json(
+				{ error: "Too many messages. Please try again shortly." },
+				{ status: 429 },
+			);
+		}
+
 		const body = (await request.json()) as ContactBody;
 		const name = body.name?.trim() ?? "";
 		const email = body.email?.trim().toLowerCase() ?? "";
@@ -32,10 +36,7 @@ export async function POST(request: Request) {
 			);
 		}
 		if (name.length > 120) {
-			return NextResponse.json(
-				{ error: "Name is too long." },
-				{ status: 400 },
-			);
+			return NextResponse.json({ error: "Name is too long." }, { status: 400 });
 		}
 		if (!email) {
 			return NextResponse.json(
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 				{ status: 400 },
 			);
 		}
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+		if (!isEmail(email)) {
 			return NextResponse.json(
 				{ error: "Please enter a valid email address." },
 				{ status: 400 },

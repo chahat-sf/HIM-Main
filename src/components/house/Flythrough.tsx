@@ -118,6 +118,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
+  const [mobileGpu, setMobileGpu] = useState(false);
   // Start rendering immediately so idle video warms during the load gate (not only on scroll-in).
   const [frameloop, setFrameloop] = useState<"always" | "never">("always");
   const homeLoad = useHomeLoad();
@@ -156,10 +157,19 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_WINDOW);
-    const sync = () => setDpr(mq.matches ? 1 : [1, 1.5]);
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const sync = () => {
+      const mobile = mq.matches || coarse.matches;
+      setDpr(mobile ? 1 : [1, 1.5]);
+      setMobileGpu(mobile);
+    };
     sync();
     mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+    coarse.addEventListener("change", sync);
+    return () => {
+      mq.removeEventListener("change", sync);
+      coarse.removeEventListener("change", sync);
+    };
   }, []);
 
   // Warm the house during HomeGate (even off-screen) so auto-spin is live when the
@@ -568,7 +578,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         frameloop={frameloop}
         camera={{ position: [0, 1.9, 0.05], fov: 72, near: 0.1, far: 80 }}
         dpr={dpr}
-        gl={{ antialias: true, toneMapping: NoToneMapping }}
+        gl={{ antialias: !mobileGpu, toneMapping: NoToneMapping }}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }}
       >
         <color attach="background" args={["#1a120c"]} />
@@ -577,10 +587,10 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           command={command}
           onComplete={onComplete}
           onSettled={onSettled}
-          parallax={mode === "exterior" || mode === "moving"}
-          idleSway={mode === "exterior" || mode === "moving"}
+          parallax={!mobileGpu && (mode === "exterior" || mode === "moving")}
+          idleSway={!mobileGpu && (mode === "exterior" || mode === "moving")}
         />
-        <SpeedBlur />
+        {!mobileGpu ? <SpeedBlur /> : null}
         <Building
           interactive={mode === "exterior"}
           onEnter={enter}
@@ -621,7 +631,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             opacity: mode === "exterior" ? 0.85 : 0,
           }}
         >
-          Click the window
+          {mobileGpu ? "Swipe or tap the window" : "Click the window"}
         </p>
         {/* <p
           className="absolute bottom-3 left-1/2 m-0 -translate-x-1/2 text-[10px] tracking-[0.08em] text-white/45"

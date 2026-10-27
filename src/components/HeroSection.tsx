@@ -7,6 +7,8 @@ import { useHomeLoad } from "./HomeGate";
 const HERO_VIDEO = "/homepage/Hero-video-Section.mp4";
 /** Slightly before EOS so browsers still have a decodable frame to paint. */
 const HOLD_EPS = 0.05;
+/** Seconds of lead-in buffer before the gate can unlock. */
+const READY_BUFFER_S = 2;
 /** Seconds before end when we peek the next section. */
 const SCROLL_LEAD_S = 1;
 /** Fraction of viewport height to scroll down. */
@@ -61,13 +63,15 @@ export default function HeroSection() {
       scrollRaf = requestAnimationFrame(tick);
     };
 
-    /** True once the full clip is in the buffer — avoids mid-play stalls. */
-    const isFullyBuffered = () => {
-      if (!duration || duration <= 0 || !video.buffered.length) return false;
+    /** Enough lead-in buffered to start without a stall (rest streams after enter). */
+    const hasStartBuffer = () => {
+      if (!duration || duration <= 0) return false;
+      if (video.readyState >= 3) return true; // HAVE_FUTURE_DATA+
+      if (!video.buffered.length) return false;
       for (let i = 0; i < video.buffered.length; i++) {
         if (
           video.buffered.start(i) <= 0.05 &&
-          video.buffered.end(i) >= duration - 0.1
+          video.buffered.end(i) >= Math.min(duration - 0.05, READY_BUFFER_S)
         ) {
           return true;
         }
@@ -83,9 +87,10 @@ export default function HeroSection() {
           end = Math.max(end, video.buffered.end(i));
         }
       }
-      const pct = Math.round(Math.min(100, (end / duration) * 100));
+      const target = Math.min(duration, READY_BUFFER_S);
+      const pct = Math.round(Math.min(100, (end / Math.max(target, 0.01)) * 100));
       homeLoadRef.current?.reportHeroProgress(pct);
-      if (isFullyBuffered()) markReady();
+      if (hasStartBuffer()) markReady();
     };
 
     /** Re-seek so a suspended tab paints the last frame again (Safari/Chrome). */
@@ -127,7 +132,7 @@ export default function HeroSection() {
     const markReady = () => {
       if (disposed || ready) return;
       duration = Number.isFinite(video.duration) ? video.duration : 0;
-      if (duration <= 0 || !isFullyBuffered()) return;
+      if (duration <= 0 || !hasStartBuffer()) return;
       ready = true;
       video.pause();
       try {
@@ -138,6 +143,11 @@ export default function HeroSection() {
       homeLoadRef.current?.reportHeroProgress(100);
       homeLoadRef.current?.reportHeroReady();
       if (pendingStart) playOnce();
+    };
+
+    const onCanPlay = () => {
+      reportBuffered();
+      if (hasStartBuffer()) markReady();
     };
 
     const onEnded = () => {
@@ -176,7 +186,8 @@ export default function HeroSection() {
     video.pause();
 
     video.addEventListener("loadedmetadata", onLoadedMetadata);
-    video.addEventListener("canplaythrough", markReady);
+    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("canplaythrough", onCanPlay);
     video.addEventListener("progress", reportBuffered);
     video.addEventListener("ended", onEnded);
     video.addEventListener("timeupdate", onTimeUpdate);
@@ -195,7 +206,8 @@ export default function HeroSection() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", onPageShow);
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
-      video.removeEventListener("canplaythrough", markReady);
+      video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("canplaythrough", onCanPlay);
       video.removeEventListener("progress", reportBuffered);
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("timeupdate", onTimeUpdate);
@@ -277,20 +289,6 @@ export default function HeroSection() {
       <Navbar />
 
       <style jsx global>{`
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        html,
-        body {
-          background: #000;
-          color: #fff;
-        }
-
         .him-hero-copy {
           left: clamp(20px, 5.9vw, 112px);
           bottom: clamp(28px, 5vh, 60px);

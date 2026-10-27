@@ -141,6 +141,21 @@ export async function resolvePdpLayout(slug: string): Promise<PdpLayout> {
 }
 
 export async function listProductSlugs(): Promise<string[]> {
-	const products = await listProducts();
-	return products.map((p) => p.slug);
+	const [rows] = await getDb().execute<RowDataPacket[]>(
+		"SELECT slug FROM products ORDER BY id ASC",
+	);
+	return (rows as RowDataPacket[]).map((r) => String(r.slug));
+}
+
+/** Related products without loading the full catalog into memory twice. */
+export async function listRelatedProducts(
+	slug: string,
+	limit = 3,
+): Promise<CatalogProduct[]> {
+	const safeLimit = Math.max(1, Math.min(24, Math.floor(limit)));
+	const [rows] = await getDb().execute<ProductRow[]>(
+		`SELECT ${SELECT_COLS} FROM products WHERE slug <> :slug ORDER BY id ASC LIMIT ${safeLimit}`,
+		{ slug },
+	);
+	return (rows as ProductRow[]).map(mapRow);
 }

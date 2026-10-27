@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const lookbooks = [
   {
@@ -38,6 +38,41 @@ function Arrow() {
       absoluteStrokeWidth={false}
       aria-hidden
     />
+  );
+}
+
+function LookbookFeatureVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          void video.play().catch(() => { });
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: [0, 0.4, 0.75] },
+    );
+    io.observe(video);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      muted
+      loop
+      playsInline
+      preload="none"
+      className="summer-feature-video"
+    >
+      <source src="/videos/footer-video.mp4" type="video/mp4" />
+    </video>
   );
 }
 
@@ -123,15 +158,7 @@ export default function Lookbook() {
 
       <section className="summer-feature">
         <div className="summer-feature-media">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="summer-feature-video"
-          >
-            <source src="/videos/footer-video.mp4" type="video/mp4" />
-          </video>
+          <LookbookFeatureVideo />
         </div>
 
         <div className="summer-feature-content">

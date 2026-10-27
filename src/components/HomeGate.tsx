@@ -23,11 +23,10 @@ export function useHomeLoad() {
 	return useContext(HomeLoadContext);
 }
 
-/** Hero frames dominate download time; house first-frame fills the rest. */
-function combinedProgress(heroPct: number, heroReady: boolean, houseReady: boolean) {
-	const hero = Math.min(100, Math.max(0, heroPct)) * 0.8;
-	const house = (houseReady ? 100 : heroReady ? 50 : 0) * 0.2;
-	return Math.min(100, Math.round(hero + house));
+/** Gate unlocks on hero readiness; house warms later below the fold. */
+function combinedProgress(heroPct: number, heroReady: boolean) {
+	if (heroReady) return 100;
+	return Math.min(100, Math.max(0, Math.round(heroPct)));
 }
 
 export default function HomeGate({ children }: { children: ReactNode }) {
@@ -66,8 +65,10 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 		[reportHeroProgress, reportHeroReady, reportHouseReady],
 	);
 
-	const pageReady = heroReady && houseReady;
-	const progress = combinedProgress(heroPct, heroReady, houseReady);
+	const pageReady = heroReady;
+	const progress = combinedProgress(heroPct, heroReady);
+	// Keep reportHouseReady for Flythrough callers; it no longer blocks the gate.
+	void houseReady;
 
 	useEffect(() => {
 		targetPctRef.current = pageReady ? 100 : progress;
@@ -117,7 +118,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 			setHeroReady(true);
 			setHeroPct(100);
 			setHouseReady(true);
-		}, 12000);
+		}, 8000);
 		return () => window.clearTimeout(timer);
 	}, [pageReady, started]);
 

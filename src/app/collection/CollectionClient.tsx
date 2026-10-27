@@ -1,0 +1,585 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import SiteShell from "@/components/SiteShell";
+import HimWaySection from "@/components/HimWaySection";
+import { Suspense, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { CatalogProduct } from "@/lib/catalog-types";
+import ProductCard from "@/components/ProductCard";
+
+const BASE_FILTERS = ["ALL"] as const;
+
+function categoryHref(filter: string) {
+  return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────
+function CollectionPageInner({
+  products,
+}: {
+  products: CatalogProduct[];
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const categories = useMemo(() => {
+    const set = new Set(
+      products.map((p) => p.category).filter(Boolean),
+    );
+    return [...BASE_FILTERS, ...Array.from(set).sort()];
+  }, [products]);
+
+  const rawCategory = searchParams.get("category");
+  const activeFilter =
+    rawCategory && categories.includes(rawCategory) ? rawCategory : "ALL";
+
+  const filtered =
+    activeFilter === "ALL"
+      ? products
+      : products.filter((p) => p.category === activeFilter);
+
+  const setActiveFilter = (filter: string) => {
+    router.replace(categoryHref(filter), { scroll: false });
+  };
+
+  return (
+    <SiteShell>
+      <main className="collection-main">
+
+        {/* ── HERO BANNER ─────────────────────────────────────────── */}
+        <div className="collection-hero">
+          <Image
+            src="/products/collection-hero.webp"
+            alt="All New Essentials"
+            fill
+            priority
+            quality={80}
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: "22% 40%" }}
+          />
+          {/* overlay */}
+          <div className="collection-hero-overlay" />
+
+          <div className="collection-hero-text">
+            <span className="collection-hero-label">ALL NEW ESSENTIALS</span>
+            <h1 className="collection-hero-title">
+              Essential Pieces,
+              <br />
+              Elevated by Design.
+            </h1>
+            <p className="collection-hero-desc">
+              Where thoughtful design meets timeless sophistication. Every piece reflects a commitment to quality, comfort, and the art of dressing well.
+            </p>
+          </div>
+        </div>
+
+        {/* Scroll target for Him Way "EXPLORE MORE" */}
+        <div id="collection-listing" aria-hidden="true" />
+
+        {/* ── FILTER BAR ──────────────────────────────────────────── */}
+        <div className="collection-bar">
+          <div className="collection-bar-left">
+            {categories.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setActiveFilter(f)}
+                className={`collection-filter-btn${activeFilter === f ? " active" : ""}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          <span className="collection-count">
+            {`${filtered.length} PRODUCTS`}
+          </span>
+        </div>
+
+        {/* ── PRODUCT GRID ─────────────────────────────────────────── */}
+        <div className="collection-grid">
+          {filtered.map((product) => (
+            <ProductCard key={product.slug} product={product} />
+          ))}
+        </div>
+
+        {/* ── LOAD MORE (hidden while catalog is small) ───────────────
+        <div className="collection-load-more">
+          <button type="button" className="load-more-btn">
+            LOAD MORE PRODUCTS &nbsp;
+            <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+          </button>
+        </div>
+        */}
+
+        {/* ── MORE WAYS TO WEAR IT ───────────────────────────────────
+        <section className="mwwi-section">
+          <div className="mwwi-header">
+            <div>
+              <span className="mwwi-eyebrow">EXPLORE MORE</span>
+              <h2 className="mwwi-title">More Ways to Wear It</h2>
+            </div>
+
+            <Link href="/lookbook" className="mwwi-view-all">
+              <span>VIEW ALL</span>
+              <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+            </Link>
+          </div>
+
+          <div className="mwwi-strip">
+            {EXPLORE_ITEMS.map((item) => (
+              <Link key={item.label} href={item.href} className="mwwi-item group">
+                <div className="mwwi-img him-card-media">
+                  <Image
+                    src={item.image}
+                    alt={item.label}
+                    fill
+                    quality={70}
+                    sizes="(max-width: 768px) 70vw, 25vw"
+                    className="object-cover object-top"
+                    style={{ objectFit: "cover", objectPosition: "top center" }}
+                  />
+                </div>
+
+                <div className="mwwi-label">
+                  <span>{item.label}</span>
+                  <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+        */}
+
+        <HimWaySection />
+      </main>
+
+      <style jsx global>{`
+        /* ── Reset & base ── */
+        .collection-main {
+          background: #fff;
+          color: #111;
+          min-height: 100vh;
+          overflow-x: clip;
+          max-width: 100%;
+        }
+
+        /* ── HERO ── */
+        .collection-hero {
+          position: relative;
+          width: 100%;
+          height: clamp(420px, 52vw, 620px);
+          overflow: hidden;
+          background: #111;
+        }
+
+        .collection-hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to right,
+            rgba(0,0,0,0.62) 0%,
+            rgba(0,0,0,0.35) 55%,
+            rgba(0,0,0,0.1) 100%
+          );
+          z-index: 1;
+        }
+
+        .collection-hero-text {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: clamp(28px, 5vw, 72px);
+          color: #fff;
+        }
+
+        .collection-hero-label {
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.7);
+          margin-bottom: 12px;
+        }
+
+        .collection-hero-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(30px, 4.5vw, 64px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.collection-hero-title span {
+  display: block;
+  white-space: nowrap;
+}
+
+        .collection-hero-desc {
+          margin: 16px 0 0;
+          max-width: 380px;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 11px;
+          font-weight: 400;
+          line-height: 1.6;
+          color: rgba(255,255,255,0.75);
+        }
+
+        /* ── FILTER BAR ── */
+        #collection-listing {
+          height: 0;
+          overflow: hidden;
+          scroll-margin-top: 0;
+        }
+
+        .collection-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 0 clamp(16px, 4vw, 56px);
+          height: 52px;
+          border-bottom: 1px solid rgba(0,0,0,0.1);
+          background: #fff;
+          position: sticky;
+          top: 0;
+          z-index: 30;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        .collection-bar-left {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow-x: auto;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .collection-bar-left::-webkit-scrollbar {
+          display: none;
+        }
+
+        .collection-filter-btn {
+          flex: 0 0 auto;
+          padding: 5px 12px;
+          border: 1px solid transparent;
+          background: transparent;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: rgba(0,0,0,0.45);
+          cursor: pointer;
+          transition: all 150ms ease;
+          white-space: nowrap;
+        }
+
+        .collection-filter-btn:hover,
+        .collection-filter-btn.active {
+          color: #111;
+          border-color: #111;
+        }
+
+        .collection-count {
+          flex: 0 0 auto;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 400;
+          letter-spacing: 0.5px;
+          color: rgba(0,0,0,0.4);
+          white-space: nowrap;
+        }
+
+        /* ── PRODUCT GRID ── */
+        .collection-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          column-gap: clamp(8px, 1vw, 12px);
+          row-gap: 30px;
+          background: transparent;
+          padding: 0;
+          margin: 0 clamp(16px, 4vw, 56px);
+          margin-top: 24px;
+          margin-bottom: clamp(40px, 5vw, 64px);
+        }
+
+        .product-card {
+          display: block;
+          background: #fff;
+          cursor: pointer;
+          overflow: hidden;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          box-sizing: border-box;
+        }
+
+        .product-card-img {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 3 / 4;
+          overflow: hidden;
+          background: #f0ede8;
+        }
+
+        .product-card-wish {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 2;
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: none;
+          border-radius: 0;
+          background: rgba(255, 255, 255, 0.88);
+          color: #3a3a3a;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          transition: color 150ms ease, background 150ms ease, opacity 150ms ease;
+        }
+
+        .product-card-wish:hover {
+          background: #fff;
+          color: #111;
+        }
+
+        .product-card-wish.is-active {
+          color: #7a1420;
+        }
+
+        .product-card-body {
+          padding: 12px 14px 18px;
+        }
+
+        .product-card-name {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 11px;
+          font-weight: 500;
+          color: #111;
+          line-height: 1.3;
+        }
+
+        .product-card-price {
+          margin: 8px 0 0;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          color: #111;
+        }
+
+        /* ── LOAD MORE ── */
+        .collection-load-more {
+          display: flex;
+          justify-content: center;
+          padding: 40px 0;
+        }
+
+        .load-more-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 28px;
+          border: 1px solid #111;
+          background: transparent;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: #111;
+          cursor: pointer;
+          transition: background 180ms ease, color 180ms ease;
+        }
+
+        .load-more-btn:hover {
+          background: #111;
+          color: #fff;
+        }
+
+        /* ── MORE WAYS TO WEAR IT ── */
+        .mwwi-section {
+          padding: clamp(40px, 5vw, 68px) clamp(16px, 4vw, 56px) clamp(48px, 5vw, 80px);
+          background: #f6f5f3;
+          border-top: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .mwwi-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: clamp(18px, 2vw, 28px);
+        }
+
+        .mwwi-eyebrow {
+          display: block;
+          margin-bottom: 6px;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: rgba(0,0,0,0.6);
+        }
+
+        .mwwi-title {
+          margin: 0;
+          font-family: "Cormorant Garamond", "Cinzel", Georgia, serif;
+          font-size: clamp(30px, 3.4vw, 52px);
+          font-weight: 400;
+          font-variant: small-caps;
+          line-height: 1;
+          letter-spacing: 0.01em;
+          color: #17140f;
+        }
+
+        .mwwi-view-all {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          height: 30px;
+          padding: 0 16px;
+          border: 1px solid #17140f;
+          border-radius: 999px;
+          background: transparent;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          text-decoration: none;
+          color: #17140f;
+          white-space: nowrap;
+          transition: background 180ms ease, color 180ms ease;
+        }
+
+        .mwwi-view-all:hover {
+          background: #17140f;
+          color: #fff;
+        }
+
+        .mwwi-strip {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: clamp(8px, 1vw, 16px);
+        }
+
+        .mwwi-item {
+          display: block;
+          min-width: 0;
+          background: #fff;
+          border-radius: 3px;
+          overflow: hidden;
+          text-decoration: none;
+          color: #111;
+        }
+
+        .mwwi-img {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 4 / 3;
+          overflow: hidden;
+          background: #e8e5df;
+        }
+
+        .mwwi-label {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: clamp(34px, 3vw, 44px);
+          padding: 0 clamp(10px, 1vw, 14px);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+          color: #111;
+        }
+
+        .mwwi-label svg {
+          color: rgba(0,0,0,0.4);
+          transition: transform 200ms ease, color 200ms ease;
+        }
+
+        .mwwi-item:hover .mwwi-label svg {
+          color: #111;
+          transform: translateX(3px);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+          .collection-grid {
+            grid-template-columns: repeat(2, 1fr);
+            column-gap: 8px;
+            row-gap: 24px;
+            margin: 0 12px;
+            margin-top: 16px;
+          }
+
+          .collection-hero-title {
+            font-size: clamp(28px, 8vw, 44px);
+          }
+
+          /* More ways to wear it → swipeable row on phones */
+          .mwwi-strip {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+          }
+
+          .mwwi-strip::-webkit-scrollbar {
+            display: none;
+          }
+
+          .mwwi-item {
+            flex: 0 0 72%;
+            scroll-snap-align: start;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .collection-grid {
+            grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
+          }
+        }
+      `}</style>
+    </SiteShell>
+  );
+}
+
+export default function CollectionClient({
+  products,
+}: {
+  products: CatalogProduct[];
+}) {
+  return (
+    <Suspense fallback={null}>
+      <CollectionPageInner products={products} />
+    </Suspense>
+  );
+}
