@@ -19,6 +19,8 @@ const SCROLL_MS = 1400;
 const USER_SCROLL_FRAC = 0.15;
 /** Delay after auto-scroll ends before the mouse cue appears (ms). */
 const CUE_AFTER_SCROLL_MS = 1000;
+/** Re-show the cue after this long with no scroll activity (ms). */
+const CUE_IDLE_MS = 15000;
 /** Fade-out duration once the user scrolls (ms). */
 const CUE_FADE_OUT_MS = 500;
 /** Fade-in duration when the cue appears (ms). */
@@ -74,12 +76,41 @@ export default function HeroSection() {
     let pendingStart = false;
     let finished = false;
     let scrolledAway = false;
+    let cueArmed = false;
     let scrollRaf = 0;
     let fadeTimer = 0;
     let cueDelayTimer = 0;
+    let idleTimer = 0;
+    let peekPrevBehavior: string | null = null;
 
     const holdTime = () =>
       Math.max(0, (Number.isFinite(duration) ? duration : 0) - HOLD_EPS);
+
+    const clearIdleTimer = () => {
+      if (!idleTimer) return;
+      window.clearTimeout(idleTimer);
+      idleTimer = 0;
+    };
+
+    const revealCue = () => {
+      if (disposed || cueVisibleRef.current) return;
+      clearIdleTimer();
+      if (fadeTimer) {
+        window.clearTimeout(fadeTimer);
+        fadeTimer = 0;
+      }
+      setCueFadingSafe(false);
+      setCueVisibleSafe(true);
+    };
+
+    const scheduleIdleCue = () => {
+      if (disposed || !cueArmed || reduceMotion) return;
+      clearIdleTimer();
+      idleTimer = window.setTimeout(() => {
+        if (disposed || cueVisibleRef.current) return;
+        revealCue();
+      }, CUE_IDLE_MS);
+    };
 
     const dismissCue = () => {
       if (disposed || !cueVisibleRef.current || cueFadingRef.current) return;
@@ -91,6 +122,7 @@ export default function HeroSection() {
         setCueFadingSafe(false);
         setCueIn(false);
       }, CUE_FADE_OUT_MS);
+      scheduleIdleCue();
     };
 
     const showCueAfterScroll = () => {
@@ -98,7 +130,8 @@ export default function HeroSection() {
       if (cueDelayTimer) window.clearTimeout(cueDelayTimer);
       cueDelayTimer = window.setTimeout(() => {
         if (disposed) return;
-        setCueVisibleSafe(true);
+        cueArmed = true;
+        revealCue();
       }, CUE_AFTER_SCROLL_MS);
     };
 
@@ -108,15 +141,39 @@ export default function HeroSection() {
       const start = performance.now();
       peekingRef.current = true;
 
+      // Flythrough sets html { scroll-behavior: smooth }; that makes each
+      // per-frame scrollTo ease toward its target and hitch mid-peek.
+      const html = document.documentElement;
+      peekPrevBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto";
+
+      const restoreBehavior = () => {
+        if (peekPrevBehavior === null) return;
+        html.style.scrollBehavior = peekPrevBehavior;
+        peekPrevBehavior = null;
+      };
+
+      const finishPeek = () => {
+        restoreBehavior();
+        peekingRef.current = false;
+        showCueAfterScroll();
+      };
+
       const tick = (now: number) => {
-        if (disposed) return;
+        if (disposed) {
+          restoreBehavior();
+          return;
+        }
         const t = Math.min(1, (now - start) / SCROLL_MS);
-        window.scrollTo(0, from + delta * easeInOutCubic(t));
+        window.scrollTo({
+          top: from + delta * easeInOutCubic(t),
+          left: 0,
+          behavior: "auto",
+        });
         if (t < 1) {
           scrollRaf = requestAnimationFrame(tick);
         } else {
-          peekingRef.current = false;
-          showCueAfterScroll();
+          finishPeek();
         }
       };
 
@@ -228,15 +285,21 @@ export default function HeroSection() {
 
     const onUserScrollIntent = () => {
       if (peekingRef.current) return;
-      if (!cueVisibleRef.current) return;
-      dismissCue();
+      if (cueVisibleRef.current) {
+        dismissCue();
+        return;
+      }
+      if (cueArmed) scheduleIdleCue();
     };
 
     const onScroll = () => {
       if (peekingRef.current) return;
-      if (!cueVisibleRef.current) return;
-      if (window.scrollY <= window.innerHeight * SCROLL_FRAC + 8) return;
-      dismissCue();
+      if (cueVisibleRef.current) {
+        if (window.scrollY <= window.innerHeight * SCROLL_FRAC + 8) return;
+        dismissCue();
+        return;
+      }
+      if (cueArmed) scheduleIdleCue();
     };
 
     const onVisibility = () => {
@@ -279,8 +342,13 @@ export default function HeroSection() {
       disposed = true;
       peekingRef.current = false;
       cancelAnimationFrame(scrollRaf);
+      if (peekPrevBehavior !== null) {
+        document.documentElement.style.scrollBehavior = peekPrevBehavior;
+        peekPrevBehavior = null;
+      }
       if (fadeTimer) window.clearTimeout(fadeTimer);
       if (cueDelayTimer) window.clearTimeout(cueDelayTimer);
+      clearIdleTimer();
       window.removeEventListener("him-start", playOnce);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", onPageShow);
