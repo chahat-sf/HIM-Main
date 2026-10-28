@@ -369,10 +369,8 @@ export default function HeroSection() {
     <section className="relative w-full h-dvh overflow-hidden bg-black">
       <video
         ref={videoRef}
-        className="absolute top-0 h-full w-auto max-w-none"
+        className="him-hero-video absolute top-0 h-full w-auto max-w-none"
         style={{
-          left: "50%",
-          transform: "translate3d(-50%, 0, 0)",
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
         }}
@@ -456,6 +454,12 @@ export default function HeroSection() {
       <Navbar />
 
       <style jsx global>{`
+        /* Center the lift in frame; mobile nudges right for optical center. */
+        .him-hero-video {
+          left: 50%;
+          transform: translate3d(-50%, 0, 0);
+        }
+
         .him-hero-copy {
           left: clamp(20px, 5.9vw, 112px);
           bottom: clamp(28px, 5vh, 60px);
@@ -668,6 +672,11 @@ export default function HeroSection() {
         }
 
         @media (max-width: 768px) {
+          /* Nudge right so the elevator sits optically centered on phones. */
+          .him-hero-video {
+            transform: translate3d(calc(-50% + 1.6vw), 0, 0);
+          }
+
           .him-hero-copy {
             left: 20px;
             bottom: 36px;
