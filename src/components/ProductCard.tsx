@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type PointerEvent, type MouseEvent } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
 import { useWishlist } from "@/hooks/useWishlist";
 
 const SWIPE_MIN = 40;
-const AUTO_MS = 2000;
 
 type ProductCardProps = {
   product: CatalogProduct;
@@ -36,7 +35,6 @@ export default function ProductCard({
 
   const [armed, setArmed] = useState(false);
   const [index, setIndex] = useState(0);
-  const hoverTimer = useRef<number | null>(null);
   const swipedRef = useRef(false);
   const swipeRef = useRef<{
     id: number;
@@ -46,35 +44,11 @@ export default function ProductCard({
     active: boolean;
   } | null>(null);
 
-  const stopAuto = () => {
-    if (hoverTimer.current != null) {
-      window.clearInterval(hoverTimer.current);
-      hoverTimer.current = null;
-    }
-  };
-
-  const startAuto = () => {
-    if (!hasMulti) return;
-    stopAuto();
-    hoverTimer.current = window.setInterval(() => {
-      setIndex((cur) => (cur + 1) % allImages.length);
-    }, AUTO_MS);
-  };
-
   const arm = () => setArmed(true);
 
   const step = (dir: 1 | -1) => {
     if (!hasMulti) return;
     setIndex((cur) => (cur + dir + allImages.length) % allImages.length);
-  };
-
-  const onHoverScrub = (e: MouseEvent<HTMLDivElement>) => {
-    if (!hasMulti || swipeRef.current?.active) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (!rect.width) return;
-    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const target = Math.floor((x / rect.width) * allImages.length);
-    setIndex((cur) => (cur === target ? cur : target));
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -120,22 +94,7 @@ export default function ProductCard({
   };
 
   return (
-    <article
-      className="product-card group"
-      style={{ position: "relative" }}
-      onPointerEnter={(e) => {
-        if (e.pointerType === "mouse" && hasMulti) {
-          arm();
-          startAuto();
-        }
-      }}
-      onPointerLeave={(e) => {
-        if (e.pointerType === "mouse") {
-          stopAuto();
-          setIndex(0);
-        }
-      }}
-    >
+    <article className="product-card group" style={{ position: "relative" }}>
       <div
         className="product-card-img him-card-media"
         style={{
@@ -148,7 +107,6 @@ export default function ProductCard({
         onPointerCancel={() => {
           swipeRef.current = null;
         }}
-        onMouseMove={hasMulti ? onHoverScrub : undefined}
         onClickCapture={(e) => {
           if (swipedRef.current) {
             e.preventDefault();
@@ -171,7 +129,7 @@ export default function ProductCard({
             quality={quality}
             sizes={sizes}
             armed={armed}
-            controlledIndex={hasMulti && armed ? index : undefined}
+            controlledIndex={hasMulti ? index : undefined}
           />
         </Link>
 
@@ -184,7 +142,6 @@ export default function ProductCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                stopAuto();
                 arm();
                 step(-1);
               }}
@@ -204,7 +161,6 @@ export default function ProductCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                stopAuto();
                 arm();
                 step(1);
               }}
@@ -232,16 +188,10 @@ export default function ProductCard({
                   aria-selected={di === index}
                   aria-label={`Show image ${di + 1}`}
                   className={`product-card-dot${di === index ? " active" : ""}`}
-                  onMouseEnter={() => {
-                    arm();
-                    stopAuto();
-                    setIndex(di);
-                  }}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     arm();
-                    stopAuto();
                     setIndex(di);
                   }}
                 />
@@ -380,13 +330,6 @@ export default function ProductCard({
           pointer-events: auto;
         }
 
-        @media (hover: none) {
-          .product-card-dots {
-            opacity: 1;
-            pointer-events: auto;
-          }
-        }
-
         .product-card-dot {
           position: relative;
           width: 18px;
@@ -421,6 +364,22 @@ export default function ProductCard({
 
         .product-card-dot.active::before {
           background: #fff;
+        }
+
+        /* Mobile: swipe only — hide chevrons; keep dots as position cues */
+        @media (hover: none), (max-width: 768px) {
+          .product-card-nav {
+            display: none !important;
+          }
+
+          .product-card-dots {
+            opacity: 1;
+            pointer-events: none;
+          }
+
+          .product-card-dot {
+            pointer-events: none;
+          }
         }
       `}</style>
     </article>
