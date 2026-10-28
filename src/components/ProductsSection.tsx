@@ -819,7 +819,7 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/THE-ARCHIVIST/1.webp",
+    src: "/products/archivist/1.webp",
     alt: "Man in a trucker cap",
     aspectRatio: "4 / 5",
     offsetTop: "96px",
@@ -833,13 +833,13 @@ const COLLAGE_IMAGES: CollageImage[] = [
     priority: true,
   },
   {
-    src: "/THE-ARCHIVIST/2.webp", // was man-image-109 (duplicate) — change if your file name differs
+    src: "/products/archivist/2.webp",
     alt: "Man in white outfit beside a car",
     aspectRatio: "3 / 4",
     offsetTop: "150px",
   },
   {
-    src: "/THE-ARCHIVIST/5.webp",
+    src: "/products/archivist/5.webp",
     alt: "Man on a red sofa",
     aspectRatio: "4 / 3",
     offsetTop: "24px",

@@ -384,12 +384,17 @@ export default function Lookbook() {
         .summer-feature-media {
           position: relative;
           min-width: 0;
-          height: 480px;
+          min-height: 480px;
+          height: 100%;
+          align-self: stretch;
           overflow: hidden;
           background: #17120e;
         }
 
-        .summer-feature-video {
+        /* :global — video lives in LookbookFeatureVideo; scoped jsx won't reach it */
+        .summer-feature-media :global(.summer-feature-video) {
+          position: absolute;
+          inset: 0;
           display: block;
           width: 100%;
           height: 100%;
@@ -495,7 +500,7 @@ export default function Lookbook() {
           }
 
           .summer-feature-media {
-            height: 280px;
+            min-height: 280px;
           }
 
           .summer-feature-content {
@@ -597,6 +602,7 @@ export default function Lookbook() {
           }
 
           .summer-feature-media {
+            min-height: 260px;
             height: 260px;
           }
 
