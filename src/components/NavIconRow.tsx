@@ -17,7 +17,7 @@ type NavIconRowProps = {
   onSearchClick?: () => void;
 };
 
-/** Shared account / wishlist / bag icons used by Navbar + PdpNavbar. */
+/** Shared account / wishlist / bag icons used by Navbar desktop row. */
 export default function NavIconRow({
   className,
   iconClassName,

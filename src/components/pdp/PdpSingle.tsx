@@ -11,7 +11,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import PdpNavbar from "@/components/PdpNavbar";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
@@ -117,7 +117,10 @@ export default function PdpSingle({
   const carouselPointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
   activeImgRef.current = activeImg;
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
+  const inCart = items.some(
+    (i) => i.slug === slug || i.productId === product.id,
+  );
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
   const imageCount = MEDIA.length;
@@ -343,7 +346,7 @@ export default function PdpSingle({
 
   return (
     <>
-      <PdpNavbar />
+      <Navbar variant="solid" />
 
       <main ref={rootRef} className="pdp-main pdp-single">
         <nav className="pdp-s-crumbs" aria-label="Breadcrumb">
@@ -672,6 +675,11 @@ export default function PdpSingle({
                 />
               </button>
             </div>
+            {inCart ? (
+              <Link href="/cart" className="pdp-checkout-btn">
+                CHECKOUT
+              </Link>
+            ) : null}
             {bagError && <p className="pdp-bag-error">{bagError}</p>}
 
             <div className="pdp-accordions">
@@ -834,7 +842,7 @@ export default function PdpSingle({
           background: #fff;
           color: var(--pdp-ink);
           --u: calc(min(100vw, 1440px) / 1440);
-          /* Match PdpNavbar.module.css --pdp-nav-h */
+          /* Match Navbar solid --pdp-nav-h */
           --pdp-nav-h: 68px;
           padding-top: var(--pdp-nav-h);
         }
@@ -855,7 +863,7 @@ export default function PdpSingle({
           background: #fff;
           /* Kith breadcrumb band: border-t above crumbs */
           border-top: 1px solid #d9d9d9;
-          /* Collapse with PdpNavbar’s bottom edge into one crisp rule */
+          /* Collapse with solid Navbar’s bottom edge into one crisp rule */
           margin-top: -1px;
         }
 
@@ -1212,6 +1220,7 @@ export default function PdpSingle({
         }
 
         .pdp-wish-btn {
+          position: relative;
           flex: 0 0 max(44px, calc(56 * var(--u)));
           width: max(44px, calc(56 * var(--u)));
           height: max(44px, calc(56 * var(--u)));
@@ -1223,6 +1232,13 @@ export default function PdpSingle({
           cursor: pointer;
           transition: color 200ms ease, border-color 200ms ease,
             background 200ms ease;
+        }
+
+        /* Invisible larger tap target beyond the bordered box */
+        .pdp-wish-btn::before {
+          content: "";
+          position: absolute;
+          inset: -10px;
         }
 
         .pdp-wish-btn:hover {
@@ -1252,6 +1268,33 @@ export default function PdpSingle({
         .pdp-add-btn:disabled:hover,
         .pdp-add-btn.is-waiting-size:hover {
           background: var(--pdp-ink);
+        }
+
+        .pdp-checkout-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: max(44px, calc(56 * var(--u)));
+          margin-top: 10px;
+          box-sizing: border-box;
+          border: 1px solid var(--pdp-ink);
+          border-radius: 0;
+          background: transparent;
+          color: var(--pdp-ink);
+          font-family: var(--pdp-sans);
+          font-size: 10px;
+          font-weight: 400;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background 200ms ease, color 200ms ease;
+        }
+
+        .pdp-checkout-btn:hover {
+          background: var(--pdp-ink);
+          color: #fff;
         }
 
         .pdp-bag-error {
@@ -1466,7 +1509,7 @@ export default function PdpSingle({
         }
 
         @media (max-width: 768px) {
-          /* Must match PdpNavbar mobile --pdp-nav-h */
+          /* Must match Navbar solid mobile --pdp-nav-h */
           .pdp-main {
             --pdp-nav-h: 56px;
           }
@@ -1503,7 +1546,7 @@ export default function PdpSingle({
             /* Avoid CSS scroll-behavior:smooth — it breaks native finger swipe */
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-x;
+            touch-action: pan-x pan-y;
             scrollbar-width: none;
             overscroll-behavior-x: contain;
           }
@@ -1520,7 +1563,7 @@ export default function PdpSingle({
             scroll-snap-align: start;
             scroll-snap-stop: always;
             background: #e9e6e1;
-            touch-action: pan-x;
+            touch-action: pan-x pan-y;
             user-select: none;
             -webkit-user-select: none;
           }

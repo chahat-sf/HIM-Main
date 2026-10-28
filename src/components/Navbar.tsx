@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowRight,
@@ -19,29 +26,14 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
+import NavIconRow from "@/components/NavIconRow";
 
 const ICON_STROKE = 1.25;
-
-// ─── Style constants ────────────────────────────────────────────────────────
 
 const NAV_FONT = "var(--font-nav), monospace";
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 
-const LINK_COLOR = "rgba(255, 255, 255, 0.72)";
-const LINK_HOVER = "#ffffff";
-
-const LINK_SIZE = "9px";
-const LINK_SPACING = "1.5px";
-
-// ─── Navigation ─────────────────────────────────────────────────────────────
-
-const leftLinks = [
-  { label: "EXPLORE", href: "/collection" },
-];
-
-const rightLinks: { label: string; href: string }[] = [];
-
-// ─── Search popup content (edit these) ──────────────────────────────────────
+const leftLinks = [{ label: "EXPLORE", href: "/collection" }];
 
 type SearchProduct = {
   slug: string;
@@ -63,42 +55,17 @@ function toSearchProduct(p: CatalogProduct): SearchProduct {
   };
 }
 
-
-
-// Banner at the bottom of the popup. Swap the image for your own "edit" photo.
 const EDIT_IMAGE = "/homepage/navbar-image.webp";
 const EDIT_LINK = "/collection";
 
-// ─── Single nav link (shared by desktop and phone lists) ───────────────────
+export type NavbarVariant = "transparent" | "solid";
 
-function NavLink({ label, href }: { label: string; href: string }) {
-  return (
-    <Link
-      href={href}
-      className="uppercase no-underline transition-colors duration-200"
-      style={{
-        fontFamily: NAV_FONT,
-        fontSize: LINK_SIZE,
-        letterSpacing: LINK_SPACING,
-        fontWeight: 400,
-        color: LINK_COLOR,
-        whiteSpace: "nowrap",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = LINK_HOVER;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = LINK_COLOR;
-      }}
-    >
-      {label}
-    </Link>
-  );
-}
+type NavbarProps = {
+  variant?: NavbarVariant;
+};
 
-// ─── Navbar ─────────────────────────────────────────────────────────────────
-
-export default function Navbar() {
+export default function Navbar({ variant = "transparent" }: NavbarProps) {
+  const solid = variant === "solid";
   const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
@@ -113,6 +80,11 @@ export default function Navbar() {
   const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  const cartInBar = itemCount > 0;
+  /* Cart signals via bar badge when present; menu dot is wishlist-only */
+  const showMenuDot = !menuOpen && wishlistCount > 0;
 
   useEffect(() => setMounted(true), []);
 
@@ -146,7 +118,6 @@ export default function Navbar() {
     return () => mq.removeEventListener("change", closeOnDesktop);
   }, []);
 
-  // Load catalog only when search opens (avoids /api/products on every page).
   useEffect(() => {
     if (!searchOpen || searchProducts.length > 0) return;
     let cancelled = false;
@@ -165,16 +136,15 @@ export default function Navbar() {
     };
   }, [searchOpen, searchProducts.length]);
 
-  const close = () => setSearchOpen(false);
+  const closeSearch = () => setSearchOpen(false);
+  const closeMenu = () => setMenuOpen(false);
 
-  // Cursor in the box when it opens
   useEffect(() => {
     if (!searchOpen) return;
     const id = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(id);
   }, [searchOpen]);
 
-  // Esc closes, and the page behind does not scroll while the popup is open
   useEffect(() => {
     if (!searchOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -197,20 +167,66 @@ export default function Navbar() {
     );
   }, [trimmed, searchProducts]);
 
+  type MenuItem = {
+    key: string;
+    label: string;
+    href?: string;
+    onClick?: () => void;
+    icon?: ReactNode;
+    badge?: number;
+  };
+
+  const menuItems: MenuItem[] = [
+    { key: "explore", label: "Explore", href: "/collection" },
+    {
+      key: "search",
+      label: "Search",
+      icon: <Search size={15} strokeWidth={ICON_STROKE} aria-hidden />,
+      onClick: () => {
+        closeMenu();
+        setSearchOpen(true);
+      },
+    },
+    {
+      key: "wishlist",
+      label: "Wishlist",
+      href: "/wishlist",
+      icon: <Heart size={15} strokeWidth={ICON_STROKE} aria-hidden />,
+      badge: wishlistCount,
+    },
+    ...(!cartInBar
+      ? [
+        {
+          key: "bag",
+          label: "Bag",
+          href: "/cart",
+          icon: (
+            <ShoppingBag size={15} strokeWidth={ICON_STROKE} aria-hidden />
+          ),
+          badge: itemCount,
+        } satisfies MenuItem,
+      ]
+      : []),
+    {
+      key: "account",
+      label: "Account",
+      href: accountHref,
+      icon: <User size={15} strokeWidth={ICON_STROKE} aria-hidden />,
+    },
+  ];
+
   const popup = (
     <div
       className={`him-sp${searchOpen ? " open" : ""}`}
       aria-hidden={!searchOpen}
     >
-      {/* dim backdrop — click anywhere outside the panel to close */}
-      <div className="him-sp-backdrop" onClick={close} />
+      <div className="him-sp-backdrop" onClick={closeSearch} />
 
       <div className="him-sp-panel" role="dialog" aria-label="Search">
-        {/* SEARCH ROW */}
         <form
           className="him-sp-bar"
           role="search"
-          onSubmit={(e) => e.preventDefault()} // no redirect
+          onSubmit={(e) => e.preventDefault()}
         >
           <span className="him-sp-bar-icon" aria-hidden="true">
             <Search size={14} strokeWidth={ICON_STROKE} aria-hidden />
@@ -232,7 +248,7 @@ export default function Navbar() {
             type="button"
             className="him-sp-esc"
             tabIndex={searchOpen ? 0 : -1}
-            onClick={close}
+            onClick={closeSearch}
             aria-label="Close search"
           >
             <span>ESC</span>
@@ -240,8 +256,9 @@ export default function Navbar() {
           </button>
         </form>
 
-        {/* PRODUCTS */}
-        <p className="him-sp-label">{trimmed ? "RESULTS" : "POPULAR PRODUCTS"}</p>
+        <p className="him-sp-label">
+          {trimmed ? "RESULTS" : "POPULAR PRODUCTS"}
+        </p>
 
         {results.length > 0 ? (
           <div className="him-sp-grid">
@@ -251,7 +268,7 @@ export default function Navbar() {
                 href={`/collection/${p.slug}`}
                 className="him-sp-card"
                 tabIndex={searchOpen ? 0 : -1}
-                onClick={close}
+                onClick={closeSearch}
               >
                 <div className="him-sp-card-img him-card-media">
                   <Image
@@ -280,10 +297,11 @@ export default function Navbar() {
             ))}
           </div>
         ) : (
-          <p className="him-sp-empty">No products found for “{query.trim()}”.</p>
+          <p className="him-sp-empty">
+            No products found for “{query.trim()}”.
+          </p>
         )}
 
-        {/* THE EDIT BANNER */}
         <div className="him-sp-edit">
           <Image
             src={EDIT_IMAGE}
@@ -309,7 +327,7 @@ export default function Navbar() {
               href={EDIT_LINK}
               className="him-sp-edit-btn"
               tabIndex={searchOpen ? 0 : -1}
-              onClick={close}
+              onClick={closeSearch}
             >
               EXPLORE NOW <ArrowRight size={12} strokeWidth={1.6} aria-hidden />
             </Link>
@@ -319,31 +337,24 @@ export default function Navbar() {
     </div>
   );
 
-  const closeMenu = () => setMenuOpen(false);
-
   return (
     <nav
-      className="him-nav absolute top-0 left-0 right-0 z-50 w-full"
-      style={{ background: "transparent" }}
+      className={`him-nav${solid ? " him-nav--solid" : " him-nav--transparent"}`}
+      data-variant={variant}
+      aria-label="Primary"
     >
-      {/* TOP ROW — desktop: explore / logo / icons.  Phone: logo left + hamburger */}
       <div className="him-nav-row relative flex w-full items-center justify-between">
-        <ul
-          className="him-nav-desktop-links flex items-center list-none m-0 p-0"
-          style={{ gap: "24px" }}
-        >
+        <ul className="him-nav-desktop-links flex items-center list-none m-0 p-0">
           {leftLinks.map((link) => (
             <li key={link.label}>
-              <NavLink {...link} />
+              <Link href={link.href} className="him-nav-link">
+                {link.label}
+              </Link>
             </li>
           ))}
         </ul>
 
-        <Link
-          href="/"
-          className="him-nav-logo"
-          aria-label="HIM home"
-        >
+        <Link href="/" className="him-nav-logo" aria-label="HIM home">
           <Image
             src="/homepage/him-logo.webp"
             alt="HIM"
@@ -355,175 +366,154 @@ export default function Navbar() {
         </Link>
 
         <div className="him-nav-right flex items-center">
-          <ul
-            className="him-nav-desktop-links flex items-center list-none m-0 p-0"
-            style={{ gap: "24px" }}
-          >
-            {rightLinks.map((link) => (
-              <li key={link.label}>
-                <NavLink {...link} />
-              </li>
-            ))}
-          </ul>
-
-          <div
+          <NavIconRow
             className="him-nav-icons flex items-center"
-            style={{ color: LINK_COLOR }}
-          >
-            <button
-              type="button"
-              aria-label="Search"
-              aria-expanded={searchOpen}
-              className="him-icon-btn"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search size={17} strokeWidth={ICON_STROKE} aria-hidden />
-            </button>
+            iconClassName="him-icon-btn him-cart-btn"
+            badgeClassName="him-cart-count"
+            onSearchClick={() => setSearchOpen(true)}
+          />
 
-            <Link
-              href="/wishlist"
-              aria-label={
-                wishlistCount > 0
-                  ? `Wishlist, ${wishlistCount} items`
-                  : "Wishlist"
-              }
-              className="him-icon-btn him-cart-btn"
-            >
-              <Heart size={17} strokeWidth={ICON_STROKE} aria-hidden />
-              {wishlistCount > 0 && (
-                <span className="him-cart-count" aria-hidden="true">
-                  {wishlistCount > 99 ? "99+" : wishlistCount}
-                </span>
-              )}
-            </Link>
-
-            <Link href={accountHref} aria-label="Account" className="him-icon-btn">
-              <User size={17} strokeWidth={ICON_STROKE} aria-hidden />
-            </Link>
-
-            <Link
-              href="/cart"
-              aria-label={
-                itemCount > 0
-                  ? `Shopping bag, ${itemCount} items`
-                  : "Shopping bag"
-              }
-              className="him-icon-btn him-cart-btn"
-            >
-              <ShoppingBag size={17} strokeWidth={ICON_STROKE} aria-hidden />
-              {itemCount > 0 && (
+          <div className="him-nav-mobile-actions" ref={menuRef}>
+            {cartInBar ? (
+              <Link
+                href="/cart"
+                className="him-nav-mobile-cart him-cart-btn"
+                aria-label={`Bag, ${itemCount} items`}
+              >
+                <ShoppingBag size={17} strokeWidth={ICON_STROKE} aria-hidden />
                 <span className="him-cart-count" aria-hidden="true">
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
-              )}
-            </Link>
-          </div>
-
-          <div
-            className={`him-nav-mobile-menu${menuOpen ? " is-open" : ""}`}
-            ref={menuRef}
-          >
-            <button
-              type="button"
-              className="him-nav-menu-btn"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              aria-controls="him-home-nav-menu"
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              <span className="him-nav-burger" aria-hidden>
-                <span className="him-nav-burger-bar" />
-                <span className="him-nav-burger-bar" />
-                <span className="him-nav-burger-bar" />
-              </span>
-              {(itemCount > 0 || wishlistCount > 0) && !menuOpen ? (
-                <span className="him-nav-menu-dot" />
-              ) : null}
-            </button>
+              </Link>
+            ) : null}
 
             <div
-              id="him-home-nav-menu"
-              className="him-nav-menu-panel"
-              role="menu"
-              aria-hidden={!menuOpen}
+              className={`him-nav-mobile-menu${menuOpen ? " is-open" : ""}`}
             >
-              <Link
-                href="/collection"
-                className="him-nav-menu-item"
-                role="menuitem"
-                tabIndex={menuOpen ? 0 : -1}
-                style={{ ["--i" as string]: 0 }}
-                onClick={closeMenu}
-              >
-                Explore
-              </Link>
               <button
                 type="button"
-                className="him-nav-menu-item"
-                role="menuitem"
-                tabIndex={menuOpen ? 0 : -1}
-                style={{ ["--i" as string]: 1 }}
-                onClick={() => {
-                  closeMenu();
-                  setSearchOpen(true);
-                }}
+                className="him-nav-menu-btn"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                aria-controls={menuId}
+                onClick={() => setMenuOpen((open) => !open)}
               >
-                <Search size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                Search
+                <span className="him-nav-burger" aria-hidden>
+                  <span className="him-nav-burger-bar" />
+                  <span className="him-nav-burger-bar" />
+                  <span className="him-nav-burger-bar" />
+                </span>
+                {showMenuDot ? (
+                  <span className="him-nav-menu-dot" />
+                ) : null}
               </button>
-              <Link
-                href="/wishlist"
-                className="him-nav-menu-item"
-                role="menuitem"
-                tabIndex={menuOpen ? 0 : -1}
-                style={{ ["--i" as string]: 2 }}
-                onClick={closeMenu}
+
+              <div
+                id={menuId}
+                className="him-nav-menu-panel"
+                role="menu"
+                aria-hidden={!menuOpen}
               >
-                <Heart size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                Wishlist
-                {wishlistCount > 0 ? (
-                  <span className="him-nav-menu-badge">{wishlistCount}</span>
-                ) : null}
-              </Link>
-              <Link
-                href="/cart"
-                className="him-nav-menu-item"
-                role="menuitem"
-                tabIndex={menuOpen ? 0 : -1}
-                style={{ ["--i" as string]: 3 }}
-                onClick={closeMenu}
-              >
-                <ShoppingBag size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                Bag
-                {itemCount > 0 ? (
-                  <span className="him-nav-menu-badge">{itemCount}</span>
-                ) : null}
-              </Link>
-              <Link
-                href={accountHref}
-                className="him-nav-menu-item"
-                role="menuitem"
-                tabIndex={menuOpen ? 0 : -1}
-                style={{ ["--i" as string]: 4 }}
-                onClick={closeMenu}
-              >
-                <User size={15} strokeWidth={ICON_STROKE} aria-hidden />
-                Account
-              </Link>
+                {menuItems.map((item, i) =>
+                  item.href ? (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      className="him-nav-menu-item"
+                      role="menuitem"
+                      tabIndex={menuOpen ? 0 : -1}
+                      style={{ ["--i" as string]: i }}
+                      onClick={closeMenu}
+                    >
+                      {item.icon}
+                      {item.label}
+                      {item.badge && item.badge > 0 ? (
+                        <span className="him-nav-menu-badge">{item.badge}</span>
+                      ) : null}
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="him-nav-menu-item"
+                      role="menuitem"
+                      tabIndex={menuOpen ? 0 : -1}
+                      style={{ ["--i" as string]: i }}
+                      onClick={item.onClick}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Search popup — rendered on <body> so it always sits above everything */}
       {mounted && createPortal(popup, document.body)}
 
       <style jsx global>{`
-        /* ───────── Desktop (unchanged values) ───────── */
+        .him-nav {
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .him-nav--transparent {
+          position: absolute;
+          background: transparent;
+          color: #fff;
+        }
+
+        .him-nav--solid {
+          --pdp-nav-h: 68px;
+          position: fixed;
+          height: var(--pdp-nav-h);
+          background: #fff;
+          border-bottom: 1px solid #d9d9d9;
+          color: #111;
+        }
 
         .him-nav-row {
           height: 68px;
           padding: 0 46px;
+        }
+
+        .him-nav-desktop-links {
+          gap: 24px;
+          z-index: 1;
+        }
+
+        .him-nav-link {
+          font-family: ${NAV_FONT};
+          font-size: 9px;
+          font-weight: 400;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          text-decoration: none;
+          white-space: nowrap;
+          transition: color 200ms ease;
+        }
+
+        .him-nav--transparent .him-nav-link {
+          color: rgba(255, 255, 255, 0.72);
+        }
+
+        .him-nav--transparent .him-nav-link:hover {
+          color: #fff;
+        }
+
+        .him-nav--solid .him-nav-link {
+          color: rgba(17, 17, 17, 0.72);
+        }
+
+        .him-nav--solid .him-nav-link:hover {
+          color: #111;
         }
 
         .him-nav-logo {
@@ -545,13 +535,55 @@ export default function Navbar() {
           object-fit: contain;
         }
 
+        .him-nav--solid .him-nav-logo-img {
+          filter: invert(1);
+        }
+
+        .him-nav-right {
+          z-index: 1;
+          margin-left: auto;
+        }
+
         .him-nav-icons {
           gap: 13px;
           margin-left: 20px;
         }
 
-        .him-nav-mobile-menu {
+        .him-nav--transparent .him-nav-icons {
+          color: rgba(255, 255, 255, 0.72);
+        }
+
+        .him-nav--solid .him-nav-icons {
+          color: rgba(17, 17, 17, 0.72);
+        }
+
+        .him-nav-mobile-actions {
           display: none;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .him-nav-mobile-cart {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        /* Tuck count into the icon corner — desktop uses a looser offset */
+        .him-nav-mobile-cart .him-cart-count {
+          top: 2px;
+          right: 1px;
+          min-width: 15px;
+          height: 15px;
+          line-height: 15px;
+          padding: 0 4px;
+        }
+
+        .him-nav-mobile-menu {
           position: relative;
         }
 
@@ -564,7 +596,7 @@ export default function Navbar() {
           padding: 0;
           border: none;
           background: transparent;
-          color: #fff;
+          color: inherit;
           cursor: pointer;
           transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
         }
@@ -623,13 +655,18 @@ export default function Navbar() {
 
         .him-nav-menu-dot {
           position: absolute;
-          top: 6px;
-          right: 6px;
-          width: 7px;
-          height: 7px;
+          top: 5px;
+          right: 5px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           background: #c4a574;
           box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+          pointer-events: none;
+        }
+
+        .him-nav--solid .him-nav-menu-dot {
+          box-shadow: 0 0 0 1.5px #fff;
         }
 
         .him-nav-menu-panel {
@@ -638,10 +675,6 @@ export default function Navbar() {
           right: 0;
           min-width: 196px;
           padding: 8px 0;
-          background: rgba(12, 10, 8, 0.94);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-          backdrop-filter: blur(12px);
           z-index: 60;
           transform-origin: top right;
           opacity: 0;
@@ -652,6 +685,19 @@ export default function Navbar() {
             opacity 200ms ease,
             transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
             visibility 0ms linear 200ms;
+        }
+
+        .him-nav--transparent .him-nav-menu-panel {
+          background: rgba(12, 10, 8, 0.94);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+          backdrop-filter: blur(12px);
+        }
+
+        .him-nav--solid .him-nav-menu-panel {
+          background: #fff;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
         }
 
         .him-nav-mobile-menu.is-open .him-nav-menu-panel {
@@ -672,13 +718,12 @@ export default function Navbar() {
           width: 100%;
           padding: 12px 16px;
           box-sizing: border-box;
-          font-family: var(--font-nav), monospace;
+          font-family: ${NAV_FONT};
           font-size: 10px;
           font-weight: 400;
           letter-spacing: 1.2px;
           text-transform: uppercase;
           text-decoration: none;
-          color: rgba(255, 255, 255, 0.88);
           background: transparent;
           border: none;
           cursor: pointer;
@@ -693,16 +738,30 @@ export default function Navbar() {
           transition-delay: 0ms;
         }
 
+        .him-nav--transparent .him-nav-menu-item {
+          color: rgba(255, 255, 255, 0.88);
+        }
+
+        .him-nav--solid .him-nav-menu-item {
+          color: #111;
+        }
+
         .him-nav-mobile-menu.is-open .him-nav-menu-item {
           opacity: 1;
           transform: translateY(0);
           transition-delay: calc(40ms + var(--i, 0) * 45ms);
         }
 
-        .him-nav-menu-item:hover,
-        .him-nav-menu-item:focus-visible {
+        .him-nav--transparent .him-nav-menu-item:hover,
+        .him-nav--transparent .him-nav-menu-item:focus-visible {
           background: rgba(255, 255, 255, 0.08);
           color: #fff;
+          outline: none;
+        }
+
+        .him-nav--solid .him-nav-menu-item:hover,
+        .him-nav--solid .him-nav-menu-item:focus-visible {
+          background: #f5f3ef;
           outline: none;
         }
 
@@ -723,7 +782,6 @@ export default function Navbar() {
           box-sizing: border-box;
         }
 
-        /* Icon buttons look exactly like the old icon links */
         .him-icon-btn {
           display: flex;
           align-items: center;
@@ -737,8 +795,12 @@ export default function Navbar() {
           text-decoration: none;
         }
 
-        .him-icon-btn:hover {
+        .him-nav--transparent .him-icon-btn:hover {
           color: #fff;
+        }
+
+        .him-nav--solid .him-icon-btn:hover {
+          color: #111;
         }
 
         .him-cart-btn {
@@ -821,7 +883,6 @@ export default function Navbar() {
           transform: none;
         }
 
-        /* search row */
         .him-sp-bar {
           display: flex;
           align-items: center;
@@ -882,7 +943,6 @@ export default function Navbar() {
           color: rgba(255, 255, 255, 0.6);
         }
 
-        /* products */
         .him-sp-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -902,8 +962,6 @@ export default function Navbar() {
           overflow: hidden;
           background: #101a2e;
         }
-
-        /* Hover zoom handled by global .him-card-media */
 
         .him-sp-plus {
           position: absolute;
@@ -958,15 +1016,14 @@ export default function Navbar() {
           color: rgba(255, 255, 255, 0.6);
         }
 
-        /* the edit banner */
         .him-sp-edit {
-  position: relative;
-  margin-top: 40px;
-  height: 300px;
-  width: 100%;
-  overflow: hidden;
-  background: #101a2e;
-}
+          position: relative;
+          margin-top: 40px;
+          height: 300px;
+          width: 100%;
+          overflow: hidden;
+          background: #101a2e;
+        }
 
         .him-sp-edit-shade {
           position: absolute;
@@ -1060,9 +1117,11 @@ export default function Navbar() {
           }
         }
 
-        /* ───────── Phone / small tablet ───────── */
-
         @media (max-width: 768px) {
+          .him-nav--solid {
+            --pdp-nav-h: 56px;
+          }
+
           .him-nav-row {
             height: 56px;
             padding: 0 16px;
@@ -1103,11 +1162,10 @@ export default function Navbar() {
             display: none;
           }
 
-          .him-nav-mobile-menu {
-            display: block;
+          .him-nav-mobile-actions {
+            display: flex;
           }
 
-          /* Hamburger layout: logo left, menu right */
           .him-nav-logo {
             position: relative;
             top: auto;

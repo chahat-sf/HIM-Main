@@ -514,12 +514,12 @@ function ExistingProductsGrid() {
                       : `Add ${product.name} to wishlist`
                   }
                   aria-pressed={inWishlist(product.slug)}
-                  className="absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
+                  className="bs-wish-btn absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                   style={{
-                    right: "10px",
-                    top: "10px",
-                    width: "20px",
-                    height: "20px",
+                    right: "2px",
+                    top: "2px",
+                    width: "44px",
+                    height: "44px",
                     padding: 0,
                     border: 0,
                     background: "transparent",

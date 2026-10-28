@@ -12,7 +12,7 @@ import {
   RotateCcw,
   RotateCw,
 } from "lucide-react";
-import PdpNavbar from "@/components/PdpNavbar";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
@@ -115,7 +115,10 @@ export default function PdpOutfit({
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
+  const inCart = items.some(
+    (i) => i.slug === slug || i.productId === product.id,
+  );
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
 
@@ -213,7 +216,7 @@ export default function PdpOutfit({
 
   return (
     <>
-      <PdpNavbar />
+      <Navbar variant="solid" />
 
       <main className="pdp-main">
         <div className="pdp-columns">
@@ -458,6 +461,11 @@ export default function PdpOutfit({
                 />
               </button>
             </div>
+            {inCart ? (
+              <Link href="/cart" className="pdp-checkout-btn">
+                CHECKOUT
+              </Link>
+            ) : null}
             {bagError && <p className="pdp-bag-error">{bagError}</p>}
 
             {/* Accordions */}
@@ -899,6 +907,7 @@ export default function PdpOutfit({
         }
 
         .pdp-wish-btn {
+          position: relative;
           flex: 0 0 max(44px, calc(56 * var(--u)));
           width: max(44px, calc(56 * var(--u)));
           height: max(44px, calc(56 * var(--u)));
@@ -909,6 +918,13 @@ export default function PdpOutfit({
           place-items: center;
           cursor: pointer;
           transition: color 200ms ease, border-color 200ms ease, background 200ms ease;
+        }
+
+        /* Invisible larger tap target beyond the bordered box */
+        .pdp-wish-btn::before {
+          content: "";
+          position: absolute;
+          inset: -10px;
         }
 
         .pdp-wish-btn:hover {
@@ -938,6 +954,33 @@ export default function PdpOutfit({
         .pdp-add-btn:disabled:hover,
         .pdp-add-btn.is-waiting-size:hover {
           background: var(--pdp-ink);
+        }
+
+        .pdp-checkout-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: max(44px, calc(56 * var(--u)));
+          margin-top: 10px;
+          box-sizing: border-box;
+          border: 1px solid var(--pdp-ink);
+          border-radius: 0;
+          background: transparent;
+          color: var(--pdp-ink);
+          font-family: var(--pdp-sans);
+          font-size: 10px;
+          font-weight: 400;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background 200ms ease, color 200ms ease;
+        }
+
+        .pdp-checkout-btn:hover {
+          background: var(--pdp-ink);
+          color: #fff;
         }
 
         .pdp-bag-error {

@@ -359,6 +359,13 @@ function CollectionPageInner({
           transition: color 150ms ease, background 150ms ease, opacity 150ms ease;
         }
 
+        /* Invisible larger tap target — icon/box stay the same size */
+        .product-card-wish::before {
+          content: "";
+          position: absolute;
+          inset: -12px;
+        }
+
         .product-card-wish:hover {
           background: #fff;
           color: #111;
