@@ -11,6 +11,11 @@ import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
+import {
+  resolveCartColor,
+  selectedColorSwatches,
+} from "@/lib/color-swatch";
+import { readLocalCart, writeLocalCart } from "@/lib/cart-local";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -89,6 +94,9 @@ export default function CartPage() {
   const [giftMsg, setGiftMsg] = useState(false);
   const [giftText, setGiftText] = useState("");
   const [youMayLike, setYouMayLike] = useState<RecoItem[]>([]);
+  const [catalogBySlug, setCatalogBySlug] = useState<
+    Map<string, CatalogProduct>
+  >(() => new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -96,23 +104,66 @@ export default function CartPage() {
       .then((res) => res.json())
       .then((body: { items?: CatalogProduct[] }) => {
         if (cancelled) return;
+        const items = body.items ?? [];
+        setCatalogBySlug(new Map(items.map((p) => [p.slug, p])));
         setYouMayLike(
-          (body.items ?? []).slice(0, 3).map((p) => ({
+          items.slice(0, 3).map((p) => ({
             slug: p.slug,
             name: p.name,
             price: `₹ ${Math.round(p.priceCents / 100).toLocaleString("en-IN")}`,
             image: p.image,
-            swatches: p.swatches,
+            swatches: p.swatches.slice(0, 1),
           })),
         );
       })
       .catch(() => {
-        if (!cancelled) setYouMayLike([]);
+        if (!cancelled) {
+          setCatalogBySlug(new Map());
+          setYouMayLike([]);
+        }
       });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const displayCart = cart.map((item) => {
+    const product = catalogBySlug.get(item.slug);
+    if (!product) return item;
+    const color = resolveCartColor(product.colors, item.color);
+    return {
+      ...item,
+      color,
+      image: product.image || item.image,
+      swatches: selectedColorSwatches(product.colors, color),
+    };
+  });
+
+  // Persist catalog images/colors into guest cart so stale paths (404 thumbs) heal.
+  useEffect(() => {
+    if (isAuthenticated || catalogBySlug.size === 0) return;
+    const local = readLocalCart();
+    if (local.length === 0) return;
+    let changed = false;
+    const next = local.map((item) => {
+      const product = catalogBySlug.get(item.slug);
+      if (!product) return item;
+      const color = resolveCartColor(product.colors, item.color);
+      const image = product.image || item.image;
+      const swatches = selectedColorSwatches(product.colors, color);
+      if (
+        image === item.image &&
+        color === item.color &&
+        swatches.length === item.swatches.length &&
+        swatches.every((s, i) => s === item.swatches[i])
+      ) {
+        return item;
+      }
+      changed = true;
+      return { ...item, image, color, swatches };
+    });
+    if (changed) writeLocalCart(next);
+  }, [catalogBySlug, isAuthenticated]);
 
   const changeQty = (item: CartItem, delta: number) => {
     void updateQty(item.id, Math.max(1, item.qty + delta));
@@ -178,13 +229,15 @@ export default function CartPage() {
                 </div>
 
                 <div className="cart-items-panel">
-                  {cart.map((item, idx) => (
+                  {displayCart.map((item, idx) => (
                     <div
                       key={item.id}
                       className="cart-item-row"
                       style={{
                         borderBottom:
-                          idx < cart.length - 1 ? `1px solid ${RULE}` : "none",
+                          idx < displayCart.length - 1
+                            ? `1px solid ${RULE}`
+                            : "none",
                       }}
                     >
                       <Link
@@ -192,6 +245,7 @@ export default function CartPage() {
                         className="cart-item-thumb him-card-media"
                       >
                         <Image
+                          key={toCardImage(item.image)}
                           src={toCardImage(item.image)}
                           alt={item.name}
                           fill
@@ -421,6 +475,7 @@ export default function CartPage() {
         .cart-hero.him-hero-media > img,
         .cart-hero.him-hero-media img {
           object-position: center 30% !important;
+          transform: scale(1.08);
           transform-origin: center center;
         }
         .cart-hero-overlay {
@@ -540,7 +595,7 @@ export default function CartPage() {
           display: grid;
           grid-template-columns: 72px 1fr auto;
           gap: 16px;
-          align-items: start;
+          align-items: stretch;
           padding: 20px;
         }
         .cart-item-thumb {
@@ -591,8 +646,11 @@ export default function CartPage() {
         .cart-item-aside {
           display: flex;
           flex-direction: column;
+          justify-content: space-between;
           align-items: flex-end;
-          gap: 10px;
+          align-self: stretch;
+          gap: 12px;
+          min-height: 88px;
         }
         .cart-item-remove {
           display: grid;
@@ -909,10 +967,15 @@ export default function CartPage() {
           margin-bottom: 0;
         }
 
+        .cart-items-col,
+        .cart-summary {
+          min-width: 0;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 900px) {
           .cart-layout {
-            grid-template-columns: minmax(0, 1fr) 270px;
+            grid-template-columns: minmax(0, 1fr) minmax(240px, 270px);
             gap: 16px;
           }
           .cart-summary {
@@ -921,12 +984,22 @@ export default function CartPage() {
         }
 
         @media (max-width: 767px) {
+          .cart-body {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+
+          .cart-layout {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+
           .cart-recs-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 14px;
           }
           .cart-item-row {
-            grid-template-columns: 64px 1fr auto;
+            grid-template-columns: 64px minmax(0, 1fr) auto;
             gap: 12px;
             padding: 16px;
           }
@@ -935,7 +1008,12 @@ export default function CartPage() {
             height: 80px;
           }
           .cart-summary {
+            width: 100%;
+            box-sizing: border-box;
             padding: 20px 16px;
+          }
+          .cart-summary-total span:last-child {
+            font-size: 20px;
           }
           .cart-hero {
             height: clamp(200px, 50vw, 280px);
@@ -944,14 +1022,16 @@ export default function CartPage() {
 
         @media (max-width: 420px) {
           .cart-item-row {
-            grid-template-columns: 56px 1fr;
+            grid-template-columns: 56px minmax(0, 1fr);
           }
           .cart-item-aside {
             grid-column: 2;
+            display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
             width: 100%;
+            min-height: 0;
           }
           .cart-item-remove {
             order: 2;

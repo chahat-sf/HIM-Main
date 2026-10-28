@@ -56,7 +56,8 @@ body {
   }
 }
 
-/* Page heroes (cart / account / auth): cover crop, no resting upscale */
+/* Page heroes (cart / account / auth): cover crop.
+   Same light scale as cards — masters include ~2% white side letterboxing. */
 .him-hero-media {
   position: relative;
   overflow: hidden;
@@ -66,7 +67,7 @@ body {
 .him-hero-media img {
   object-fit: cover !important;
   object-position: top center !important;
-  transform: none;
+  transform: scale(1.08);
   transform-origin: top center;
 }
 

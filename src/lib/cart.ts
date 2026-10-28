@@ -1,6 +1,8 @@
 import type { RowDataPacket } from "mysql2";
 import { getDb } from "@/lib/db";
 import type { CartItem, CartItemInput } from "@/lib/cart-types";
+import type { CatalogColor } from "@/lib/catalog-types";
+import { resolveCartColor, selectedColorSwatches } from "@/lib/color-swatch";
 
 function parseSwatches(raw: unknown): string[] {
 	if (Array.isArray(raw)) return raw.map(String);
@@ -15,18 +17,58 @@ function parseSwatches(raw: unknown): string[] {
 	return [];
 }
 
+function parseColors(raw: unknown): CatalogColor[] {
+	if (Array.isArray(raw)) {
+		return raw
+			.map((row) => {
+				if (!row || typeof row !== "object") return null;
+				const r = row as { name?: unknown; hex?: unknown };
+				const name = typeof r.name === "string" ? r.name.trim() : "";
+				const hex = typeof r.hex === "string" ? r.hex.trim() : "";
+				if (!name || !hex) return null;
+				return { name, hex };
+			})
+			.filter((c): c is CatalogColor => c != null);
+	}
+	if (typeof raw === "string") {
+		try {
+			return parseColors(JSON.parse(raw) as unknown);
+		} catch {
+			return [];
+		}
+	}
+	return [];
+}
+
 function rowToItem(row: RowDataPacket): CartItem {
+	const catalogColors = parseColors(row.product_colors_json);
+	const rawColor = String(row.color ?? "");
+	const hasCatalog = "product_colors_json" in row;
+
+	let color = rawColor;
+	let swatches = parseSwatches(row.swatches_json);
+	const catalogImage =
+		typeof row.product_image_url === "string"
+			? row.product_image_url.trim()
+			: "";
+	const image = catalogImage || String(row.image_url ?? "");
+
+	if (hasCatalog) {
+		color = resolveCartColor(catalogColors, rawColor);
+		swatches = selectedColorSwatches(catalogColors, color);
+	}
+
 	return {
 		id: String(row.id),
 		productId: row.product_id == null ? null : Number(row.product_id),
 		slug: String(row.product_slug),
 		name: String(row.product_name),
 		size: String(row.size ?? ""),
-		color: String(row.color ?? ""),
+		color,
 		price: Math.round(Number(row.price_cents) / 100),
 		qty: Number(row.qty),
-		image: String(row.image_url),
-		swatches: parseSwatches(row.swatches_json),
+		image,
+		swatches,
 	};
 }
 
@@ -36,6 +78,7 @@ async function resolveProduct(input: CartItemInput): Promise<{
 	name: string;
 	image: string;
 	priceCents: number;
+	color: string;
 	swatches: string[];
 }> {
 	const db = getDb();
@@ -43,7 +86,7 @@ async function resolveProduct(input: CartItemInput): Promise<{
 
 	if (input.productId != null && Number.isFinite(Number(input.productId))) {
 		const [rows] = await db.query<RowDataPacket[]>(
-			`SELECT id, slug, name, image_url, price_cents, swatches_json
+			`SELECT id, slug, name, image_url, price_cents, colors_json
        FROM products WHERE id = :id LIMIT 1`,
 			{ id: Number(input.productId) },
 		);
@@ -52,7 +95,7 @@ async function resolveProduct(input: CartItemInput): Promise<{
 
 	if (!row && input.slug?.trim()) {
 		const [rows] = await db.query<RowDataPacket[]>(
-			`SELECT id, slug, name, image_url, price_cents, swatches_json
+			`SELECT id, slug, name, image_url, price_cents, colors_json
        FROM products WHERE slug = :slug LIMIT 1`,
 			{ slug: input.slug.trim() },
 		);
@@ -60,18 +103,18 @@ async function resolveProduct(input: CartItemInput): Promise<{
 	}
 
 	if (row) {
-		const catalogSwatches = parseSwatches(row.swatches_json);
+		const colors = parseColors(row.colors_json);
+		const color = resolveCartColor(colors, input.color);
 		return {
 			productId: Number(row.id),
 			slug: String(row.slug),
 			name: input.name?.trim() || String(row.name),
-			image: input.image?.trim() || String(row.image_url),
+			// Always trust catalog image for known products (avoids stale/missing paths).
+			image: String(row.image_url),
 			// Always trust catalog price for known products.
 			priceCents: Number(row.price_cents) || 0,
-			swatches:
-				input.swatches && input.swatches.length > 0
-					? input.swatches
-					: catalogSwatches,
+			color,
+			swatches: selectedColorSwatches(colors, color),
 		};
 	}
 
@@ -82,9 +125,18 @@ async function resolveProduct(input: CartItemInput): Promise<{
 export async function listCartItems(userId: number): Promise<CartItem[]> {
 	const db = getDb();
 	const [rows] = await db.query<RowDataPacket[]>(
-		`SELECT id, product_id, product_slug, product_name, size, color, price_cents, qty, image_url, swatches_json
-     FROM cart_items WHERE user_id = :userId
-     ORDER BY updated_at DESC, id DESC`,
+		`SELECT
+       c.id, c.product_id, c.product_slug, c.product_name, c.size, c.color,
+       c.price_cents, c.qty, c.image_url, c.swatches_json,
+       p.colors_json AS product_colors_json,
+       p.image_url AS product_image_url
+     FROM cart_items c
+     LEFT JOIN products p ON (
+       (c.product_id IS NOT NULL AND p.id = c.product_id)
+       OR (c.product_id IS NULL AND p.slug = c.product_slug)
+     )
+     WHERE c.user_id = :userId
+     ORDER BY c.updated_at DESC, c.id DESC`,
 		{ userId },
 	);
 	return (rows ?? []).map(rowToItem);
@@ -102,7 +154,7 @@ export async function upsertCartItem(
 
 	const qty = Math.max(1, input.qty ?? 1);
 	const size = (input.size ?? "").trim();
-	const color = (input.color ?? "").trim();
+	const color = resolved.color;
 	const swatches = JSON.stringify(resolved.swatches);
 
 	if (resolved.productId != null) {
@@ -117,6 +169,7 @@ export async function upsertCartItem(
          price_cents = VALUES(price_cents),
          qty = qty + VALUES(qty),
          image_url = VALUES(image_url),
+         color = VALUES(color),
          swatches_json = VALUES(swatches_json)`,
 			{
 				userId,

@@ -22,6 +22,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
+import { selectedColorSwatches } from "@/lib/color-swatch";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
 
 function PlayBadge() {
@@ -198,11 +199,11 @@ export default function PdpOutfit({
         slug,
         name: product.name,
         size: selectedSize,
-        color: selectedColor,
+        color: PRODUCT.colors.length > 0 ? selectedColor : "",
         price: priceRupees,
         qty: 1,
         image: product.image || PRODUCT.images[0] || "/products/man-image-100.webp",
-        swatches: PRODUCT.colors.map((c) => c.hex),
+        swatches: selectedColorSwatches(PRODUCT.colors, selectedColor),
       });
       setAdded(true);
       setSelectedSize("");
@@ -448,7 +449,10 @@ export default function PdpOutfit({
                       product.image ||
                       PRODUCT.images[0] ||
                       "/products/man-image-100.webp",
-                    swatches: PRODUCT.colors.map((c) => c.hex),
+                    swatches: selectedColorSwatches(
+                      PRODUCT.colors,
+                      selectedColor,
+                    ),
                   });
                 }}
               >
