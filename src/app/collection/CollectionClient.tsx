@@ -102,7 +102,11 @@ function CollectionPageInner({
         {/* ── PRODUCT GRID ─────────────────────────────────────────── */}
         <div className="collection-grid">
           {filtered.map((product) => (
-            <ProductCard key={product.slug} product={product} />
+            <ProductCard
+              key={product.slug}
+              product={product}
+              sizes="(max-width: 768px) 50vw, 33vw"
+            />
           ))}
         </div>
 
@@ -567,13 +571,6 @@ function CollectionPageInner({
           }
         }
 
-        @media (max-width: 480px) {
-          .collection-grid {
-            grid-template-columns: 1fr;
-            column-gap: 0;
-            row-gap: 20px;
-          }
-        }
       `}</style>
     </SiteShell>
   );
