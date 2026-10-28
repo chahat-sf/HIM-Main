@@ -69,6 +69,7 @@ const PRODUCTS = [
       "A refined evening silhouette designed to make a statement through understated authority.",
     shipping: DEFAULT_SHIP,
     pdpLayout: "single",
+    videoUrl: "/products/videos/nocturne-reel.mp4",
   },
   {
     id: 2,
@@ -105,6 +106,7 @@ const PRODUCTS = [
     sizeFit: "Slim fit. Model is 6'0\" wearing size M. True to size.",
     shipping: DEFAULT_SHIP,
     pdpLayout: "single",
+    videoUrl: "/products/videos/last-word-reel.mp4",
   },
   {
     id: 3,
@@ -143,6 +145,7 @@ const PRODUCTS = [
     sizeFit: "A structured silhouette with a sharp, understated profile.",
     shipping: DEFAULT_SHIP,
     pdpLayout: "single",
+    videoUrl: "/products/videos/composure-reel.mp4",
   },
   {
     id: 4,
@@ -182,6 +185,7 @@ const PRODUCTS = [
       "A timeless overcoat silhouette designed for a refined, heritage-inspired look.",
     shipping: DEFAULT_SHIP,
     pdpLayout: "single",
+    videoUrl: "/products/videos/archivist-reel.mp4",
   },
   {
     id: 5,
