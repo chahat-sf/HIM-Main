@@ -36,9 +36,18 @@ const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 const leftLinks = [{ label: "EXPLORE", href: "/collection" }];
 
 type SearchProduct = {
+  id: number;
   slug: string;
   name: string;
+  title: string;
+  category: string;
+  fabric: string;
+  marketingLine: string;
+  colorNames: string[];
+  /** Display string e.g. ₹0 */
   price: string;
+  /** Whole rupees for wishlist */
+  priceRupees: number;
   image: string;
   colors: string[];
 };
@@ -47,12 +56,40 @@ const POPULAR_COUNT = 4;
 
 function toSearchProduct(p: CatalogProduct): SearchProduct {
   return {
+    id: p.id,
     slug: p.slug,
     name: p.name,
+    title: p.title,
+    category: p.category,
+    fabric: p.fabric,
+    marketingLine: p.marketingLine,
+    colorNames: p.colors.map((c) => c.name).filter(Boolean),
     price: `₹${p.price.replace(/\.00$/, "")}`,
+    priceRupees: Math.round(p.priceCents / 100) || 0,
     image: p.image,
-    colors: p.swatches,
+    colors: p.swatches.length > 0 ? p.swatches : p.colors.map((c) => c.hex),
   };
+}
+
+function searchHaystack(p: SearchProduct): string[] {
+  return [
+    p.name,
+    p.title,
+    p.category,
+    p.fabric,
+    p.marketingLine,
+    ...p.colorNames,
+  ]
+    .map((s) => s.toLowerCase())
+    .filter(Boolean);
+}
+
+function matchesSearchQuery(p: SearchProduct, query: string): boolean {
+  const fields = searchHaystack(p);
+  if (fields.some((f) => f.includes(query))) return true;
+  const tokens = query.split(/\s+/).filter(Boolean);
+  if (tokens.length <= 1) return false;
+  return tokens.every((token) => fields.some((f) => f.includes(token)));
 }
 
 const EDIT_IMAGE = "/homepage/navbar-image.webp";
@@ -68,7 +105,11 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
   const solid = variant === "solid";
   const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
-  const { itemCount: wishlistCount } = useWishlist();
+  const {
+    itemCount: wishlistCount,
+    has: inWishlist,
+    toggle: toggleWishlist,
+  } = useWishlist();
   const accountHref = isAuthenticated
     ? "/account"
     : buildLoginHref("/account");
@@ -78,6 +119,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -121,6 +163,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
   useEffect(() => {
     if (!searchOpen || searchProducts.length > 0) return;
     let cancelled = false;
+    setSearchLoading(true);
     void fetch("/api/products")
       .then((res) => res.json())
       .then((body: { items?: CatalogProduct[] }) => {
@@ -130,6 +173,9 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
       })
       .catch(() => {
         if (!cancelled) setSearchProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
       });
     return () => {
       cancelled = true;
@@ -162,9 +208,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
   const trimmed = query.trim().toLowerCase();
   const results = useMemo(() => {
     if (!trimmed) return searchProducts.slice(0, POPULAR_COUNT);
-    return searchProducts.filter((p) =>
-      p.name.toLowerCase().includes(trimmed),
-    );
+    return searchProducts.filter((p) => matchesSearchQuery(p, trimmed));
   }, [trimmed, searchProducts]);
 
   type MenuItem = {
@@ -260,41 +304,107 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           {trimmed ? "RESULTS" : "POPULAR PRODUCTS"}
         </p>
 
-        {results.length > 0 ? (
-          <div className="him-sp-grid">
-            {results.map((p) => (
-              <Link
-                key={p.slug}
-                href={`/collection/${p.slug}`}
-                className="him-sp-card"
-                tabIndex={searchOpen ? 0 : -1}
-                onClick={closeSearch}
-              >
-                <div className="him-sp-card-img him-card-media">
-                  <Image
-                    src={toCardImage(p.image)}
-                    alt={p.name}
-                    fill
-                    quality={90}
-                    sizes="(max-width: 768px) 45vw, 22vw"
-                    className="object-cover object-top"
-                    style={{ objectFit: "cover", objectPosition: "top center" }}
-                  />
-                  <span className="him-sp-plus" aria-hidden="true">
-                    <Plus size={9} strokeWidth={ICON_STROKE} aria-hidden />
-                  </span>
-                </div>
-                <p className="him-sp-card-name">{p.name}</p>
-                <p className="him-sp-card-price">{p.price}</p>
-                {p.colors.length > 0 && (
-                  <div className="him-sp-dots">
-                    {p.colors.map((c, i) => (
-                      <span key={`${c}-${i}`} style={{ background: c }} />
-                    ))}
-                  </div>
-                )}
-              </Link>
+        {searchLoading && !trimmed ? (
+          <div
+            className="him-sp-grid"
+            aria-busy="true"
+            aria-label="Loading products"
+          >
+            {Array.from({ length: POPULAR_COUNT }, (_, i) => (
+              <div key={`skel-${i}`} className="him-sp-card him-sp-card--skel">
+                <div className="him-sp-card-img him-sp-skel" />
+                <span className="him-sp-skel him-sp-skel-line him-sp-skel-name" />
+                <span className="him-sp-skel him-sp-skel-line him-sp-skel-price" />
+              </div>
             ))}
+          </div>
+        ) : results.length > 0 ? (
+          <div className="him-sp-grid">
+            {results.map((p) => {
+              const wishlisted = inWishlist(p.slug);
+              return (
+                <div key={p.slug} className="him-sp-card">
+                  <div className="him-sp-card-img him-card-media">
+                    <Link
+                      href={`/collection/${p.slug}`}
+                      tabIndex={searchOpen ? 0 : -1}
+                      onClick={closeSearch}
+                      className="him-sp-card-media-link"
+                      aria-label={p.name}
+                    >
+                      <Image
+                        src={toCardImage(p.image)}
+                        alt={p.name}
+                        fill
+                        quality={90}
+                        sizes="(max-width: 768px) 45vw, 22vw"
+                        className="object-cover object-top"
+                        style={{
+                          objectFit: "cover",
+                          objectPosition: "top center",
+                        }}
+                      />
+                    </Link>
+                    <button
+                      type="button"
+                      data-no-route-loader="true"
+                      className={`him-sp-wish${wishlisted ? " is-active" : ""}`}
+                      aria-label={
+                        wishlisted
+                          ? `Remove ${p.name} from wishlist`
+                          : `Add ${p.name} to wishlist`
+                      }
+                      aria-pressed={wishlisted}
+                      tabIndex={searchOpen ? 0 : -1}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void toggleWishlist({
+                          productId: p.id,
+                          slug: p.slug,
+                          name: p.name,
+                          price: p.priceRupees,
+                          image: p.image,
+                          swatches: p.colors,
+                        });
+                      }}
+                    >
+                      {wishlisted ? (
+                        <Heart
+                          size={10}
+                          strokeWidth={ICON_STROKE}
+                          absoluteStrokeWidth={false}
+                          fill="currentColor"
+                          aria-hidden
+                        />
+                      ) : (
+                        <Plus
+                          size={9}
+                          strokeWidth={ICON_STROKE}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  </div>
+                  <Link
+                    href={`/collection/${p.slug}`}
+                    tabIndex={searchOpen ? 0 : -1}
+                    onClick={closeSearch}
+                    className="him-sp-card-meta"
+                  >
+                    <p className="him-sp-card-name">{p.name}</p>
+                    <p className="him-sp-card-price">{p.price}</p>
+                    {p.colors.length > 0 && (
+                      <div className="him-sp-dots">
+                        {p.colors.map((c, i) => (
+                          <span key={`${c}-${i}`} style={{ background: c }} />
+                        ))}
+                      </div>
+                    )}
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="him-sp-empty">
@@ -955,6 +1065,10 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           text-decoration: none;
         }
 
+        .him-sp-card--skel {
+          pointer-events: none;
+        }
+
         .him-sp-card-img {
           position: relative;
           width: 100%;
@@ -963,12 +1077,61 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           background: #101a2e;
         }
 
-        .him-sp-plus {
+        .him-sp-skel {
+          background: rgba(255, 255, 255, 0.08);
+          animation: him-sp-pulse 1.2s ease-in-out infinite;
+        }
+
+        .him-sp-card-img.him-sp-skel {
+          width: 100%;
+        }
+
+        .him-sp-skel-line {
+          display: block;
+          height: 8px;
+          border-radius: 1px;
+        }
+
+        .him-sp-skel-name {
+          width: 72%;
+          margin: 14px 0 0;
+        }
+
+        .him-sp-skel-price {
+          width: 40%;
+          margin: 10px 0 0;
+        }
+
+        @keyframes him-sp-pulse {
+          0%,
+          100% {
+            opacity: 0.55;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
+        .him-sp-card-media-link {
+          position: absolute;
+          inset: 0;
+          display: block;
+        }
+
+        .him-sp-card-meta {
+          display: block;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .him-sp-wish {
           position: absolute;
           right: 10px;
           bottom: 10px;
+          z-index: 2;
           width: 20px;
           height: 20px;
+          padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -976,6 +1139,49 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           border-radius: 50%;
           color: #fff;
           background: rgba(0, 0, 0, 0.25);
+          cursor: pointer;
+          transition:
+            color 200ms ease,
+            background 200ms ease,
+            border-color 200ms ease,
+            transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Invisible larger tap target */
+        .him-sp-wish::before {
+          content: "";
+          position: absolute;
+          inset: -12px;
+        }
+
+        .him-sp-wish:hover {
+          background: rgba(0, 0, 0, 0.4);
+        }
+
+        .him-sp-wish.is-active {
+          color: #7a1420;
+          border-color: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.92);
+          animation: him-sp-wish-pop 280ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .him-sp-wish svg {
+          display: block;
+          pointer-events: none;
+        }
+
+        @keyframes him-sp-wish-pop {
+          0% {
+            transform: scale(0.72);
+            opacity: 0.6;
+          }
+          60% {
+            transform: scale(1.12);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+          }
         }
 
         .him-sp-card-name {
@@ -1102,8 +1308,17 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           .him-nav-menu-btn,
           .him-nav-burger-bar,
           .him-nav-menu-panel,
-          .him-nav-menu-item {
+          .him-nav-menu-item,
+          .him-sp-skel {
             transition: none !important;
+            animation: none !important;
+          }
+
+          .him-sp-skel {
+            opacity: 0.7;
+          }
+
+          .him-sp-wish.is-active {
             animation: none !important;
           }
 
