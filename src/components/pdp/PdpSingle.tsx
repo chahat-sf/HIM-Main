@@ -834,7 +834,7 @@ export default function PdpSingle({
           background: #fff;
           color: var(--pdp-ink);
           --u: calc(min(100vw, 1440px) / 1440);
-          /* Match PdpNavbar.module.css --pdp-nav-h (logo bar; mobile adds explore strip) */
+          /* Match PdpNavbar.module.css --pdp-nav-h */
           --pdp-nav-h: 68px;
           padding-top: var(--pdp-nav-h);
         }
@@ -1466,9 +1466,9 @@ export default function PdpSingle({
         }
 
         @media (max-width: 768px) {
-          /* Must match PdpNavbar mobile --pdp-nav-h (56 + 36) */
+          /* Must match PdpNavbar mobile --pdp-nav-h */
           .pdp-main {
-            --pdp-nav-h: 92px;
+            --pdp-nav-h: 56px;
           }
 
           .pdp-s-crumbs {

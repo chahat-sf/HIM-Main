@@ -1207,7 +1207,7 @@ export default function PdpOutfit({
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
           .pdp-main {
-            --pdp-nav-h: 92px;
+            --pdp-nav-h: 56px;
           }
 
           /* Single column — image on top, info below */

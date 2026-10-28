@@ -107,12 +107,44 @@ export default function Navbar() {
     : buildLoginHref("/account");
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const el = menuRef.current;
+      if (el && !el.contains(e.target as Node)) setMenuOpen(false);
+    };
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("touchstart", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("touchstart", onPointer);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 769px)");
+    const closeOnDesktop = () => {
+      if (mq.matches) setMenuOpen(false);
+    };
+    mq.addEventListener("change", closeOnDesktop);
+    return () => mq.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   // Load catalog only when search opens (avoids /api/products on every page).
   useEffect(() => {
@@ -287,15 +319,16 @@ export default function Navbar() {
     </div>
   );
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <nav
       className="him-nav absolute top-0 left-0 right-0 z-50 w-full"
       style={{ background: "transparent" }}
     >
-      {/* TOP ROW — desktop: links / logo / links + icons.  Phone: logo + icons */}
+      {/* TOP ROW — desktop: explore / logo / icons.  Phone: logo left + hamburger */}
       <div className="him-nav-row relative flex w-full items-center justify-between">
-        {/* LEFT NAVIGATION (desktop only) */}
-        {/* <ul
+        <ul
           className="him-nav-desktop-links flex items-center list-none m-0 p-0"
           style={{ gap: "24px" }}
         >
@@ -304,13 +337,12 @@ export default function Navbar() {
               <NavLink {...link} />
             </li>
           ))}
-        </ul> */}
+        </ul>
 
-        {/* CENTER LOGO */}
         <Link
           href="/"
-          className="him-nav-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 no-underline"
-          style={{ padding: 0, marginTop: 0, lineHeight: 0 }}
+          className="him-nav-logo"
+          aria-label="HIM home"
         >
           <Image
             src="/homepage/him-logo.webp"
@@ -318,11 +350,10 @@ export default function Navbar() {
             width={100}
             height={35}
             priority
-            className="block object-contain"
+            className="him-nav-logo-img"
           />
         </Link>
 
-        {/* RIGHT NAVIGATION */}
         <div className="him-nav-right flex items-center">
           <ul
             className="him-nav-desktop-links flex items-center list-none m-0 p-0"
@@ -335,8 +366,7 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* ICONS — buttons, so nothing redirects */}
-          {/* <div
+          <div
             className="him-nav-icons flex items-center"
             style={{ color: LINK_COLOR }}
           >
@@ -387,18 +417,103 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-          </div> */}
+          </div>
+
+          <div
+            className={`him-nav-mobile-menu${menuOpen ? " is-open" : ""}`}
+            ref={menuRef}
+          >
+            <button
+              type="button"
+              className="him-nav-menu-btn"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls="him-home-nav-menu"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span className="him-nav-burger" aria-hidden>
+                <span className="him-nav-burger-bar" />
+                <span className="him-nav-burger-bar" />
+                <span className="him-nav-burger-bar" />
+              </span>
+              {(itemCount > 0 || wishlistCount > 0) && !menuOpen ? (
+                <span className="him-nav-menu-dot" />
+              ) : null}
+            </button>
+
+            <div
+              id="him-home-nav-menu"
+              className="him-nav-menu-panel"
+              role="menu"
+              aria-hidden={!menuOpen}
+            >
+              <Link
+                href="/collection"
+                className="him-nav-menu-item"
+                role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
+                style={{ ["--i" as string]: 0 }}
+                onClick={closeMenu}
+              >
+                Explore
+              </Link>
+              <button
+                type="button"
+                className="him-nav-menu-item"
+                role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
+                style={{ ["--i" as string]: 1 }}
+                onClick={() => {
+                  closeMenu();
+                  setSearchOpen(true);
+                }}
+              >
+                <Search size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                Search
+              </button>
+              <Link
+                href="/wishlist"
+                className="him-nav-menu-item"
+                role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
+                style={{ ["--i" as string]: 2 }}
+                onClick={closeMenu}
+              >
+                <Heart size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                Wishlist
+                {wishlistCount > 0 ? (
+                  <span className="him-nav-menu-badge">{wishlistCount}</span>
+                ) : null}
+              </Link>
+              <Link
+                href="/cart"
+                className="him-nav-menu-item"
+                role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
+                style={{ ["--i" as string]: 3 }}
+                onClick={closeMenu}
+              >
+                <ShoppingBag size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                Bag
+                {itemCount > 0 ? (
+                  <span className="him-nav-menu-badge">{itemCount}</span>
+                ) : null}
+              </Link>
+              <Link
+                href={accountHref}
+                className="him-nav-menu-item"
+                role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
+                style={{ ["--i" as string]: 4 }}
+                onClick={closeMenu}
+              >
+                <User size={15} strokeWidth={ICON_STROKE} aria-hidden />
+                Account
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* PHONE LINKS ROW — hidden on desktop */}
-      {/* <ul className="him-nav-mobile-links list-none m-0 p-0">
-        {[...leftLinks, ...rightLinks].map((link) => (
-          <li key={link.label}>
-            <NavLink {...link} />
-          </li>
-        ))}
-      </ul> */}
 
       {/* Search popup — rendered on <body> so it always sits above everything */}
       {mounted && createPortal(popup, document.body)}
@@ -412,7 +527,22 @@ export default function Navbar() {
         }
 
         .him-nav-logo {
-          margin-left: -2px;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          z-index: 2;
+          transform: translate(-50%, -50%);
+          margin: 0;
+          padding: 0;
+          line-height: 0;
+          text-decoration: none;
+        }
+
+        .him-nav-logo-img {
+          display: block;
+          width: 100px;
+          height: auto;
+          object-fit: contain;
         }
 
         .him-nav-icons {
@@ -420,8 +550,177 @@ export default function Navbar() {
           margin-left: 20px;
         }
 
-        .him-nav-mobile-links {
+        .him-nav-mobile-menu {
           display: none;
+          position: relative;
+        }
+
+        .him-nav-menu-btn {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          border: none;
+          background: transparent;
+          color: #fff;
+          cursor: pointer;
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .him-nav-menu-btn:active {
+          transform: scale(0.92);
+        }
+
+        .him-nav-burger {
+          position: relative;
+          display: block;
+          width: 18px;
+          height: 12px;
+        }
+
+        .him-nav-burger-bar {
+          position: absolute;
+          left: 0;
+          width: 100%;
+          height: 1.5px;
+          background: currentColor;
+          border-radius: 1px;
+          transition:
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 180ms ease,
+            top 280ms cubic-bezier(0.22, 1, 0.36, 1);
+          transform-origin: center;
+        }
+
+        .him-nav-burger-bar:nth-child(1) {
+          top: 0;
+        }
+
+        .him-nav-burger-bar:nth-child(2) {
+          top: 5.25px;
+        }
+
+        .him-nav-burger-bar:nth-child(3) {
+          top: 10.5px;
+        }
+
+        .him-nav-mobile-menu.is-open .him-nav-burger-bar:nth-child(1) {
+          top: 5.25px;
+          transform: rotate(45deg);
+        }
+
+        .him-nav-mobile-menu.is-open .him-nav-burger-bar:nth-child(2) {
+          opacity: 0;
+          transform: scaleX(0.4);
+        }
+
+        .him-nav-mobile-menu.is-open .him-nav-burger-bar:nth-child(3) {
+          top: 5.25px;
+          transform: rotate(-45deg);
+        }
+
+        .him-nav-menu-dot {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #c4a574;
+          box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+        }
+
+        .him-nav-menu-panel {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          min-width: 196px;
+          padding: 8px 0;
+          background: rgba(12, 10, 8, 0.94);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+          backdrop-filter: blur(12px);
+          z-index: 60;
+          transform-origin: top right;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transform: translateY(-6px) scale(0.96);
+          transition:
+            opacity 200ms ease,
+            transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+            visibility 0ms linear 200ms;
+        }
+
+        .him-nav-mobile-menu.is-open .him-nav-menu-panel {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transform: translateY(0) scale(1);
+          transition:
+            opacity 220ms ease,
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            visibility 0ms linear 0ms;
+        }
+
+        .him-nav-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 12px 16px;
+          box-sizing: border-box;
+          font-family: var(--font-nav), monospace;
+          font-size: 10px;
+          font-weight: 400;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+          text-decoration: none;
+          color: rgba(255, 255, 255, 0.88);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          opacity: 0;
+          transform: translateY(6px);
+          transition:
+            background 150ms ease,
+            color 150ms ease,
+            opacity 240ms ease,
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+          transition-delay: 0ms;
+        }
+
+        .him-nav-mobile-menu.is-open .him-nav-menu-item {
+          opacity: 1;
+          transform: translateY(0);
+          transition-delay: calc(40ms + var(--i, 0) * 45ms);
+        }
+
+        .him-nav-menu-item:hover,
+        .him-nav-menu-item:focus-visible {
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff;
+          outline: none;
+        }
+
+        .him-nav-menu-badge {
+          margin-left: auto;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 5px;
+          border-radius: 999px;
+          background: #c4a574;
+          color: #111;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 18px;
+          text-align: center;
+          letter-spacing: 0;
+          box-sizing: border-box;
         }
 
         /* Icon buttons look exactly like the old icon links */
@@ -742,8 +1041,22 @@ export default function Navbar() {
 
         @media (prefers-reduced-motion: reduce) {
           .him-sp-panel,
-          .him-sp-backdrop {
-            transition: none;
+          .him-sp-backdrop,
+          .him-nav-menu-btn,
+          .him-nav-burger-bar,
+          .him-nav-menu-panel,
+          .him-nav-menu-item {
+            transition: none !important;
+            animation: none !important;
+          }
+
+          .him-nav-menu-panel,
+          .him-nav-menu-item {
+            transform: none;
+          }
+
+          .him-nav-mobile-menu.is-open .him-nav-menu-item {
+            opacity: 1;
           }
         }
 
@@ -785,55 +1098,32 @@ export default function Navbar() {
             padding: 0 18px;
           }
 
-          /* logo sits dead-centre on its own, no more overlap with links */
-          .him-nav-logo {
-            margin-left: 0;
+          .him-nav-desktop-links,
+          .him-nav-icons {
+            display: none;
           }
 
-          .him-nav-logo img {
+          .him-nav-mobile-menu {
+            display: block;
+          }
+
+          /* Hamburger layout: logo left, menu right */
+          .him-nav-logo {
+            position: relative;
+            top: auto;
+            left: auto;
+            transform: none;
+            flex: 0 0 auto;
+          }
+
+          .him-nav-logo-img {
             width: 84px;
             height: auto;
           }
 
-          /* links move to the second row */
-          .him-nav-desktop-links {
-            display: none;
-          }
-
-          /* icons stay on the right of the top row */
           .him-nav-right {
             margin-left: auto;
-          }
-
-          .him-nav-icons {
-            gap: 12px;
-            margin-left: 0;
-          }
-
-          .him-nav-icons svg {
-            width: 16px;
-            height: 16px;
-          }
-
-          .him-nav-mobile-links {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 22px;
-            padding: 4px 16px 14px 5px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            -webkit-overflow-scrolling: touch;
-          }
-
-          .him-nav-mobile-links::-webkit-scrollbar {
-            display: none;
-          }
-
-          .him-nav-mobile-links li {
-            flex: 0 0 auto;
+            z-index: 2;
           }
         }
       `}</style>
