@@ -379,6 +379,33 @@ function CollectionPageInner({
           color: #7a1420;
         }
 
+        .product-card-wish.is-pop svg {
+          animation: product-card-wish-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes product-card-wish-pop {
+          0% {
+            transform: scale(1);
+          }
+          35% {
+            transform: scale(1.28);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .product-card-wish,
+          .product-card-wish svg {
+            transition: none;
+          }
+
+          .product-card-wish.is-pop svg {
+            animation: none;
+          }
+        }
+
         .product-card-body {
           padding: 12px 14px 18px;
         }

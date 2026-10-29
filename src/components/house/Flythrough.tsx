@@ -111,10 +111,12 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
   const [dragging, setDragging] = useState(false);
   const [interactMode, setInteractModeState] = useState(false);
   const [interactLoading, setInteractLoading] = useState(false);
+  const [outfitLoading, setOutfitLoading] = useState(false);
   const interactModeRef = useRef(false);
   const interactReadyRef = useRef(false);
   const interactLoadingRef = useRef(false);
   const interactTokenRef = useRef(0);
+  const outfitTokenRef = useRef(0);
   const dragGuideRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
@@ -433,11 +435,13 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
 
   function clearInteractUi() {
     interactTokenRef.current += 1;
+    outfitTokenRef.current += 1;
     interactModeRef.current = false;
     interactReadyRef.current = false;
     interactLoadingRef.current = false;
     setInteractModeState(false);
     setInteractLoading(false);
+    setOutfitLoading(false);
     setDragGuide(false);
     dragGuideRef.current = false;
     setDragging(false);
@@ -553,12 +557,17 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  function chooseOutfit(outfitIndex: number) {
+  async function chooseOutfit(outfitIndex: number) {
     if (modeRef.current !== "interior" || !OUTFITS[outfitIndex]) return;
     const room = indexRef.current;
+    if ((picked[room] ?? 0) === outfitIndex) return;
     const outfit = OUTFITS[outfitIndex];
+    const loadToken = ++outfitTokenRef.current;
+    setOutfitLoading(true);
     setPicked((current) => current.map((value, i) => (i === room ? outfitIndex : value)));
-    void setOutfitVideo(room, outfit.video, outfit.mask ?? null, outfit.background ?? null);
+    await setOutfitVideo(room, outfit.video, outfit.mask ?? null, outfit.background ?? null);
+    if (loadToken !== outfitTokenRef.current) return;
+    setOutfitLoading(false);
   }
 
   function onWindowPointerDown(event: PointerEvent<HTMLElement>) {
@@ -712,7 +721,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           Miniature open window model by PK
         </p> */}
 
-        {mode === "interior" && !interactMode && !interactLoading && (
+        {mode === "interior" && !interactMode && !interactLoading && !outfitLoading && (
           <>
             <div className={styles.castScrim} />
             <div className={`${styles.cast} ${styles.castPanel}`} data-cast>
@@ -743,20 +752,43 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           </>
         )}
 
-        {/* Same wait surface as HomeGate while interact plate buffers. */}
+        {/* Same wait surface as HomeGate while interact / outfit plate buffers. */}
         <div
-          aria-hidden={!interactLoading}
+          role="status"
+          aria-busy={interactLoading || outfitLoading}
+          aria-live="polite"
+          aria-label="Loading"
+          aria-hidden={!(interactLoading || outfitLoading)}
           style={{
             position: "absolute",
             inset: 0,
             zIndex: 25,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             background:
               "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
-            opacity: interactLoading ? 0.92 : 0,
-            pointerEvents: interactLoading ? "auto" : "none",
+            opacity: interactLoading || outfitLoading ? 0.92 : 0,
+            pointerEvents: interactLoading || outfitLoading ? "auto" : "none",
             transition: "opacity 0.35s ease",
           }}
-        />
+        >
+          {/* Native <img> so animated GIF frames play (next/image can flatten). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/him-loader.gif"
+            alt=""
+            width={160}
+            height={284}
+            aria-hidden
+            draggable={false}
+            style={{
+              width: "min(160px, 28vw)",
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
+        </div>
 
         {/* Rotate control — paused for now
         {mode === "interior" && (

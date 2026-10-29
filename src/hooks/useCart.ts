@@ -11,6 +11,7 @@ import {
 	updateLocalCartQty,
 } from "@/lib/cart-local";
 import { useSession } from "@/hooks/useSession";
+import { toast } from "@/components/Toast";
 import { track } from "@/lib/analytics";
 
 async function fetchServerCart(): Promise<CartItem[]> {
@@ -81,6 +82,7 @@ export function useCart() {
 			} else {
 				setItems(addLocalCartItem(input));
 			}
+			toast("Added to bag");
 			track("add_to_cart", {
 				slug: input.slug,
 				product_id: input.productId ?? undefined,

@@ -87,6 +87,7 @@ function ExistingProductsGrid({
   // Per-card state, keyed by product slug
   const [cardImgIndex, setCardImgIndex] = useState<Record<string, number>>({});
   const [cardArmed, setCardArmed] = useState<Record<string, boolean>>({});
+  const [wishPopSlug, setWishPopSlug] = useState<string | null>(null);
 
   // Swipe tracking (mouse drag + touch swipe on the image)
   const swipeRef = useRef<{
@@ -507,7 +508,7 @@ function ExistingProductsGrid({
                       : `Add ${product.name} to wishlist`
                   }
                   aria-pressed={inWishlist(product.slug)}
-                  className="bs-wish-btn absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
+                  className={`bs-wish-btn absolute flex items-center justify-center transition-opacity duration-200 hover:opacity-60${wishPopSlug === product.slug ? " is-pop" : ""}`}
                   style={{
                     right: "2px",
                     top: "2px",
@@ -524,6 +525,7 @@ function ExistingProductsGrid({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    setWishPopSlug(product.slug);
                     void toggleWishlist({
                       productId: product.id ?? null,
                       slug: product.slug,
@@ -533,6 +535,7 @@ function ExistingProductsGrid({
                       swatches: product.swatches,
                     });
                   }}
+                  onAnimationEnd={() => setWishPopSlug(null)}
                 >
                   <Heart
                     size={13}
@@ -679,6 +682,28 @@ function ExistingProductsGrid({
         }
         .bs-img-nav--prev { left: 8px; }
         .bs-img-nav--next { right: 8px; }
+
+        .bs-wish-btn.is-pop :global(svg) {
+          animation: bs-wish-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes bs-wish-pop {
+          0% {
+            transform: scale(1);
+          }
+          35% {
+            transform: scale(1.28);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .bs-wish-btn.is-pop :global(svg) {
+            animation: none;
+          }
+        }
 
         /* ── Slider bars (also tappable) ── */
         .bs-img-dots {

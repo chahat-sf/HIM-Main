@@ -15,6 +15,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
+import SizeChartModal from "@/components/pdp/SizeChartModal";
 import {
   useEffect,
   useRef,
@@ -27,6 +28,7 @@ import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
+import { SIZE_FIT_NOTE } from "@/lib/size-chart";
 
 function PlayBadge() {
   return (
@@ -106,6 +108,8 @@ export default function PdpSingle({
     PRODUCT.colors[0]?.name ?? "",
   );
   const [selectedSize, setSelectedSize] = useState("");
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const [wishPop, setWishPop] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [added, setAdded] = useState(false);
@@ -623,11 +627,17 @@ export default function PdpSingle({
               </>
             )}
 
+            <p className="pdp-size-note">{SIZE_FIT_NOTE}</p>
+
             <div className="pdp-size-head">
               <label htmlFor="pdp-s-size" className="pdp-field-label">
                 SIZE
               </label>
-              <button type="button" className="pdp-size-chart">
+              <button
+                type="button"
+                className="pdp-size-chart"
+                onClick={() => setSizeChartOpen(true)}
+              >
                 SIZE CHART
               </button>
             </div>
@@ -661,12 +671,13 @@ export default function PdpSingle({
               <button
                 type="button"
                 data-no-route-loader="true"
-                className={`pdp-wish-btn${wishlisted ? " is-active" : ""}`}
+                className={`pdp-wish-btn${wishlisted ? " is-active" : ""}${wishPop ? " is-pop" : ""}`}
                 aria-label={
                   wishlisted ? "Remove from wishlist" : "Add to wishlist"
                 }
                 aria-pressed={wishlisted}
                 onClick={() => {
+                  setWishPop(true);
                   void toggleWishlist({
                     productId: product.id,
                     slug,
@@ -682,6 +693,7 @@ export default function PdpSingle({
                     ),
                   });
                 }}
+                onAnimationEnd={() => setWishPop(false)}
               >
                 <Heart
                   size={18}
@@ -762,6 +774,11 @@ export default function PdpSingle({
       </main>
 
       <Footer />
+
+      <SizeChartModal
+        open={sizeChartOpen}
+        onClose={() => setSizeChartOpen(false)}
+      />
 
       {lightboxOpen && lightboxCount > 0 ? (
         <div
@@ -1174,6 +1191,16 @@ export default function PdpSingle({
           outline-color: rgba(0, 0, 0, 0.3);
         }
 
+        .pdp-size-note {
+          margin: 0 0 calc(16 * var(--u));
+          font-family: var(--pdp-sans);
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.55;
+          letter-spacing: 0.01em;
+          color: var(--pdp-muted);
+        }
+
         .pdp-size-head {
           display: flex;
           justify-content: space-between;
@@ -1247,8 +1274,8 @@ export default function PdpSingle({
           display: grid;
           place-items: center;
           cursor: pointer;
-          transition: color 200ms ease, border-color 200ms ease,
-            background 200ms ease;
+          transition: color 220ms ease, border-color 220ms ease,
+            background 220ms ease, transform 220ms ease;
         }
 
         /* Invisible larger tap target beyond the bordered box */
@@ -1262,9 +1289,46 @@ export default function PdpSingle({
           border-color: var(--pdp-ink);
         }
 
+        .pdp-wish-btn:active {
+          transform: scale(0.96);
+        }
+
+        .pdp-wish-btn :global(svg) {
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            fill 220ms ease;
+          transform-origin: center;
+        }
+
         .pdp-wish-btn.is-active {
           color: #7a1420;
           border-color: #7a1420;
+        }
+
+        .pdp-wish-btn.is-pop :global(svg) {
+          animation: pdp-wish-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes pdp-wish-pop {
+          0% {
+            transform: scale(1);
+          }
+          35% {
+            transform: scale(1.28);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pdp-wish-btn,
+          .pdp-wish-btn :global(svg) {
+            transition: none;
+          }
+
+          .pdp-wish-btn.is-pop :global(svg) {
+            animation: none;
+          }
         }
 
         .pdp-add-btn:hover {

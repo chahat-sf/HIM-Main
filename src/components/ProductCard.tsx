@@ -29,6 +29,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(product.slug);
+  const [wishPop, setWishPop] = useState(false);
 
   const allImages = uniqueImages(product.image, product.images);
   const hasMulti = allImages.length > 1;
@@ -203,7 +204,7 @@ export default function ProductCard({
         <button
           type="button"
           data-no-route-loader="true"
-          className={`product-card-wish${wishlisted ? " is-active" : ""}`}
+          className={`product-card-wish${wishlisted ? " is-active" : ""}${wishPop ? " is-pop" : ""}`}
           aria-label={
             wishlisted
               ? `Remove ${product.name} from wishlist`
@@ -214,6 +215,7 @@ export default function ProductCard({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            setWishPop(true);
             void toggleWishlist({
               productId: product.id,
               slug: product.slug,
@@ -223,6 +225,7 @@ export default function ProductCard({
               swatches: product.swatches,
             });
           }}
+          onAnimationEnd={() => setWishPop(false)}
         >
           <Heart
             size={14}
