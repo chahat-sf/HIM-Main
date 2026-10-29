@@ -30,6 +30,7 @@ const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export default function HeroSection() {
+  const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cueVisible, setCueVisible] = useState(false);
   const [cueIn, setCueIn] = useState(false);
@@ -50,6 +51,46 @@ export default function HeroSection() {
     cueFadingRef.current = v;
     setCueFading(v);
   };
+
+  // Lock hero height in px so mobile browser chrome show/hide (dvh/svh churn)
+  // does not rescale the video and look like zoom-on-scroll.
+  // Relock only on orientation / real width change — not on every scroll resize.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    let lastWidth = window.innerWidth;
+
+    const lockHeight = () => {
+      // Prefer layout viewport height (more stable than visualViewport on scroll).
+      const h = window.innerHeight;
+      if (!h || !Number.isFinite(h)) return;
+      section.style.height = `${Math.round(h)}px`;
+    };
+
+    lockHeight();
+
+    const onOrientation = () => {
+      requestAnimationFrame(() => {
+        lastWidth = window.innerWidth;
+        lockHeight();
+      });
+    };
+
+    const onResize = () => {
+      const w = window.innerWidth;
+      if (w === lastWidth) return; // ignore chrome show/hide height-only churn
+      lastWidth = w;
+      lockHeight();
+    };
+
+    window.addEventListener("orientationchange", onOrientation);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("orientationchange", onOrientation);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   // Fade the cue in on the frame after mount so opacity can transition from 0 → 1.
   useEffect(() => {
@@ -366,7 +407,10 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full h-dvh overflow-hidden bg-black">
+    <section
+      ref={sectionRef}
+      className="relative w-full h-svh overflow-hidden bg-black"
+    >
       <video
         ref={videoRef}
         className="him-hero-video absolute top-0 h-full w-auto max-w-none"
