@@ -7,6 +7,7 @@ import {
   listProductSlugs,
   listRelatedProducts,
 } from "@/lib/catalog";
+import { productShareMetadata } from "@/lib/seo";
 
 type PageProps = {
   params: Promise<{ slug: string }> | { slug: string };
@@ -28,15 +29,13 @@ export async function generateMetadata({
   const slug = typeof resolved?.slug === "string" ? resolved.slug : "";
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product" };
-  return {
-    title: product.name,
-    description: product.marketingLine || product.description || product.title,
-    openGraph: {
-      title: product.name,
-      description: product.marketingLine || product.description || product.title,
-      images: product.image ? [{ url: product.image }] : undefined,
-    },
-  };
+  return productShareMetadata({
+    name: product.name,
+    slug: product.slug,
+    description:
+      product.marketingLine || product.description || product.title || "",
+    image: product.image,
+  });
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {

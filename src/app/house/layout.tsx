@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "The House",
-  description: "Look through the windows and step into the rooms.",
-};
+export const metadata = buildPageMetadata(PAGE_SEO.house);
 
 export default function HouseLayout({ children }: { children: ReactNode }) {
-  return children;
+	return children;
 }

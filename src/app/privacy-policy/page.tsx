@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import LegalPageShell from "@/components/LegalPageShell";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | HIM",
-  description: "How HIM collects, uses, and protects personal data.",
-};
+export const metadata = buildPageMetadata(PAGE_SEO.privacy);
 
 export default function PrivacyPolicyPage() {
   return (

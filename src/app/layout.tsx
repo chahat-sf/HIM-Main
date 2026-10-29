@@ -4,10 +4,11 @@ import NavigationOverlay from "@/components/NavigationOverlay";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import { SessionProvider } from "@/components/SessionProvider";
 import { getSiteUrl } from "@/lib/site-url";
+import { SEO_IMAGES } from "@/lib/seo";
 import "./globals.css";
 
 const siteUrl = getSiteUrl();
-const defaultOgImage = "/android-chrome-512x512.png";
+const defaultOgImage = SEO_IMAGES.default;
 
 const spaceMono = Space_Mono({
 	subsets: ["latin"],
@@ -36,7 +37,16 @@ export const metadata: Metadata = {
 		default: "HIM",
 		template: "%s — HIM",
 	},
-	description: "HIM — Luxury Menswear",
+	description:
+		"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
+	robots: {
+		index: false,
+		follow: false,
+		googleBot: {
+			index: false,
+			follow: false,
+		},
+	},
 	icons: {
 		icon: [
 			{ url: "/favicon.ico", sizes: "32x32" },
@@ -46,24 +56,26 @@ export const metadata: Metadata = {
 		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
 	},
 	openGraph: {
-		title: "HIM",
-		description: "HIM — Luxury Menswear",
+		title: "HIM — Luxury Menswear",
+		description:
+			"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
 		type: "website",
 		url: siteUrl,
 		siteName: "HIM",
 		images: [
 			{
 				url: defaultOgImage,
-				width: 512,
-				height: 512,
-				alt: "HIM",
+				width: 1200,
+				height: 630,
+				alt: "HIM luxury menswear",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "HIM",
-		description: "HIM — Luxury Menswear",
+		title: "HIM — Luxury Menswear",
+		description:
+			"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
 		images: [defaultOgImage],
 	},
 };

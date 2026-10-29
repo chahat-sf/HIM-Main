@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import LegalPageShell from "@/components/LegalPageShell";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Legals | HIM",
-  description: "Legal information for HIM.",
-};
+export const metadata = buildPageMetadata(PAGE_SEO.legals);
 
 export default function LegalsPage() {
   return (

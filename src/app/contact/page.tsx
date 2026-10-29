@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import {
@@ -14,19 +13,11 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 import ContactForm from "./ContactForm";
 import styles from "./contact.module.css";
 
-export const metadata: Metadata = {
-	title: "Contact",
-	description:
-		"Get in touch with HIM — styling advice, order support, returns, and studio visits in Gurgaon.",
-	openGraph: {
-		title: "Contact — HIM",
-		description:
-			"Get in touch with HIM — styling advice, order support, returns, and studio visits in Gurgaon.",
-	},
-};
+export const metadata = buildPageMetadata(PAGE_SEO.contact);
 
 const INSTAGRAM_URL =
 	"https://www.instagram.com/itshimworld?utm_source=ig_web_button_share_sheet&rpxt=ZDNlZDc0MzIxNw==";

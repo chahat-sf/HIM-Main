@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import LegalPageShell from "@/components/LegalPageShell";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms of Sale | HIM",
-  description: "Terms of sale for purchases from HIM.",
-};
+export const metadata = buildPageMetadata(PAGE_SEO.termsOfSale);
 
 export default function TermsOfSalePage() {
   return (

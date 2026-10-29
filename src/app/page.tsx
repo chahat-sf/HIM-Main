@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import HomeGate from "@/components/HomeGate";
 import HeroSection from "@/components/HeroSection";
 import FlythroughLazy from "@/components/house/FlythroughLazy";
@@ -7,24 +6,11 @@ import Lookbook from "@/components/Lookbook";
 import Footer from "@/components/Footer";
 import DeferredMount from "@/components/DeferredMount";
 import { listProducts } from "@/lib/catalog";
+import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-	title: "HIM — Luxury Menswear",
-	description:
-		"Discover HIM luxury menswear — refined essentials, seasonal collections, and studio craftsmanship.",
-	openGraph: {
-		title: "HIM — Luxury Menswear",
-		description:
-			"Discover HIM luxury menswear — refined essentials, seasonal collections, and studio craftsmanship.",
-	},
-	twitter: {
-		title: "HIM — Luxury Menswear",
-		description:
-			"Discover HIM luxury menswear — refined essentials, seasonal collections, and studio craftsmanship.",
-	},
-};
+export const metadata = buildPageMetadata(PAGE_SEO.home);
 
 export default async function Home() {
 	const products = await listProducts();
