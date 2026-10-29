@@ -496,10 +496,22 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           />
 
           <div className="him-nav-mobile-actions" ref={menuRef}>
+            <button
+              type="button"
+              className="him-nav-mobile-icon him-nav-mobile-search"
+              aria-label="Search"
+              onClick={() => {
+                setMenuOpen(false);
+                setSearchOpen(true);
+              }}
+            >
+              <Search size={17} strokeWidth={ICON_STROKE} aria-hidden />
+            </button>
+
             {cartInBar ? (
               <Link
                 href="/cart"
-                className="him-nav-mobile-cart him-cart-btn"
+                className="him-nav-mobile-icon him-nav-mobile-cart him-cart-btn"
                 aria-label={`Bag, ${itemCount} items`}
               >
                 <ShoppingBag size={17} strokeWidth={ICON_STROKE} aria-hidden />
@@ -685,14 +697,18 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           gap: 2px;
         }
 
-        .him-nav-mobile-cart {
+        .him-nav-mobile-icon {
           position: relative;
           display: grid;
           place-items: center;
           width: 36px;
           height: 36px;
+          padding: 0;
+          border: none;
+          background: transparent;
           color: inherit;
           text-decoration: none;
+          cursor: pointer;
         }
 
         /* Tuck count into the icon corner — desktop uses a looser offset */

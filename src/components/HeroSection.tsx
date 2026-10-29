@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Navbar from "./Navbar";
 import { useHomeLoad } from "./HomeGate";
 
@@ -459,7 +460,7 @@ export default function HeroSection() {
           Timeless fits, modern details and colours that go anywhere.
         </p>
 
-        <a href="/collection" className="him-hero-btn">
+        <Link href="/collection" className="him-hero-btn">
           <span>EXPLORE COLLECTION</span>
           <svg
             width="12"
@@ -476,7 +477,7 @@ export default function HeroSection() {
               strokeLinejoin="round"
             />
           </svg>
-        </a>
+        </Link>
       </div>
 
       {cueVisible ? (
