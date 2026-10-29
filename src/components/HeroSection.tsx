@@ -721,9 +721,14 @@ export default function HeroSection() {
             transform: translate3d(calc(-50% + 1.6vw), 0, 0);
           }
 
+          /* Only the CTA remains on mobile — center it in the viewport. */
           .him-hero-copy {
-            left: 20px;
+            left: 50%;
             bottom: 36px;
+            width: max-content;
+            max-width: calc(100% - 40px);
+            transform: translateX(-50%);
+            text-align: center;
           }
 
           .him-hero-label,
@@ -736,6 +741,8 @@ export default function HeroSection() {
             height: 36px;
             font-size: 10px;
             margin-top: 0;
+            margin-left: auto;
+            margin-right: auto;
           }
 
           .him-scroll-cue {
