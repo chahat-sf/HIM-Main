@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import RouteLoading from "@/components/RouteLoading";
 
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 const SANS = 'var(--font-room-sans, "Helvetica Neue"), Helvetica, Arial, sans-serif';
@@ -42,16 +40,6 @@ export default function LegalPageShell({
   sections: LegalSection[];
   showDisclaimer?: boolean;
 }) {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready) {
-    return <RouteLoading />;
-  }
-
   return (
     <>
       <Navbar />

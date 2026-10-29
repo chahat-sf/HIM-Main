@@ -3,7 +3,11 @@ import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import NavigationOverlay from "@/components/NavigationOverlay";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import { SessionProvider } from "@/components/SessionProvider";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
+
+const siteUrl = getSiteUrl();
+const defaultOgImage = "/android-chrome-512x512.png";
 
 const spaceMono = Space_Mono({
 	subsets: ["latin"],
@@ -27,6 +31,7 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
+	metadataBase: new URL(siteUrl),
 	title: {
 		default: "HIM",
 		template: "%s — HIM",
@@ -44,11 +49,22 @@ export const metadata: Metadata = {
 		title: "HIM",
 		description: "HIM — Luxury Menswear",
 		type: "website",
+		url: siteUrl,
+		siteName: "HIM",
+		images: [
+			{
+				url: defaultOgImage,
+				width: 512,
+				height: 512,
+				alt: "HIM",
+			},
+		],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "HIM",
 		description: "HIM — Luxury Menswear",
+		images: [defaultOgImage],
 	},
 };
 

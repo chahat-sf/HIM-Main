@@ -60,11 +60,30 @@ type CarouselProduct = {
   priceCents?: number;
 };
 
-function ExistingProductsGrid() {
+function toCarouselProducts(items: CatalogProduct[]): CarouselProduct[] {
+  return items.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    price: `₹${p.price.replace(/\.00$/, "")}`,
+    image: p.image,
+    images: p.images,
+    swatches: p.swatches,
+    id: p.id,
+    priceCents: p.priceCents,
+  }));
+}
+
+function ExistingProductsGrid({
+  initialProducts,
+}: {
+  initialProducts: CatalogProduct[];
+}) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
-  const [products, setProducts] = useState<CarouselProduct[]>([]);
+  const [products] = useState<CarouselProduct[]>(() =>
+    toCarouselProducts(initialProducts),
+  );
   // Per-card state, keyed by product slug
   const [cardImgIndex, setCardImgIndex] = useState<Record<string, number>>({});
   const [cardArmed, setCardArmed] = useState<Record<string, boolean>>({});
@@ -181,32 +200,6 @@ function ExistingProductsGrid() {
   const onImgPointerCancel = () => {
     swipeRef.current = null;
   };
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/products")
-      .then((res) => res.json())
-      .then((body: { items?: CatalogProduct[] }) => {
-        if (cancelled) return;
-        const items = (body.items ?? []).map((p) => ({
-          slug: p.slug,
-          name: p.name,
-          price: `₹${p.price.replace(/\.00$/, "")}`,
-          image: p.image,
-          images: p.images,
-          swatches: p.swatches,
-          id: p.id,
-          priceCents: p.priceCents,
-        }));
-        setProducts(items);
-      })
-      .catch(() => {
-        if (!cancelled) setProducts([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Scroll-turn: dark -> light. Eased toward scroll target so the shift isn't stepped.
   useEffect(() => {
@@ -1374,10 +1367,14 @@ function ProvisionsSection() {
    DEFAULT EXPORT
 ===================================================================== */
 
-export default function ProductsSection() {
+export default function ProductsSection({
+  products = [],
+}: {
+  products?: CatalogProduct[];
+}) {
   return (
     <>
-      <ExistingProductsGrid />
+      <ExistingProductsGrid initialProducts={products} />
 
       <EditorialCollage />
 
