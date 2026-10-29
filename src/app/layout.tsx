@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import NavigationOverlay from "@/components/NavigationOverlay";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import { SessionProvider } from "@/components/SessionProvider";
+import PostHogProviderGate from "@/components/PostHogProviderGate";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO_IMAGES } from "@/lib/seo";
 import "./globals.css";
@@ -89,9 +90,11 @@ export default function RootLayout({
 		<html lang="en" className={`${spaceMono.variable} ${cormorant.variable} ${jost.variable}`}>
 			<body className="font-sans antialiased">
 				<SessionProvider>
-					{children}
-					<NavigationOverlay />
-					<BackgroundMusic />
+					<PostHogProviderGate>
+						{children}
+						<NavigationOverlay />
+						<BackgroundMusic />
+					</PostHogProviderGate>
 				</SessionProvider>
 			</body>
 		</html>

@@ -124,6 +124,19 @@ export default function PdpSingle({
   );
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
+
+  useEffect(() => {
+    void import("@/lib/analytics").then(({ track }) => {
+      track("product_viewed", {
+        slug: product.slug,
+        name: product.name,
+        product_id: product.id,
+        price: product.price,
+        layout: "single",
+      });
+    });
+  }, [product.slug, product.name, product.id, product.price]);
+
   const imageCount = MEDIA.length;
   const lightboxImageIndices = MEDIA.reduce<number[]>((acc, item, i) => {
     if (item.kind === "image") acc.push(i);

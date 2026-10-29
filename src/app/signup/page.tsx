@@ -87,6 +87,8 @@ function SignupForm() {
       } catch {
         /* guest wishlist merge is best-effort */
       }
+      const { track } = await import("@/lib/analytics");
+      track("signed_up", { method: "password" });
       router.replace(returnTo);
       router.refresh();
     } catch {

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { track } from "@/lib/analytics";
 import styles from "./contact.module.css";
 
 const SUBJECTS = [
@@ -47,6 +48,7 @@ export default function ContactForm() {
 
 			setStatus("success");
 			setStatusMessage("Thanks — we've received your message.");
+			track("contact_submitted", { subject });
 			setName("");
 			setEmail("");
 			setSubject("");

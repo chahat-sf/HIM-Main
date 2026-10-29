@@ -16,12 +16,13 @@ const nextConfig: NextConfig = {
 						key: "Content-Security-Policy",
 						value: [
 							"default-src 'self'",
-							"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+							// PostHog loads config.js + captures from *.i.posthog.com (Cloud US/EU)
+							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.i.posthog.com https://*.posthog.com",
 							"style-src 'self' 'unsafe-inline'",
-							"img-src 'self' data: blob:",
+							"img-src 'self' data: blob: https://*.i.posthog.com https://*.posthog.com",
 							"font-src 'self' data:",
 							"media-src 'self' blob:",
-							"connect-src 'self'",
+							"connect-src 'self' https://*.i.posthog.com https://*.posthog.com",
 							"worker-src 'self' blob:",
 							"frame-ancestors 'self'",
 						].join("; "),

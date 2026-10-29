@@ -11,6 +11,7 @@ import {
   WISHLIST_CHANGED_EVENT,
 } from "@/lib/wishlist-local";
 import { useSession } from "@/hooks/useSession";
+import { track } from "@/lib/analytics";
 
 async function fetchServerWishlist(): Promise<WishlistItem[]> {
   const res = await fetch("/api/wishlist", { credentials: "include" });
@@ -125,13 +126,26 @@ export function useWishlist() {
           };
           if (body.items) setItems(body.items);
           notifyWishlistChanged();
-          return body.added ?? false;
+          const added = body.added ?? false;
+          track("wishlist_toggled", {
+            slug: input.slug,
+            name: input.name,
+            added,
+            authenticated: true,
+          });
+          return added;
         } catch (err) {
           setItems(prevItems);
           notifyWishlistChanged();
           throw err;
         }
       }
+      track("wishlist_toggled", {
+        slug: input.slug,
+        name: input.name,
+        added: local.added,
+        authenticated: false,
+      });
       return local.added;
     },
     [isAuthenticated, items],

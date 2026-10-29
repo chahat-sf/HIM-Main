@@ -27,6 +27,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import NavIconRow from "@/components/NavIconRow";
+import { track } from "@/lib/analytics";
 
 const ICON_STROKE = 1.25;
 
@@ -210,6 +211,17 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
     if (!trimmed) return searchProducts.slice(0, POPULAR_COUNT);
     return searchProducts.filter((p) => matchesSearchQuery(p, trimmed));
   }, [trimmed, searchProducts]);
+
+  useEffect(() => {
+    if (!searchOpen || trimmed.length < 2) return;
+    const t = window.setTimeout(() => {
+      track("search_used", {
+        query: trimmed,
+        result_count: results.length,
+      });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [trimmed, searchOpen, results.length]);
 
   type MenuItem = {
     key: string;

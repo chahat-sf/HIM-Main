@@ -155,6 +155,8 @@ export default function AccountPage() {
   }
 
   async function onSignOut() {
+    const { track } = await import("@/lib/analytics");
+    track("logged_out");
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     router.push("/login");
   }

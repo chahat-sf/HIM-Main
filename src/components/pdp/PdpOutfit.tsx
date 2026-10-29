@@ -123,6 +123,18 @@ export default function PdpOutfit({
   const { has: inWishlist, toggle: toggleWishlist } = useWishlist();
   const wishlisted = inWishlist(slug);
 
+  useEffect(() => {
+    void import("@/lib/analytics").then(({ track }) => {
+      track("product_viewed", {
+        slug: product.slug,
+        name: product.name,
+        product_id: product.id,
+        price: product.price,
+        layout: "outfit",
+      });
+    });
+  }, [product.slug, product.name, product.id, product.price]);
+
   // Reset per-product state whenever the slug changes
   useEffect(() => {
     setSelectedColor(PRODUCT.colors[0]?.name ?? "");

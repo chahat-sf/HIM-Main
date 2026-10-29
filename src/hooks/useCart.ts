@@ -11,6 +11,7 @@ import {
 	updateLocalCartQty,
 } from "@/lib/cart-local";
 import { useSession } from "@/hooks/useSession";
+import { track } from "@/lib/analytics";
 
 async function fetchServerCart(): Promise<CartItem[]> {
 	const res = await fetch("/api/cart", { credentials: "include" });
@@ -77,9 +78,19 @@ export function useCart() {
 				const body = (await res.json()) as { items?: CartItem[] };
 				setItems(body.items ?? []);
 				notifyCartChanged();
-				return;
+			} else {
+				setItems(addLocalCartItem(input));
 			}
-			setItems(addLocalCartItem(input));
+			track("add_to_cart", {
+				slug: input.slug,
+				product_id: input.productId ?? undefined,
+				name: input.name,
+				price: input.price,
+				qty: input.qty ?? 1,
+				size: input.size,
+				color: input.color,
+				authenticated: isAuthenticated,
+			});
 		},
 		[isAuthenticated],
 	);
@@ -97,9 +108,14 @@ export function useCart() {
 				const body = (await res.json()) as { items?: CartItem[] };
 				setItems(body.items ?? []);
 				notifyCartChanged();
-				return;
+			} else {
+				setItems(updateLocalCartQty(id, qty));
 			}
-			setItems(updateLocalCartQty(id, qty));
+			track("cart_updated", {
+				item_id: id,
+				qty,
+				authenticated: isAuthenticated,
+			});
 		},
 		[isAuthenticated],
 	);
@@ -115,9 +131,13 @@ export function useCart() {
 				const body = (await res.json()) as { items?: CartItem[] };
 				setItems(body.items ?? []);
 				notifyCartChanged();
-				return;
+			} else {
+				setItems(removeLocalCartItem(id));
 			}
-			setItems(removeLocalCartItem(id));
+			track("remove_from_cart", {
+				item_id: id,
+				authenticated: isAuthenticated,
+			});
 		},
 		[isAuthenticated],
 	);

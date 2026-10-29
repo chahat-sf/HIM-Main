@@ -16,6 +16,7 @@ import {
   selectedColorSwatches,
 } from "@/lib/color-swatch";
 import { readLocalCart, writeLocalCart } from "@/lib/cart-local";
+import { track } from "@/lib/analytics";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -366,7 +367,17 @@ export default function CartClient({
                 </div>
 
                 {isAuthenticated ? (
-                  <Link href="#" className="cart-btn-primary">
+                  <Link
+                    href="#"
+                    className="cart-btn-primary"
+                    onClick={() =>
+                      track("checkout_clicked", {
+                        authenticated: true,
+                        item_count: itemCount,
+                        subtotal,
+                      })
+                    }
+                  >
                     PROCEED TO CHECKOUT{" "}
                     <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                   </Link>
@@ -374,6 +385,13 @@ export default function CartClient({
                   <Link
                     href="/login?next=%2Fcart"
                     className="cart-btn-primary"
+                    onClick={() =>
+                      track("checkout_clicked", {
+                        authenticated: false,
+                        item_count: itemCount,
+                        subtotal,
+                      })
+                    }
                   >
                     LOGIN TO CHECKOUT{" "}
                     <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />

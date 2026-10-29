@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
+import { track } from "@/lib/analytics";
 
 type FooterLink = { label: string; href: string };
 
@@ -102,6 +103,10 @@ export default function Footer() {
           ? "You're already on the list."
           : "Thanks — you're subscribed.",
       );
+      track("newsletter_subscribed", {
+        source: "footer",
+        already_subscribed: Boolean(data.alreadySubscribed),
+      });
       setEmail("");
     } catch {
       setStatus("error");
