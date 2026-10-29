@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type { ResultSetHeader } from "mysql2";
 import { getDb } from "@/lib/db";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { isEmail } from "@/lib/validation";
+import {
+	FIELD_LIMITS,
+	isEmail,
+	parseJsonBody,
+	tooManyRequests,
+} from "@/lib/validation";
 
 type ContactBody = {
 	name?: string;
@@ -17,13 +22,13 @@ export async function POST(request: Request) {
 	try {
 		const ip = clientIp(request);
 		if (!rateLimit(`contact:${ip}`, { limit: 8, windowMs: 60_000 })) {
-			return NextResponse.json(
-				{ error: "Too many messages. Please try again shortly." },
-				{ status: 429 },
-			);
+			return tooManyRequests("Too many messages. Please try again shortly.");
 		}
 
-		const body = (await request.json()) as ContactBody;
+		const parsed = await parseJsonBody<ContactBody>(request);
+		if (!parsed.ok) return parsed.response;
+
+		const body = parsed.data;
 		const name = body.name?.trim() ?? "";
 		const email = body.email?.trim().toLowerCase() ?? "";
 		const subject = body.subject?.trim().toLowerCase() ?? "";
@@ -35,7 +40,7 @@ export async function POST(request: Request) {
 				{ status: 400 },
 			);
 		}
-		if (name.length > 120) {
+		if (name.length > FIELD_LIMITS.fullName) {
 			return NextResponse.json({ error: "Name is too long." }, { status: 400 });
 		}
 		if (!email) {
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
 				{ status: 400 },
 			);
 		}
-		if (!isEmail(email)) {
+		if (!isEmail(email) || email.length > FIELD_LIMITS.email) {
 			return NextResponse.json(
 				{ error: "Please enter a valid email address." },
 				{ status: 400 },

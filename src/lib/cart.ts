@@ -3,6 +3,12 @@ import { getDb } from "@/lib/db";
 import type { CartItem, CartItemInput } from "@/lib/cart-types";
 import type { CatalogColor } from "@/lib/catalog-types";
 import { resolveCartColor, selectedColorSwatches } from "@/lib/color-swatch";
+import { FIELD_LIMITS } from "@/lib/validation";
+
+function clampCartQty(qty: number): number {
+	const n = Math.max(1, Math.floor(Number(qty) || 1));
+	return Math.min(n, FIELD_LIMITS.cartQty);
+}
 
 function parseSwatches(raw: unknown): string[] {
 	if (Array.isArray(raw)) return raw.map(String);
@@ -152,7 +158,7 @@ export async function upsertCartItem(
 		throw new Error("Invalid cart item");
 	}
 
-	const qty = Math.max(1, input.qty ?? 1);
+	const qty = clampCartQty(input.qty ?? 1);
 	const size = (input.size ?? "").trim();
 	const color = resolved.color;
 	const swatches = JSON.stringify(resolved.swatches);
@@ -239,7 +245,7 @@ export async function setCartItemQty(
 	qty: number,
 ): Promise<CartItem[]> {
 	const db = getDb();
-	const nextQty = Math.max(1, Math.floor(qty));
+	const nextQty = clampCartQty(qty);
 	await db.execute(
 		`UPDATE cart_items SET qty = :qty
      WHERE id = :itemId AND user_id = :userId`,
@@ -274,7 +280,7 @@ export async function mergeCartItems(
 		try {
 			await upsertCartItem(userId, {
 				...item,
-				qty: Math.max(1, item.qty ?? 1),
+				qty: clampCartQty(item.qty ?? 1),
 			});
 		} catch {
 			/* skip unknown / invalid lines */

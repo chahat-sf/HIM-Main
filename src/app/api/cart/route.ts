@@ -7,6 +7,19 @@ import {
 	upsertCartItem,
 } from "@/lib/cart";
 import type { CartItemInput } from "@/lib/cart-types";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+import {
+	FIELD_LIMITS,
+	parseJsonBody,
+	tooManyRequests,
+} from "@/lib/validation";
+
+function allowCartMutation(ip: string, userId: number): boolean {
+	return (
+		rateLimit(`cart:${ip}`, { limit: 60, windowMs: 60_000 }) &&
+		rateLimit(`cart:user:${userId}`, { limit: 60, windowMs: 60_000 })
+	);
+}
 
 export async function GET() {
 	try {
@@ -32,7 +45,15 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const body = (await request.json()) as CartItemInput;
+		const ip = clientIp(request);
+		if (!allowCartMutation(ip, user.id)) {
+			return tooManyRequests();
+		}
+
+		const parsed = await parseJsonBody<CartItemInput>(request);
+		if (!parsed.ok) return parsed.response;
+		const body = parsed.data;
+
 		if (!body.slug?.trim() && body.productId == null) {
 			return NextResponse.json(
 				{ error: "productId or slug is required." },
@@ -42,6 +63,18 @@ export async function POST(request: Request) {
 		if (!body.name?.trim() || !body.image?.trim()) {
 			return NextResponse.json(
 				{ error: "name and image are required." },
+				{ status: 400 },
+			);
+		}
+		if (
+			(body.slug && body.slug.length > FIELD_LIMITS.productSlug) ||
+			body.name.length > FIELD_LIMITS.productName ||
+			body.image.length > FIELD_LIMITS.productImage ||
+			(body.size != null && String(body.size).length > FIELD_LIMITS.size) ||
+			(body.color != null && String(body.color).length > FIELD_LIMITS.color)
+		) {
+			return NextResponse.json(
+				{ error: "Cart item fields are too long." },
 				{ status: 400 },
 			);
 		}
@@ -79,10 +112,18 @@ export async function PATCH(request: Request) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const body = (await request.json()) as {
+		const ip = clientIp(request);
+		if (!allowCartMutation(ip, user.id)) {
+			return tooManyRequests();
+		}
+
+		const parsed = await parseJsonBody<{
 			id?: string | number;
 			qty?: number;
-		};
+		}>(request);
+		if (!parsed.ok) return parsed.response;
+		const body = parsed.data;
+
 		const itemId = Number(body.id);
 		const qty = Number(body.qty);
 		if (!Number.isFinite(itemId) || itemId <= 0) {
@@ -94,6 +135,12 @@ export async function PATCH(request: Request) {
 		if (!Number.isFinite(qty) || qty < 1) {
 			return NextResponse.json(
 				{ error: "qty must be at least 1." },
+				{ status: 400 },
+			);
+		}
+		if (qty > FIELD_LIMITS.cartQty) {
+			return NextResponse.json(
+				{ error: `qty must be at most ${FIELD_LIMITS.cartQty}.` },
 				{ status: 400 },
 			);
 		}
@@ -114,6 +161,11 @@ export async function DELETE(request: Request) {
 		const user = await getSessionUser();
 		if (!user) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
+
+		const ip = clientIp(request);
+		if (!allowCartMutation(ip, user.id)) {
+			return tooManyRequests();
 		}
 
 		const { searchParams } = new URL(request.url);

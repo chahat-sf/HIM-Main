@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type { ResultSetHeader } from "mysql2";
 import { getDb } from "@/lib/db";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { isEmail } from "@/lib/validation";
+import {
+	FIELD_LIMITS,
+	isEmail,
+	parseJsonBody,
+	tooManyRequests,
+} from "@/lib/validation";
 
 type NewsletterBody = {
 	email?: string;
@@ -19,13 +24,13 @@ export async function POST(request: Request) {
 	try {
 		const ip = clientIp(request);
 		if (!rateLimit(`newsletter:${ip}`, { limit: 10, windowMs: 60_000 })) {
-			return NextResponse.json(
-				{ error: "Too many attempts. Please try again shortly." },
-				{ status: 429 },
-			);
+			return tooManyRequests();
 		}
 
-		const body = (await request.json()) as NewsletterBody;
+		const parsed = await parseJsonBody<NewsletterBody>(request);
+		if (!parsed.ok) return parsed.response;
+
+		const body = parsed.data;
 		const email = body.email?.trim().toLowerCase() ?? "";
 		const source = (body.source?.trim() || "footer").slice(0, 64);
 
@@ -35,7 +40,7 @@ export async function POST(request: Request) {
 				{ status: 400 },
 			);
 		}
-		if (!isEmail(email)) {
+		if (!isEmail(email) || email.length > FIELD_LIMITS.email) {
 			return NextResponse.json(
 				{ error: "Please enter a valid email address." },
 				{ status: 400 },
