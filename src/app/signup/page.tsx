@@ -11,10 +11,12 @@ import {
 } from "@/lib/auth-redirect";
 import { mergeLocalCartToServer } from "@/lib/cart-local";
 import { mergeLocalWishlistToServer } from "@/lib/wishlist-local";
+import { useSession } from "@/hooks/useSession";
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refresh: refreshSession } = useSession();
   const nextParam = searchParams.get("next");
   const returnTo = safeNextPath(nextParam);
 
@@ -77,6 +79,7 @@ function SignupForm() {
         setError(body?.error || "Unable to create account.");
         return;
       }
+      await refreshSession();
       try {
         await mergeLocalCartToServer();
       } catch {

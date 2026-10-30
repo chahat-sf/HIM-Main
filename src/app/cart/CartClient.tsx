@@ -368,7 +368,7 @@ export default function CartClient({
 
                 {isAuthenticated ? (
                   <Link
-                    href="#"
+                    href="/checkout"
                     className="cart-btn-primary"
                     onClick={() =>
                       track("checkout_clicked", {
@@ -383,7 +383,7 @@ export default function CartClient({
                   </Link>
                 ) : (
                   <Link
-                    href="/login?next=%2Fcart"
+                    href="/login?next=%2Fcheckout"
                     className="cart-btn-primary"
                     onClick={() =>
                       track("checkout_clicked", {

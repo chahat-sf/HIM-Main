@@ -4,6 +4,8 @@ import NavigationOverlay from "@/components/NavigationOverlay";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import ToastHost from "@/components/Toast";
 import { SessionProvider } from "@/components/SessionProvider";
+import { CartProvider } from "@/components/CartProvider";
+import { WishlistProvider } from "@/components/WishlistProvider";
 import PostHogProviderGate from "@/components/PostHogProviderGate";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO_IMAGES } from "@/lib/seo";
@@ -91,12 +93,16 @@ export default function RootLayout({
 		<html lang="en" className={`${spaceMono.variable} ${cormorant.variable} ${jost.variable}`}>
 			<body className="font-sans antialiased">
 				<SessionProvider>
-					<PostHogProviderGate>
-						{children}
-						<NavigationOverlay />
-						<BackgroundMusic />
-						<ToastHost />
-					</PostHogProviderGate>
+					<CartProvider>
+						<WishlistProvider>
+							<PostHogProviderGate>
+								{children}
+								<NavigationOverlay />
+								<BackgroundMusic />
+								<ToastHost />
+							</PostHogProviderGate>
+						</WishlistProvider>
+					</CartProvider>
 				</SessionProvider>
 			</body>
 		</html>

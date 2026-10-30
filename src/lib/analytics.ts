@@ -31,10 +31,7 @@ export type AnalyticsProps = Record<
  * Named product-analytics events. Prefer these over relying only on autocapture
  * for funnels you care about (cart, auth, checkout).
  *
- * Future checkout:
- *   track("order_completed", {
- *     order_id, revenue, currency: "INR", user_id
- *   })
+ * Checkout: track("order_completed", { order_id, revenue, currency: "INR" })
  */
 export type AnalyticsEvent =
 	| "signed_up"

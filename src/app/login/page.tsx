@@ -11,10 +11,12 @@ import {
 } from "@/lib/auth-redirect";
 import { mergeLocalCartToServer } from "@/lib/cart-local";
 import { mergeLocalWishlistToServer } from "@/lib/wishlist-local";
+import { useSession } from "@/hooks/useSession";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refresh: refreshSession } = useSession();
   const nextParam = searchParams.get("next");
   const returnTo = safeNextPath(nextParam);
 
@@ -61,6 +63,7 @@ function LoginForm() {
         setError(body?.error || "Unable to sign in.");
         return;
       }
+      await refreshSession();
       try {
         await mergeLocalCartToServer();
       } catch {

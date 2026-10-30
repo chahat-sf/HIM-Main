@@ -268,17 +268,126 @@ export async function removeCartItem(
 
 const MERGE_MAX_ITEMS = 50;
 
+/** Insert/replace a line with absolute qty (does not add to existing qty). */
+async function putCartItem(
+	userId: number,
+	input: CartItemInput,
+): Promise<void> {
+	const db = getDb();
+	const resolved = await resolveProduct(input);
+	if (!resolved.slug || !resolved.name || !resolved.image) {
+		throw new Error("Invalid cart item");
+	}
+
+	const qty = clampCartQty(input.qty ?? 1);
+	const size = (input.size ?? "").trim();
+	const color = resolved.color;
+	const swatches = JSON.stringify(resolved.swatches);
+
+	if (resolved.productId != null) {
+		await db.execute(
+			`INSERT INTO cart_items
+        (user_id, product_id, product_slug, product_name, size, color, price_cents, qty, image_url, swatches_json)
+       VALUES
+        (:userId, :productId, :slug, :name, :size, :color, :priceCents, :qty, :image, CAST(:swatches AS JSON))
+       ON DUPLICATE KEY UPDATE
+         product_slug = VALUES(product_slug),
+         product_name = VALUES(product_name),
+         price_cents = VALUES(price_cents),
+         qty = VALUES(qty),
+         image_url = VALUES(image_url),
+         color = VALUES(color),
+         swatches_json = VALUES(swatches_json)`,
+			{
+				userId,
+				productId: resolved.productId,
+				slug: resolved.slug,
+				name: resolved.name,
+				size,
+				color,
+				priceCents: resolved.priceCents,
+				qty,
+				image: resolved.image,
+				swatches,
+			},
+		);
+		return;
+	}
+
+	const [existing] = await db.query<RowDataPacket[]>(
+		`SELECT id FROM cart_items
+     WHERE user_id = :userId AND product_id IS NULL
+       AND product_slug = :slug AND size = :size AND color = :color
+     LIMIT 1`,
+		{ userId, slug: resolved.slug, size, color },
+	);
+	if (existing?.[0]) {
+		await db.execute(
+			`UPDATE cart_items
+       SET product_name = :name, price_cents = :priceCents, qty = :qty,
+           image_url = :image, swatches_json = CAST(:swatches AS JSON)
+       WHERE id = :id AND user_id = :userId`,
+			{
+				id: existing[0].id,
+				userId,
+				name: resolved.name,
+				priceCents: resolved.priceCents,
+				qty,
+				image: resolved.image,
+				swatches,
+			},
+		);
+		return;
+	}
+
+	await db.execute(
+		`INSERT INTO cart_items
+      (user_id, product_id, product_slug, product_name, size, color, price_cents, qty, image_url, swatches_json)
+     VALUES
+      (:userId, NULL, :slug, :name, :size, :color, :priceCents, :qty, :image, CAST(:swatches AS JSON))`,
+		{
+			userId,
+			slug: resolved.slug,
+			name: resolved.name,
+			size,
+			color,
+			priceCents: resolved.priceCents,
+			qty,
+			image: resolved.image,
+			swatches,
+		},
+	);
+}
+
+/**
+ * Guest cart wins: when items are present, replace the server cart entirely.
+ * Empty guest payload leaves the server cart unchanged.
+ */
 export async function mergeCartItems(
 	userId: number,
 	items: CartItemInput[],
 ): Promise<CartItem[]> {
-	const capped = items.slice(0, MERGE_MAX_ITEMS);
+	const capped = items
+		.slice(0, MERGE_MAX_ITEMS)
+		.filter(
+			(item) =>
+				Boolean(item.slug?.trim()) &&
+				Boolean(item.name?.trim()) &&
+				Boolean(item.image?.trim()),
+		);
+
+	if (capped.length === 0) {
+		return listCartItems(userId);
+	}
+
+	const db = getDb();
+	await db.execute(`DELETE FROM cart_items WHERE user_id = :userId`, {
+		userId,
+	});
+
 	for (const item of capped) {
-		if (!item.slug?.trim() || !item.name?.trim() || !item.image?.trim()) {
-			continue;
-		}
 		try {
-			await upsertCartItem(userId, {
+			await putCartItem(userId, {
 				...item,
 				qty: clampCartQty(item.qty ?? 1),
 			});

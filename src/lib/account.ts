@@ -20,7 +20,7 @@ export type OrderRow = {
   orderNumber: string;
   date: string;
   items: number;
-  status: "processing" | "shipped" | "delivered" | "cancelled";
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   statusLabel: string;
   statusColor: string;
   total: string;
@@ -47,6 +47,7 @@ const STATUS_META: Record<
   OrderRow["status"],
   { label: string; color: string }
 > = {
+  pending: { label: "Pending", color: "#9a9a9a" },
   processing: { label: "Processing", color: "#d4a017" },
   shipped: { label: "Shipped", color: "#6ba3e8" },
   delivered: { label: "Delivered", color: "#5aad6e" },
@@ -97,7 +98,8 @@ export async function getAccountPayload(
 
   const [orderRows] = await db.query<RowDataPacket[]>(
     `SELECT id, order_number, status, item_count, total_cents, placed_at
-     FROM orders WHERE user_id = :userId
+     FROM orders
+     WHERE user_id = :userId AND payment_status = 'paid'
      ORDER BY placed_at DESC, id DESC`,
     { userId: user.id },
   );

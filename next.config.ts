@@ -16,13 +16,15 @@ const nextConfig: NextConfig = {
 						key: "Content-Security-Policy",
 						value: [
 							"default-src 'self'",
-							// PostHog loads config.js + captures from *.i.posthog.com (Cloud US/EU)
-							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.i.posthog.com https://*.posthog.com",
+							// PostHog + Razorpay Checkout.js
+							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.i.posthog.com https://*.posthog.com https://checkout.razorpay.com https://*.razorpay.com",
 							"style-src 'self' 'unsafe-inline'",
-							"img-src 'self' data: blob: https://*.i.posthog.com https://*.posthog.com",
+							"img-src 'self' data: blob: https://*.i.posthog.com https://*.posthog.com https://*.razorpay.com",
 							"font-src 'self' data:",
 							"media-src 'self' blob:",
-							"connect-src 'self' https://*.i.posthog.com https://*.posthog.com",
+							"connect-src 'self' https://*.i.posthog.com https://*.posthog.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.razorpay.com",
+							"frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com",
+							"child-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com",
 							"worker-src 'self' blob:",
 							"frame-ancestors 'self'",
 						].join("; "),

@@ -145,9 +145,9 @@ export function removeLocalCartItem(id: string): CartItem[] {
 	return next;
 }
 
-export async function mergeLocalCartToServer(): Promise<void> {
+export async function mergeLocalCartToServer(): Promise<CartItem[]> {
 	const items = readLocalCart();
-	if (items.length === 0) return;
+	if (items.length === 0) return [];
 
 	const res = await fetch("/api/cart/merge", {
 		method: "POST",
@@ -172,5 +172,8 @@ export async function mergeLocalCartToServer(): Promise<void> {
 		throw new Error("Unable to merge cart");
 	}
 
+	const body = (await res.json()) as { items?: CartItem[] };
+	const merged = body.items ?? [];
 	clearLocalCart();
+	return merged;
 }

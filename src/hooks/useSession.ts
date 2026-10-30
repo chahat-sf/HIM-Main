@@ -17,6 +17,7 @@ export function useSession() {
 			user: ctx.user,
 			loading: ctx.loading,
 			isAuthenticated: ctx.isAuthenticated,
+			refresh: ctx.refresh,
 		};
 	}
 
@@ -24,5 +25,6 @@ export function useSession() {
 		user: null as SessionUser | null,
 		loading: true,
 		isAuthenticated: false,
+		refresh: async () => {},
 	};
 }
