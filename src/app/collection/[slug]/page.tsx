@@ -13,6 +13,8 @@ type PageProps = {
   params: Promise<{ slug: string }> | { slug: string };
 };
 
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   try {
     const slugs = await listProductSlugs();

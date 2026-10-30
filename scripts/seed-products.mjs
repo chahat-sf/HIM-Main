@@ -62,7 +62,7 @@ const PRODUCTS = [
       "/products/nocturne/5.webp",
       "/products/nocturne/6.webp",
     ],
-    priceCents: 0,
+    priceCents: 1299900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -100,7 +100,7 @@ const PRODUCTS = [
       "/products/last-word/5.webp",
       "/products/last-word/6.webp",
     ],
-    priceCents: 0,
+    priceCents: 2499900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit: "Slim fit. Model is 6'0\" wearing size M. True to size.",
@@ -139,7 +139,7 @@ const PRODUCTS = [
       "/products/composure/7.webp",
       "/products/composure/8.webp",
     ],
-    priceCents: 0,
+    priceCents: 1799900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit: "A structured silhouette with a sharp, understated profile.",
@@ -178,7 +178,7 @@ const PRODUCTS = [
       "/products/archivist/7.webp",
       "/products/archivist/8.webp",
     ],
-    priceCents: 0,
+    priceCents: 1499900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -214,7 +214,7 @@ const PRODUCTS = [
       "/products/exception/3.webp",
       "/products/exception/4.webp",
     ],
-    priceCents: 0,
+    priceCents: 1499900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -248,7 +248,7 @@ const PRODUCTS = [
       "/products/inner-images/man-image-100-1.webp",
       "/products/inner-images/man-image-100-2.webp",
     ],
-    priceCents: 0,
+    priceCents: 1199900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -284,7 +284,7 @@ const PRODUCTS = [
       "/products/afterglow/4.webp",
       "/products/afterglow/5.webp",
     ],
-    priceCents: 0,
+    priceCents: 1299900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
@@ -320,7 +320,7 @@ const PRODUCTS = [
       "/products/encore/3.webp",
       "/products/encore/4.webp",
     ],
-    priceCents: 0,
+    priceCents: 1499900,
     colors: DEFAULT_COLORS,
     sizes: DEFAULT_SIZES,
     sizeFit:
