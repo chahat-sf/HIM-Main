@@ -35,7 +35,7 @@ export default function ContactPage() {
 						<p className={styles.eyebrow}>CONTACT</p>
 						<h1 className={styles.title}>GET IN TOUCH</h1>
 						<p className={styles.sub}>
-							We&apos;re here to help — from styling questions to order support.
+							We&apos;re here to help, from styling questions to order support.
 						</p>
 					</div>
 				</section>

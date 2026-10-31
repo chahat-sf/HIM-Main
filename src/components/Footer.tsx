@@ -102,7 +102,7 @@ export default function Footer() {
       setStatusMessage(
         data.alreadySubscribed
           ? "You're already on the list."
-          : "Thanks — you're subscribed.",
+          : "Thanks, you're subscribed.",
       );
       track("newsletter_subscribed", {
         source: "footer",

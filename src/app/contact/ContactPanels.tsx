@@ -254,7 +254,7 @@ export default function ContactPanels() {
 						</h2>
 						<p className={styles.cardLead}>
 							A private line for styling, fit, and studio appointments. Tell us
-							what you need — we&apos;ll arrange the next step with you.
+							what you need, we&apos;ll arrange the next step with you.
 						</p>
 
 						<ul className={styles.conciergeList}>

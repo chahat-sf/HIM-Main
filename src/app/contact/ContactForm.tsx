@@ -60,7 +60,7 @@ export default function ContactForm({
 			}
 
 			setStatus("success");
-			setStatusMessage("Thanks — we've received your message.");
+			setStatusMessage("Thanks, we've received your message.");
 			track("contact_submitted", { subject });
 			setName("");
 			setEmail("");
