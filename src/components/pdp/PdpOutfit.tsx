@@ -519,8 +519,8 @@ export default function PdpOutfit({
               </Accordion>
               <Accordion label="Fabric" focus="fabric">
                 {PRODUCT.fabric
-                  .split(/\n\n+/)
-                  .map((para) => para.trim())
+                  .split(/\n+/)
+                  .map((para) => para.replace(/\s+/g, " ").trim())
                   .filter(Boolean)
                   .map((para) => (
                     <p key={para}>{para}</p>
