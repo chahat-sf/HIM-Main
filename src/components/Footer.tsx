@@ -12,6 +12,7 @@ type FooterLink = { label: string; href: string };
 
 const HELP_LINKS: FooterLink[] = [
   { label: "CONTACT", href: "/contact" },
+  { label: "CONCIERGE", href: "/contact?tab=concierge" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
