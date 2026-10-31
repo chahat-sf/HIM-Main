@@ -29,6 +29,10 @@ import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
 import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
+import {
+  PDP_POLICY_SECTIONS,
+  PDP_SUPPORT_LINKS,
+} from "@/lib/pdp-policies";
 
 function PlayBadge() {
   return (
@@ -734,6 +738,42 @@ export default function PdpSingle({
                     <p key={para}>{para}</p>
                   ))}
               </Accordion>
+              {PDP_POLICY_SECTIONS.map((section) => (
+                <Accordion key={section.id} label={section.label}>
+                  {section.paragraphs.map((para) => (
+                    <p key={para}>{para}</p>
+                  ))}
+                  {section.id === "support" ? (
+                    <>
+                      <ul className="pdp-policy-contacts">
+                        {PDP_SUPPORT_LINKS.map((row) => (
+                          <li key={row.label}>
+                            <span>{row.label}</span>
+                            <a
+                              href={row.href}
+                              {...(row.href.startsWith("http")
+                                ? {
+                                  target: "_blank",
+                                  rel: "noopener noreferrer",
+                                }
+                                : {})}
+                            >
+                              {row.value}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                      <p>
+                        Or visit our{" "}
+                        <Link href="/contact" className="pdp-policy-link">
+                          Contact
+                        </Link>{" "}
+                        page for more ways to reach us.
+                      </p>
+                    </>
+                  ) : null}
+                </Accordion>
+              ))}
             </div>
           </div>
         </div>
@@ -1480,6 +1520,49 @@ export default function PdpSingle({
         }
 
         .pdp-accordion-body p + p {
+          margin-top: 12px;
+        }
+
+        .pdp-policy-contacts {
+          list-style: none;
+          margin: 12px 0 0;
+          padding: 0;
+        }
+
+        .pdp-policy-contacts li {
+          display: flex;
+          gap: 12px;
+          align-items: baseline;
+          font-family: var(--pdp-sans);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .pdp-policy-contacts li + li {
+          margin-top: 8px;
+        }
+
+        .pdp-policy-contacts span {
+          flex: 0 0 72px;
+          color: var(--pdp-muted);
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 10px;
+        }
+
+        .pdp-policy-contacts a,
+        .pdp-policy-link {
+          color: var(--pdp-ink);
+          text-decoration: none;
+          border-bottom: 1px solid currentColor;
+        }
+
+        .pdp-policy-contacts a:hover,
+        .pdp-policy-link:hover {
+          opacity: 0.7;
+        }
+
+        .pdp-policy-contacts + p {
           margin-top: 12px;
         }
 
