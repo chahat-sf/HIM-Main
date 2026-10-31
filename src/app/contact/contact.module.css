@@ -78,10 +78,22 @@
 }
 
 .tabs {
+  position: relative;
   display: flex;
   gap: 0;
   margin: 0 0 clamp(20px, 3vw, 28px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.tabIndicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #c4a574;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .tab {
@@ -89,7 +101,7 @@
   border: none;
   background: transparent;
   padding: 12px 18px;
-  margin: 0 0 -1px;
+  margin: 0;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 11px;
   font-weight: 500;
@@ -97,8 +109,7 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
   cursor: pointer;
-  border-bottom: 1px solid transparent;
-  transition: color 160ms ease, border-color 160ms ease;
+  transition: color 160ms ease;
 }
 
 .tab:hover {
@@ -107,7 +118,6 @@
 
 .tabActive {
   color: #ffffff;
-  border-bottom-color: #c4a574;
 }
 
 .grid {
@@ -274,32 +284,25 @@ a.careValue:hover {
 
 .studioMap {
   position: relative;
-  height: 160px;
+  display: block;
+  width: 100%;
+  height: 140px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    radial-gradient(circle at 35% 42%, rgba(196, 165, 116, 0.16), transparent 42%),
-    linear-gradient(160deg, #1c1814 0%, #0c0a08 48%, #16120e 100%);
+  background: #000000;
 }
 
-.studioMapPin {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  transform: translate(-50%, -50%);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+a.studioMap {
+  cursor: pointer;
 }
 
-.studioMapLabel {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 9px;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+a.studioMap:hover {
+  border-color: rgba(196, 165, 116, 0.45);
+}
+
+.studioMapImage {
+  object-fit: cover;
+  object-position: center;
 }
 
 .studioFooter {

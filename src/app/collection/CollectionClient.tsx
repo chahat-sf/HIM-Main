@@ -3,10 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import SiteShell from "@/components/SiteShell";
 import HimWaySection from "@/components/HimWaySection";
-import { Suspense, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -16,7 +18,36 @@ import {
   isCollectionCategoryPath,
 } from "@/lib/seo";
 
+gsap.registerPlugin(useGSAP);
+
 const BASE_FILTERS = ["ALL"] as const;
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function resolveActiveFilter(
+  categories: string[],
+  initialCategory: string | undefined,
+  pathname: string,
+  rawCategory: string | null,
+): string {
+  const pathSlug = pathname.replace(/^\/collection\/?/, "").split("/")[0] || "";
+  const pathCategory = isCollectionCategoryPath(pathSlug)
+    ? COLLECTION_CATEGORY_PATHS[pathSlug]
+    : null;
+  return (
+    (initialCategory && categories.includes(initialCategory)
+      ? initialCategory
+      : null) ||
+    (pathCategory && categories.includes(pathCategory) ? pathCategory : null) ||
+    (rawCategory && categories.includes(rawCategory) ? rawCategory : null) ||
+    "ALL"
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────
 function CollectionPageInner({
@@ -26,9 +57,12 @@ function CollectionPageInner({
   products: CatalogProduct[];
   initialCategory?: string;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const indicatorReady = useRef(false);
 
   const categories = useMemo(() => {
     const set = new Set(
@@ -37,18 +71,14 @@ function CollectionPageInner({
     return [...BASE_FILTERS, ...Array.from(set).sort()];
   }, [products]);
 
-  const pathSlug = pathname.replace(/^\/collection\/?/, "").split("/")[0] || "";
-  const pathCategory = isCollectionCategoryPath(pathSlug)
-    ? COLLECTION_CATEGORY_PATHS[pathSlug]
-    : null;
-  const rawCategory = searchParams.get("category");
-  const activeFilter =
-    (initialCategory && categories.includes(initialCategory)
-      ? initialCategory
-      : null) ||
-    (pathCategory && categories.includes(pathCategory) ? pathCategory : null) ||
-    (rawCategory && categories.includes(rawCategory) ? rawCategory : null) ||
-    "ALL";
+  const [activeFilter, setActiveFilterState] = useState(() =>
+    resolveActiveFilter(
+      categories,
+      initialCategory,
+      pathname,
+      searchParams.get("category"),
+    ),
+  );
 
   const filtered =
     activeFilter === "ALL"
@@ -56,8 +86,62 @@ function CollectionPageInner({
       : products.filter((p) => p.category === activeFilter);
 
   const setActiveFilter = (filter: string) => {
-    router.replace(categoryHref(filter), { scroll: false });
+    setActiveFilterState(filter);
+    window.history.replaceState(null, "", categoryHref(filter));
   };
+
+  const { contextSafe } = useGSAP({ scope: tabListRef });
+
+  const syncIndicator = contextSafe((immediate = false) => {
+    const list = tabListRef.current;
+    const indicator = indicatorRef.current;
+    if (!list || !indicator) return;
+    const active = list.querySelector<HTMLElement>("[data-tab-active='true']");
+    if (!active) return;
+    const reduce = prefersReducedMotion();
+    const duration =
+      immediate || reduce || !indicatorReady.current ? 0 : 0.4;
+    gsap.to(indicator, {
+      x: active.offsetLeft,
+      width: active.offsetWidth,
+      height: active.offsetHeight,
+      duration,
+      ease: "power3.out",
+      overwrite: true,
+    });
+    indicatorReady.current = true;
+  });
+
+  useGSAP(
+    () => {
+      syncIndicator();
+      const onResize = () => syncIndicator(true);
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    },
+    { dependencies: [activeFilter, categories], scope: tabListRef },
+  );
+
+  useGSAP(
+    () => {
+      const grid = gridRef.current;
+      if (!grid || grid.children.length === 0) return;
+      const reduce = prefersReducedMotion();
+      gsap.fromTo(
+        grid.children,
+        { autoAlpha: 0, y: reduce ? 0 : 14 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: reduce ? 0.01 : 0.38,
+          stagger: reduce ? 0 : 0.045,
+          ease: "power2.out",
+          overwrite: true,
+        },
+      );
+    },
+    { dependencies: [activeFilter, filtered.length], scope: gridRef },
+  );
 
   return (
     <SiteShell>
@@ -98,11 +182,19 @@ function CollectionPageInner({
 
         {/* ── FILTER BAR ──────────────────────────────────────────── */}
         <div className="collection-bar">
-          <div className="collection-bar-left">
+          <div className="collection-bar-left" ref={tabListRef} role="tablist" aria-label="Product categories">
+            <span
+              className="collection-filter-indicator"
+              ref={indicatorRef}
+              aria-hidden
+            />
             {categories.map((f) => (
               <button
                 key={f}
                 type="button"
+                role="tab"
+                aria-selected={activeFilter === f}
+                data-tab-active={activeFilter === f ? "true" : undefined}
                 onClick={() => setActiveFilter(f)}
                 className={`collection-filter-btn${activeFilter === f ? " active" : ""}`}
               >
@@ -116,7 +208,7 @@ function CollectionPageInner({
         </div>
 
         {/* ── PRODUCT GRID ─────────────────────────────────────────── */}
-        <div className="collection-grid">
+        <div className="collection-grid" ref={gridRef}>
           {filtered.map((product) => (
             <ProductCard
               key={product.slug}
@@ -294,6 +386,7 @@ function CollectionPageInner({
         }
 
         .collection-bar-left {
+          position: relative;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -309,7 +402,21 @@ function CollectionPageInner({
           display: none;
         }
 
+        .collection-filter-indicator {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 0;
+          border: 1px solid #111;
+          pointer-events: none;
+          z-index: 0;
+          box-sizing: border-box;
+        }
+
         .collection-filter-btn {
+          position: relative;
+          z-index: 1;
           flex: 0 0 auto;
           padding: 5px 12px;
           border: 1px solid transparent;
@@ -321,14 +428,13 @@ function CollectionPageInner({
           text-transform: uppercase;
           color: rgba(0,0,0,0.45);
           cursor: pointer;
-          transition: all 150ms ease;
+          transition: color 160ms ease;
           white-space: nowrap;
         }
 
         .collection-filter-btn:hover,
         .collection-filter-btn.active {
           color: #111;
-          border-color: #111;
         }
 
         .collection-count {

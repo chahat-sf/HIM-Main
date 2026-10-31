@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import {
 	ArrowRight,
 	Clock,
@@ -14,7 +16,17 @@ import {
 	UserRound,
 } from "lucide-react";
 import ContactForm from "./ContactForm";
+import StudioMap from "./StudioMap";
 import styles from "./contact.module.css";
+
+gsap.registerPlugin(useGSAP);
+
+function prefersReducedMotion() {
+	return (
+		typeof window !== "undefined" &&
+		window.matchMedia("(prefers-reduced-motion: reduce)").matches
+	);
+}
 
 const STUDIO_ADDRESS = "789, Sector-43, Gurgaon";
 const STUDIO_MAPS_URL = "https://maps.google.com/?q=789+Sector+43+Gurgaon";
@@ -100,6 +112,10 @@ export default function ContactPanels() {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const tab = parseTab(searchParams.get("tab"));
+	const tabListRef = useRef<HTMLDivElement>(null);
+	const indicatorRef = useRef<HTMLSpanElement>(null);
+	const panelRef = useRef<HTMLDivElement>(null);
+	const indicatorReady = useRef(false);
 
 	const tabs = useMemo(
 		() =>
@@ -122,13 +138,66 @@ export default function ContactPanels() {
 		[pathname, router, searchParams],
 	);
 
+	const { contextSafe } = useGSAP({ scope: tabListRef });
+
+	const syncIndicator = contextSafe((immediate = false) => {
+		const list = tabListRef.current;
+		const indicator = indicatorRef.current;
+		if (!list || !indicator) return;
+		const active = list.querySelector<HTMLElement>("[data-tab-active='true']");
+		if (!active) return;
+		const reduce = prefersReducedMotion();
+		const duration =
+			immediate || reduce || !indicatorReady.current ? 0 : 0.4;
+		gsap.to(indicator, {
+			x: active.offsetLeft,
+			width: active.offsetWidth,
+			duration,
+			ease: "power3.out",
+			overwrite: true,
+		});
+		indicatorReady.current = true;
+	});
+
+	useGSAP(
+		() => {
+			syncIndicator();
+			const onResize = () => syncIndicator(true);
+			window.addEventListener("resize", onResize);
+			return () => window.removeEventListener("resize", onResize);
+		},
+		{ dependencies: [tab], scope: tabListRef },
+	);
+
+	useGSAP(
+		() => {
+			const panel = panelRef.current;
+			if (!panel) return;
+			const reduce = prefersReducedMotion();
+			gsap.fromTo(
+				panel,
+				{ autoAlpha: 0, y: reduce ? 0 : 12 },
+				{
+					autoAlpha: 1,
+					y: 0,
+					duration: reduce ? 0.01 : 0.4,
+					ease: "power2.out",
+					overwrite: true,
+				},
+			);
+		},
+		{ dependencies: [tab] },
+	);
+
 	return (
 		<div className={styles.body}>
 			<div
 				className={styles.tabs}
+				ref={tabListRef}
 				role="tablist"
 				aria-label="Contact options"
 			>
+				<span className={styles.tabIndicator} ref={indicatorRef} aria-hidden />
 				{tabs.map((item) => {
 					const selected = tab === item.id;
 					return (
@@ -139,6 +208,7 @@ export default function ContactPanels() {
 							id={`contact-tab-${item.id}`}
 							aria-selected={selected}
 							aria-controls={`contact-panel-${item.id}`}
+							data-tab-active={selected ? "true" : undefined}
 							tabIndex={selected ? 0 : -1}
 							className={`${styles.tab}${selected ? ` ${styles.tabActive}` : ""}`}
 							onClick={() => setTab(item.id)}
@@ -151,6 +221,7 @@ export default function ContactPanels() {
 
 			{tab === "care" ? (
 				<div
+					ref={panelRef}
 					className={styles.grid}
 					role="tabpanel"
 					id="contact-panel-care"
@@ -207,16 +278,7 @@ export default function ContactPanels() {
 						</div>
 
 						<div className={styles.studio}>
-							<div className={styles.studioMap} aria-hidden>
-								<div className={styles.studioMapPin}>
-									<MapPin
-										size={28}
-										strokeWidth={1.25}
-										absoluteStrokeWidth={false}
-									/>
-									<span className={styles.studioMapLabel}>Gurgaon</span>
-								</div>
-							</div>
+							<StudioMap label={STUDIO_ADDRESS} href={STUDIO_MAPS_URL} />
 							<div className={styles.studioFooter}>
 								<div className={styles.studioCopy}>
 									<p className={styles.studioTitle}>Visit Our Studio</p>
@@ -243,6 +305,7 @@ export default function ContactPanels() {
 				</div>
 			) : (
 				<div
+					ref={panelRef}
 					className={styles.grid}
 					role="tabpanel"
 					id="contact-panel-concierge"
