@@ -6,23 +6,28 @@ import { ArrowRight } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import HimWaySection from "@/components/HimWaySection";
 import { Suspense, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCard from "@/components/ProductCard";
+import {
+  categoryHref,
+  COLLECTION_CATEGORY_PATHS,
+  COLLECTION_INTRO,
+  isCollectionCategoryPath,
+} from "@/lib/seo";
 
 const BASE_FILTERS = ["ALL"] as const;
-
-function categoryHref(filter: string) {
-  return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────
 function CollectionPageInner({
   products,
+  initialCategory,
 }: {
   products: CatalogProduct[];
+  initialCategory?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const categories = useMemo(() => {
@@ -32,9 +37,18 @@ function CollectionPageInner({
     return [...BASE_FILTERS, ...Array.from(set).sort()];
   }, [products]);
 
+  const pathSlug = pathname.replace(/^\/collection\/?/, "").split("/")[0] || "";
+  const pathCategory = isCollectionCategoryPath(pathSlug)
+    ? COLLECTION_CATEGORY_PATHS[pathSlug]
+    : null;
   const rawCategory = searchParams.get("category");
   const activeFilter =
-    rawCategory && categories.includes(rawCategory) ? rawCategory : "ALL";
+    (initialCategory && categories.includes(initialCategory)
+      ? initialCategory
+      : null) ||
+    (pathCategory && categories.includes(pathCategory) ? pathCategory : null) ||
+    (rawCategory && categories.includes(rawCategory) ? rawCategory : null) ||
+    "ALL";
 
   const filtered =
     activeFilter === "ALL"
@@ -76,6 +90,8 @@ function CollectionPageInner({
             </p>
           </div>
         </div>
+
+        <p className="collection-seo-intro">{COLLECTION_INTRO}</p>
 
         {/* Scroll target for Him Way "EXPLORE MORE" */}
         <div id="collection-listing" aria-hidden="true" />
@@ -241,6 +257,16 @@ function CollectionPageInner({
           font-weight: 400;
           line-height: 1.6;
           color: rgba(255,255,255,0.75);
+        }
+
+        .collection-seo-intro {
+          margin: 28px clamp(16px, 4vw, 48px) 0;
+          max-width: 720px;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 13px;
+          font-weight: 400;
+          line-height: 1.65;
+          color: #4a4a4a;
         }
 
         /* ── FILTER BAR ── */
@@ -605,12 +631,17 @@ function CollectionPageInner({
 
 export default function CollectionClient({
   products,
+  initialCategory,
 }: {
   products: CatalogProduct[];
+  initialCategory?: string;
 }) {
   return (
     <Suspense fallback={null}>
-      <CollectionPageInner products={products} />
+      <CollectionPageInner
+        products={products}
+        initialCategory={initialCategory}
+      />
     </Suspense>
   );
 }

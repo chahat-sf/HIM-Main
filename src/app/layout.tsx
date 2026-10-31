@@ -38,11 +38,11 @@ const jost = Jost({
 export const metadata: Metadata = {
 	metadataBase: new URL(siteUrl),
 	title: {
-		default: "HIM",
-		template: "%s — HIM",
+		default: "HIM World | Luxury Menswear, Suits, Jackets & Tailoring",
+		template: "%s | HIM World",
 	},
 	description:
-		"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
+		"HIM World is luxury menswear from Gurgaon. Tailored suits, velvet jackets, blazers and overcoats crafted for the man who stands out.",
 	robots: {
 		index: false,
 		follow: false,
@@ -60,26 +60,26 @@ export const metadata: Metadata = {
 		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
 	},
 	openGraph: {
-		title: "HIM — Luxury Menswear",
+		title: "HIM World | Made for the Man Who Stands Out",
 		description:
-			"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
+			"Luxury tailoring, velvet and eveningwear from our Gurgaon studio.",
 		type: "website",
 		url: siteUrl,
-		siteName: "HIM",
+		siteName: "HIM World",
 		images: [
 			{
 				url: defaultOgImage,
 				width: 1200,
 				height: 630,
-				alt: "HIM luxury menswear",
+				alt: "HIM World luxury menswear",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "HIM — Luxury Menswear",
+		title: "HIM World | Made for the Man Who Stands Out",
 		description:
-			"Discover HIM luxury menswear: refined essentials, seasonal collections, and studio craftsmanship.",
+			"Luxury tailoring, velvet and eveningwear from our Gurgaon studio.",
 		images: [defaultOgImage],
 	},
 };

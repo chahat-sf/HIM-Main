@@ -12,13 +12,13 @@ export default function PrivacyPolicyPage() {
         {
           heading: "1. Introduction",
           body: [
-            "At HIM, we value your privacy and are committed to handling your personal information responsibly. This Privacy Policy explains how we collect, use, store, and protect your information when you visit our website, place an order, or interact with our services.",
+            "At HIM World, we value your privacy and are committed to handling your personal information responsibly. This Privacy Policy explains how we collect, use, store, and protect your information when you visit our website, place an order, or interact with our services.",
             "By using our website, you acknowledge the practices described in this Privacy Policy, subject to applicable data protection laws.",
           ],
         },
         {
           heading: "2. Information We Collect",
-          body: "HIM may collect the following categories of information when you use our website or services:",
+          body: "HIM World may collect the following categories of information when you use our website or services:",
           labeled: [
             {
               label: "Personal Information",
@@ -66,7 +66,7 @@ export default function PrivacyPolicyPage() {
         {
           heading: "5. Sharing of Information",
           body: [
-            "HIM does not sell customers' personal information as part of its ordinary business operations.",
+            "HIM World does not sell customers' personal information as part of its ordinary business operations.",
             "We may share relevant information with trusted third parties when necessary to provide our services, including:",
           ],
           items: [
@@ -83,7 +83,7 @@ export default function PrivacyPolicyPage() {
         {
           heading: "6. Data Security",
           body: [
-            "HIM takes reasonable technical and organisational measures to protect personal information against unauthorised access, loss, misuse, alteration, or disclosure.",
+            "HIM World takes reasonable technical and organisational measures to protect personal information against unauthorised access, loss, misuse, alteration, or disclosure.",
             "However, no method of electronic transmission or storage can be guaranteed to be completely secure. While we take appropriate precautions, we cannot guarantee absolute security.",
           ],
         },
@@ -106,12 +106,12 @@ export default function PrivacyPolicyPage() {
             "Raise concerns or submit a complaint regarding the handling of your personal information.",
           ],
           after:
-            "To exercise any applicable rights, please contact HIM through the official contact details provided on our website. We may need to verify your identity before processing certain requests.",
+            "To exercise any applicable rights, please contact HIM World through the official contact details provided on our website. We may need to verify your identity before processing certain requests.",
         },
         {
           heading: "9. Marketing Communications",
           body: [
-            "If you choose to receive updates from HIM, we may send you information about new collections, product launches, special offers, and brand announcements.",
+            "If you choose to receive updates from HIM World, we may send you information about new collections, product launches, special offers, and brand announcements.",
             "You may unsubscribe from promotional emails by using the unsubscribe link provided in the communication or by contacting us directly.",
             "Even if you opt out of marketing communications, we may continue to send essential messages relating to your purchases, deliveries, account, or other service-related matters.",
           ],
@@ -120,27 +120,27 @@ export default function PrivacyPolicyPage() {
           heading: "10. Third-Party Websites",
           body: [
             "Our website may contain links to third-party websites, platforms, or services. These external websites operate independently and may have their own privacy policies and data handling practices.",
-            "HIM is not responsible for the privacy practices of third-party websites. We encourage you to review their privacy policies before sharing personal information with them.",
+            "HIM World is not responsible for the privacy practices of third-party websites. We encourage you to review their privacy policies before sharing personal information with them.",
           ],
         },
         {
           heading: "11. Children's Privacy",
           body: [
-            "HIM's website and products are intended for a general audience, and our services are not knowingly directed towards children where restricted by applicable law.",
+            "HIM World's website and products are intended for a general audience, and our services are not knowingly directed towards children where restricted by applicable law.",
             "We do not knowingly collect personal information from children in circumstances where such collection is prohibited. If we become aware that personal information has been collected unlawfully from a child, we will take appropriate steps to address the matter in accordance with applicable law.",
           ],
         },
         {
           heading: "12. International Data Transfers",
           body: [
-            "Where HIM uses service providers or operates across multiple countries, personal information may be processed or transferred outside your country of residence.",
+            "Where HIM World uses service providers or operates across multiple countries, personal information may be processed or transferred outside your country of residence.",
             "Any such transfer will be carried out in accordance with applicable data protection laws and any required safeguards.",
           ],
         },
         {
           heading: "13. Changes to This Privacy Policy",
           body: [
-            "HIM may update this Privacy Policy to reflect changes in our business practices, website functionality, service providers, or applicable legal requirements.",
+            "HIM World may update this Privacy Policy to reflect changes in our business practices, website functionality, service providers, or applicable legal requirements.",
             "Any revised policy will be published on this page. We encourage you to review this page periodically to remain informed about how your information is handled.",
           ],
         },
@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
           labeled: [
             {
               label: "Brand",
-              text: "HIM",
+              text: "HIM World",
             },
             {
               label: "Email",

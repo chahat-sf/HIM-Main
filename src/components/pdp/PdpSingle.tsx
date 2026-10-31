@@ -33,6 +33,7 @@ import {
   PDP_POLICY_SECTIONS,
   PDP_SUPPORT_LINKS,
 } from "@/lib/pdp-policies";
+import { getProductSeo } from "@/lib/product-seo";
 
 function PlayBadge() {
   return (
@@ -95,6 +96,7 @@ export default function PdpSingle({
   related: CatalogProduct[];
 }) {
   const slug = product.slug;
+  const productSeo = getProductSeo(slug);
   const MEDIA = buildPdpMedia(product);
   const PRODUCT = {
     name: product.name,
@@ -107,6 +109,8 @@ export default function PdpSingle({
     details: product.details,
     fabric: product.fabric,
   };
+  const mainImageAlt =
+    productSeo?.mainImageAlt ?? PRODUCT.name;
 
   const [selectedColor, setSelectedColor] = useState(
     PRODUCT.colors[0]?.name ?? "",
@@ -432,8 +436,8 @@ export default function PdpSingle({
                           maxTier="high"
                           alt={
                             i === 0
-                              ? PRODUCT.name
-                              : `${PRODUCT.name} view ${i + 1}`
+                              ? mainImageAlt
+                              : `${PRODUCT.name} by HIM World, view ${i + 1}`
                           }
                           fill
                           priority={i === 0}
@@ -564,8 +568,8 @@ export default function PdpSingle({
                         maxTier="high"
                         alt={
                           i === 0
-                            ? PRODUCT.name
-                            : `${PRODUCT.name} view ${i + 1}`
+                            ? mainImageAlt
+                            : `${PRODUCT.name} by HIM World, view ${i + 1}`
                         }
                         width={1600}
                         height={2400}
@@ -868,8 +872,8 @@ export default function PdpSingle({
                       maxTier="high"
                       alt={
                         pos === 0
-                          ? PRODUCT.name
-                          : `${PRODUCT.name} view ${pos + 1}`
+                          ? mainImageAlt
+                          : `${PRODUCT.name} by HIM World, view ${pos + 1}`
                       }
                       fill
                       priority={pos === 0}

@@ -456,6 +456,8 @@ export default function HeroSection() {
           moves you.
         </h1>
 
+        <p className="him-hero-seo-sub">Luxury Menswear by HIM World</p>
+
         <p className="him-hero-text">
           Timeless fits, modern details and colours that go anywhere.
         </p>
@@ -532,6 +534,16 @@ export default function HeroSection() {
           font-variant: small-caps;
           line-height: 0.88;
           letter-spacing: 0.01em;
+        }
+
+        .him-hero-seo-sub {
+          margin: 12px 0 0;
+          color: rgba(255, 255, 255, 0.72);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: clamp(11px, 0.8vw, 14px);
+          font-weight: 400;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
         }
 
         .him-hero-text {

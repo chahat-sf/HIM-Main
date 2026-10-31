@@ -30,6 +30,7 @@ import {
   PDP_POLICY_SECTIONS,
   PDP_SUPPORT_LINKS,
 } from "@/lib/pdp-policies";
+import { getProductSeo } from "@/lib/product-seo";
 
 function PlayBadge() {
   return (
@@ -98,6 +99,7 @@ export default function PdpOutfit({
   related: CatalogProduct[];
 }) {
   const slug = product.slug;
+  const productSeo = getProductSeo(slug);
   const MEDIA = buildPdpMedia(product);
   const PRODUCT = {
     name: product.name,
@@ -110,6 +112,7 @@ export default function PdpOutfit({
     details: product.details,
     fabric: product.fabric,
   };
+  const mainImageAlt = productSeo?.mainImageAlt ?? PRODUCT.name;
 
   const [selectedColor, setSelectedColor] = useState(
     PRODUCT.colors[0]?.name ?? "",
@@ -300,7 +303,7 @@ export default function PdpOutfit({
                         key={item.src}
                         src={item.src}
                         maxTier="high"
-                        alt={i === activeImg ? PRODUCT.name : ""}
+                        alt={i === activeImg ? mainImageAlt : ""}
                         fill
                         priority={i === 0}
                         quality={85}
