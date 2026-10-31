@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import SiteShell from "@/components/SiteShell";
 import HimWaySection from "@/components/HimWaySection";
+import ProgressiveImage from "@/components/ProgressiveImage";
 import { Suspense, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
@@ -149,7 +149,7 @@ function CollectionPageInner({
 
         {/* ── HERO BANNER ─────────────────────────────────────────── */}
         <div className="collection-hero">
-          <Image
+          <ProgressiveImage
             src="/products/collection-hero.webp"
             alt="All New Essentials"
             fill
@@ -157,7 +157,7 @@ function CollectionPageInner({
             quality={80}
             sizes="100vw"
             className="object-cover"
-            style={{ objectPosition: "22% 40%" }}
+            style={{ objectPosition: "center 35%" }}
           />
           {/* overlay */}
           <div className="collection-hero-overlay" />
