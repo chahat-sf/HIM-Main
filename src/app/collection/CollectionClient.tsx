@@ -14,7 +14,6 @@ import ProductCard from "@/components/ProductCard";
 import {
   categoryHref,
   COLLECTION_CATEGORY_PATHS,
-  COLLECTION_INTRO,
   isCollectionCategoryPath,
 } from "@/lib/seo";
 
@@ -174,8 +173,6 @@ function CollectionPageInner({
             </p>
           </div>
         </div>
-
-        <p className="collection-seo-intro">{COLLECTION_INTRO}</p>
 
         {/* Scroll target for Him Way "EXPLORE MORE" */}
         <div id="collection-listing" aria-hidden="true" />
@@ -349,16 +346,6 @@ function CollectionPageInner({
           font-weight: 400;
           line-height: 1.6;
           color: rgba(255,255,255,0.75);
-        }
-
-        .collection-seo-intro {
-          margin: 28px clamp(16px, 4vw, 48px) 0;
-          max-width: 720px;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 13px;
-          font-weight: 400;
-          line-height: 1.65;
-          color: #4a4a4a;
         }
 
         /* ── FILTER BAR ── */
