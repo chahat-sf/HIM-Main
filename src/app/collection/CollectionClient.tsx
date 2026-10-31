@@ -213,14 +213,14 @@ function CollectionPageInner({
           margin-bottom: 12px;
         }
 
-        .collection-hero-title {
+.collection-hero-title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(26px, 4vw, 52px);
+  font-size: 36px !important;
   font-weight: 400;
   line-height: 0.95;
   letter-spacing: -0.5px;
