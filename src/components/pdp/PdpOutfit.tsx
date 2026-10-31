@@ -25,7 +25,7 @@ import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
-import { SIZE_FIT_NOTE } from "@/lib/size-chart";
+import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 
 function PlayBadge() {
   return (
@@ -415,7 +415,10 @@ export default function PdpOutfit({
             )}
 
             {/* Size selector */}
-            <p className="pdp-size-note">{SIZE_FIT_NOTE}</p>
+            <aside className="pdp-size-note" aria-label="Fit guidance">
+              <p className="pdp-size-note-title">{SIZE_FIT_HEADLINE}</p>
+              <p className="pdp-size-note-body">{SIZE_FIT_NOTE}</p>
+            </aside>
 
             <div className="pdp-size-head">
               <label htmlFor="pdp-size" className="pdp-field-label">SIZE</label>
@@ -511,7 +514,13 @@ export default function PdpOutfit({
                 )}
               </Accordion>
               <Accordion label="Fabric" focus="fabric">
-                <p>{PRODUCT.fabric}</p>
+                {PRODUCT.fabric
+                  .split(/\n\n+/)
+                  .map((para) => para.trim())
+                  .filter(Boolean)
+                  .map((para) => (
+                    <p key={para}>{para}</p>
+                  ))}
               </Accordion>
             </div>
 
@@ -879,13 +888,30 @@ export default function PdpOutfit({
 
         /* Size */
         .pdp-size-note {
-          margin: 0 0 calc(16 * var(--u));
+          margin: 0 0 calc(20 * var(--u));
+          padding: 14px 16px;
+          border-left: 2px solid var(--pdp-ink);
+          background: #f5f3ef;
+        }
+
+        .pdp-size-note-title {
+          margin: 0;
+          font-family: var(--pdp-sans);
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.35;
+          letter-spacing: 0.02em;
+          color: var(--pdp-ink);
+        }
+
+        .pdp-size-note-body {
+          margin: 6px 0 0;
           font-family: var(--pdp-sans);
           font-size: 12px;
           font-weight: 400;
-          line-height: 1.55;
+          line-height: 1.5;
           letter-spacing: 0.01em;
-          color: var(--pdp-muted);
+          color: #3d3d3d;
         }
 
         .pdp-size-head {
@@ -1145,6 +1171,10 @@ export default function PdpOutfit({
 
         .pdp-accordion-body p {
           margin: 0;
+        }
+
+        .pdp-accordion-body p + p {
+          margin-top: 12px;
         }
 
         .pdp-details-list {

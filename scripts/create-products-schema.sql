@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS products (
   slug VARCHAR(160) NOT NULL,
   name VARCHAR(255) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  fabric VARCHAR(255) NULL,
+  fabric TEXT NULL,
   description TEXT NULL,
   marketing_line VARCHAR(512) NULL,
   alternatives_json JSON NULL,

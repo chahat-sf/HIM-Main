@@ -92,13 +92,20 @@ function LoginForm() {
       subtitle="A more considered wardrobe begins here."
       imageSrc="/products/man-image-103.webp"
     >
-      <form className="auth-form" onSubmit={onSubmit} noValidate>
+      <form
+        className="auth-form"
+        method="post"
+        autoComplete="on"
+        onSubmit={onSubmit}
+        noValidate
+      >
         <div className="auth-field">
           <label htmlFor="login-email">Email</label>
           <input
             id="login-email"
+            name="email"
             type="email"
-            autoComplete="email"
+            autoComplete="username"
             placeholder="you@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -111,6 +118,7 @@ function LoginForm() {
           <div className="auth-password-wrap">
             <input
               id="login-password"
+              name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               placeholder="••••••••"
@@ -133,6 +141,7 @@ function LoginForm() {
           <label className="auth-check">
             <input
               type="checkbox"
+              name="remember"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />

@@ -220,7 +220,7 @@ function CollectionPageInner({
   width: 100%;
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(30px, 4.5vw, 64px);
+  font-size: clamp(26px, 4vw, 52px);
   font-weight: 400;
   line-height: 0.95;
   letter-spacing: -0.5px;
@@ -577,7 +577,7 @@ function CollectionPageInner({
           }
 
           .collection-hero-title {
-            font-size: clamp(28px, 8vw, 44px);
+            font-size: clamp(24px, 7vw, 38px);
           }
 
           /* More ways to wear it → swipeable row on phones */
