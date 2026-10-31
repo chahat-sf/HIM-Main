@@ -1,6 +1,7 @@
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { getDb } from "@/lib/db";
 import type { PublicUser } from "@/lib/auth";
+import { sendOrderConfirmationEmail } from "@/lib/email/send";
 import {
 	assertRazorpayConfigured,
 	createRazorpayOrder,
@@ -330,7 +331,7 @@ export async function verifyCheckoutPayment(
 		return { orderId, orderNumber, totalCents, currency };
 	}
 
-	await db.execute(
+	const [updateResult] = await db.execute<ResultSetHeader>(
 		`UPDATE orders
      SET status = 'processing',
          payment_status = 'paid',
@@ -345,6 +346,11 @@ export async function verifyCheckoutPayment(
 	);
 
 	await clearCart(user.id);
+
+	// Only the request that flipped the order to paid sends the email.
+	if (updateResult.affectedRows > 0) {
+		await sendOrderConfirmationEmail(orderId);
+	}
 
 	return { orderId, orderNumber, totalCents, currency };
 }
