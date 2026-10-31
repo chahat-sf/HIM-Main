@@ -154,11 +154,11 @@ export default function PrivacyPolicyPage() {
             },
             {
               label: "Email",
-              text: "[Customer Support Email]",
+              text: "support@thehim.in",
             },
             {
               label: "Mobile number",
-              text: "[Registered Business Address]",
+              text: "+91 99111 67778",
             },
           ],
         },

@@ -12,6 +12,7 @@ type FooterLink = { label: string; href: string };
 
 const HELP_LINKS: FooterLink[] = [
   { label: "CONTACT", href: "/contact" },
+  { label: "CONCIERGE", href: "/contact?tab=concierge" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
@@ -101,7 +102,7 @@ export default function Footer() {
       setStatusMessage(
         data.alreadySubscribed
           ? "You're already on the list."
-          : "Thanks — you're subscribed.",
+          : "Thanks, you're subscribed.",
       );
       track("newsletter_subscribed", {
         source: "footer",
