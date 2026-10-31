@@ -88,13 +88,14 @@ export default function AccountPage() {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
 
-  const [addrLabel, setAddrLabel] = useState("DEFAULT SHIPPING ADDRESS");
+  const [addrLabel, setAddrLabel] = useState("SHIPPING ADDRESS");
   const [line1, setLine1] = useState("");
   const [line2, setLine2] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("India");
+  const [makeDefaultAddress, setMakeDefaultAddress] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,21 +138,21 @@ export default function AccountPage() {
     };
   }, [router]);
 
+  function clearAddressForm(hasExisting: boolean) {
+    setAddrLabel("SHIPPING ADDRESS");
+    setLine1("");
+    setLine2("");
+    setCity("");
+    setState("");
+    setPostalCode("");
+    setCountry("India");
+    setMakeDefaultAddress(!hasExisting);
+  }
+
   function hydrateForms(payload: AccountPayload) {
     setFullName(payload.user.fullName);
     setPhone(payload.user.phone ?? "");
     setDateOfBirth(payload.user.dateOfBirth?.slice(0, 10) ?? "");
-
-    const addr = payload.addresses[0];
-    if (addr) {
-      setAddrLabel(addr.label);
-      setLine1(addr.line1);
-      setLine2(addr.line2 ?? "");
-      setCity(addr.city);
-      setState(addr.state);
-      setPostalCode(addr.postalCode);
-      setCountry(addr.country);
-    }
   }
 
   async function onSignOut() {
@@ -208,6 +209,7 @@ export default function AccountPage() {
           state,
           postalCode,
           country,
+          isDefault: makeDefaultAddress,
         }),
       });
       const body = (await res.json()) as AccountPayload & { error?: string };
@@ -218,8 +220,54 @@ export default function AccountPage() {
       setData(body);
       hydrateForms(body);
       setEditingAddress(false);
+      clearAddressForm(body.addresses.length > 0);
     } catch {
       setFormError("Unable to save address.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSetDefaultAddress(addressId: number) {
+    setFormError("");
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/account/addresses/${addressId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDefault: true }),
+      });
+      const body = (await res.json()) as AccountPayload & { error?: string };
+      if (!res.ok) {
+        setFormError(body.error || "Unable to update default address.");
+        return;
+      }
+      setData(body);
+    } catch {
+      setFormError("Unable to update default address.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDeleteAddress(addressId: number) {
+    setFormError("");
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/account/addresses/${addressId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const body = (await res.json()) as AccountPayload & { error?: string };
+      if (!res.ok) {
+        setFormError(body.error || "Unable to delete address.");
+        return;
+      }
+      setData(body);
+      clearAddressForm(body.addresses.length > 0);
+    } catch {
+      setFormError("Unable to delete address.");
     } finally {
       setSaving(false);
     }
@@ -364,10 +412,12 @@ export default function AccountPage() {
                 <Card>
                   <SectionHeader
                     title="ADDRESSES"
-                    action={editingAddress ? "CANCEL" : "MANAGE"}
+                    action={editingAddress ? "CANCEL" : "ADD ADDRESS"}
                     onAction={() => {
                       setFormError("");
-                      if (editingAddress) hydrateForms(data);
+                      if (!editingAddress) {
+                        clearAddressForm(data.addresses.length > 0);
+                      }
                       setEditingAddress((v) => !v);
                     }}
                   />
@@ -426,29 +476,73 @@ export default function AccountPage() {
                           onChange={(e) => setCountry(e.target.value)}
                         />
                       </label>
+                      {data.addresses.length > 0 ? (
+                        <label className="acc-check">
+                          <input
+                            type="checkbox"
+                            checked={makeDefaultAddress}
+                            onChange={(e) =>
+                              setMakeDefaultAddress(e.target.checked)
+                            }
+                          />
+                          Set as default shipping address
+                        </label>
+                      ) : null}
                       <button
                         type="submit"
                         className="acc-save"
                         disabled={saving}
                         style={{ background: GOLD, color: "#111" }}
                       >
-                        {saving ? "Saving…" : "Save address"}
+                        {saving ? "Saving…" : "Add address"}
                       </button>
                     </form>
-                  ) : data.addresses.length === 0 ? (
+                  ) : null}
+                  {!editingAddress && data.addresses.length === 0 ? (
                     <p className="acc-empty">No addresses yet</p>
-                  ) : (
-                    data.addresses.map((addr) => (
-                      <div key={addr.id} className="acc-address-box">
-                        <p className="acc-address-label">{addr.label}</p>
-                        {addr.lines.map((line) => (
-                          <p key={`${addr.id}-${line}`} className="acc-address-line">
-                            {line}
-                          </p>
-                        ))}
-                      </div>
-                    ))
-                  )}
+                  ) : null}
+                  {data.addresses.length > 0 ? (
+                    <div className="acc-address-list">
+                      {data.addresses.map((addr) => (
+                        <div key={addr.id} className="acc-address-box">
+                          <div className="acc-address-head">
+                            <p className="acc-address-label">{addr.label}</p>
+                            {addr.isDefault ? (
+                              <span className="acc-address-badge">Default</span>
+                            ) : null}
+                          </div>
+                          {addr.lines.map((line) => (
+                            <p
+                              key={`${addr.id}-${line}`}
+                              className="acc-address-line"
+                            >
+                              {line}
+                            </p>
+                          ))}
+                          <div className="acc-address-actions">
+                            {!addr.isDefault ? (
+                              <button
+                                type="button"
+                                className="acc-address-action"
+                                disabled={saving}
+                                onClick={() => void onSetDefaultAddress(addr.id)}
+                              >
+                                Set as default
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="acc-address-action"
+                              disabled={saving}
+                              onClick={() => void onDeleteAddress(addr.id)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </Card>
               </div>
 
@@ -789,6 +883,23 @@ export default function AccountPage() {
           text-align: right;
         }
 
+        .acc-address-list {
+          max-height: 26.5rem;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding-right: 4px;
+          scrollbar-width: thin;
+          scrollbar-color: ${RULE} transparent;
+        }
+        .acc-form + .acc-address-list {
+          margin-top: 16px;
+        }
+        .acc-address-list::-webkit-scrollbar {
+          width: 4px;
+        }
+        .acc-address-list::-webkit-scrollbar-thumb {
+          background: ${RULE};
+        }
         .acc-address-box {
           border: 1px solid ${RULE};
           padding: 16px 18px;
@@ -797,13 +908,29 @@ export default function AccountPage() {
         .acc-address-box + .acc-address-box {
           margin-top: 12px;
         }
+        .acc-address-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
         .acc-address-label {
-          margin: 0 0 12px;
+          margin: 0;
           font-family: ${SANS};
           font-size: 8px;
           letter-spacing: 1.2px;
           color: ${MUTED};
           text-transform: uppercase;
+        }
+        .acc-address-badge {
+          font-family: ${SANS};
+          font-size: 8px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: ${GOLD};
+          border: 1px solid ${GOLD};
+          padding: 3px 8px;
         }
         .acc-address-line {
           margin: 0 0 2px;
@@ -811,6 +938,47 @@ export default function AccountPage() {
           font-size: 12px;
           color: ${INK};
           line-height: 1.65;
+        }
+        .acc-address-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px 16px;
+          margin-top: 14px;
+        }
+        .acc-address-action {
+          border: none;
+          background: transparent;
+          padding: 0;
+          font-family: ${SANS};
+          font-size: 9px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: ${MUTED_SOFT};
+          cursor: pointer;
+          border-bottom: 1px solid transparent;
+        }
+        .acc-address-action:hover:not(:disabled) {
+          color: ${INK};
+          border-bottom-color: ${INK};
+        }
+        .acc-address-action:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .acc-check {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-family: ${SANS};
+          font-size: 11px;
+          color: ${MUTED_SOFT};
+          cursor: pointer;
+          user-select: none;
+        }
+        .acc-check input {
+          width: 14px;
+          height: 14px;
+          accent-color: ${GOLD};
         }
 
         .acc-empty {

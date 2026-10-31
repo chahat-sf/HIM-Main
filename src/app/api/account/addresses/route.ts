@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { getAccountPayload, upsertDefaultAddress } from "@/lib/account";
+import { createAddress, getAccountPayload } from "@/lib/account";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import {
-	FIELD_LIMITS,
-	parseJsonBody,
-	tooManyRequests,
-} from "@/lib/validation";
+import { FIELD_LIMITS, parseJsonBody, tooManyRequests } from "@/lib/validation";
 
 type AddressBody = {
 	label?: string;
@@ -16,6 +12,7 @@ type AddressBody = {
 	state?: string;
 	postalCode?: string;
 	country?: string;
+	isDefault?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -66,7 +63,7 @@ export async function POST(request: Request) {
 			);
 		}
 
-		await upsertDefaultAddress(user.id, {
+		const addressId = await createAddress(user.id, {
 			label: body.label,
 			line1,
 			line2: body.line2,
@@ -74,9 +71,11 @@ export async function POST(request: Request) {
 			state,
 			postalCode,
 			country: body.country,
+			isDefault: Boolean(body.isDefault),
 		});
 
-		return NextResponse.json(await getAccountPayload(user));
+		const payload = await getAccountPayload(user);
+		return NextResponse.json({ ...payload, createdAddressId: addressId });
 	} catch (error) {
 		console.error("addresses POST error", error);
 		return NextResponse.json(
