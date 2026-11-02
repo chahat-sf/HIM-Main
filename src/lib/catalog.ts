@@ -71,7 +71,9 @@ function mapRow(row: ProductRow): CatalogProduct {
 	const swatchesFromDb = parseJsonArray<string>(row.swatches_json, []);
 	const swatches =
 		swatchesFromDb.length > 0 ? swatchesFromDb : colors.map((c) => c.hex);
-	const images = parseJsonArray<string>(row.images_json, []).map(toHighImage);
+	const images = parseJsonArray<string>(row.images_json, [])
+		.map(toHighImage)
+		.filter((src) => !/\/signature\.webp$/i.test(src));
 	const image = toHighImage(
 		row.image_url || images[0] || "/products/man-image-100.webp",
 	);
@@ -88,6 +90,7 @@ function mapRow(row: ProductRow): CatalogProduct {
 		details: parseJsonArray<string>(row.details_json, []),
 		category: row.category ?? "",
 		image,
+		// Gallery excludes card signatures; PDP uses this list, cards use `image`.
 		images: images.length > 0 ? images : [image],
 		videoUrl: row.video_url?.trim() || null,
 		price: formatPriceRupees(row.price_cents),

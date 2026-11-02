@@ -168,7 +168,7 @@ export default function Lookbook() {
             <h2>WHERE THE DAY UNFOLDS</h2>
 
             <p>
-              Him is about clothes that live with you — in the routine,
+              Him is about clothes that live with you in the routine,
               the detours and everything in between. Designed for comfort,
               movement and a more considered tomorrow.
             </p>
