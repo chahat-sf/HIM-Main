@@ -42,8 +42,8 @@ export default function TermsOfSalePage() {
         {
           heading: "5. Order Cancellation",
           body: [
-            "Because every piece is crafted specifically for you, we can amend or cancel your order only before production begins.",
-            "Once your fabric is allocated and preparation has started, cancellations are no longer possible.",
+            "Each piece is crafted specifically for you. You may amend or cancel your order only before production begins — please contact us by email, phone, or WhatsApp with your order number.",
+            "Once fabric has been allocated and preparation has started, the order can no longer be cancelled. You may still request a return after delivery under our returns policy.",
           ],
         },
         {
