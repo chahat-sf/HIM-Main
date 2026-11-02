@@ -90,7 +90,7 @@ function LoginForm() {
       eyebrow="ACCOUNT"
       title="SIGN IN"
       subtitle="A more considered wardrobe begins here."
-      imageSrc="/products/man-image-103.webp"
+      imageSrc="/products/low/archivist/7.webp"
     >
       <form
         className="auth-form"

@@ -16,15 +16,15 @@ export const PDP_POLICY_SECTIONS: PdpPolicySection[] = [
 		label: "Shipping & Delivery",
 		paragraphs: [
 			"Complimentary shipping on all prepaid orders within India.",
-			"Orders typically arrive in 5–7 business days. Timelines are estimates and may vary by location or courier delays.",
+			"Orders typically arrive in 10–15 business days. Timelines are estimates and may vary by location or courier delays.",
 		],
 	},
 	{
 		id: "cancellation",
 		label: "Order Cancellation",
 		paragraphs: [
-			"You can cancel your order anytime before it is dispatched. Reach us by email, phone, or WhatsApp with your order number.",
-			"Once an order has been dispatched, it can no longer be cancelled. You may still request a return after delivery under our returns policy.",
+			"Because every piece is crafted specifically for you, we can amend or cancel your order only before production begins.",
+			"Once your fabric is allocated and preparation has started, cancellations are no longer possible.",
 		],
 	},
 	{
@@ -32,7 +32,7 @@ export const PDP_POLICY_SECTIONS: PdpPolicySection[] = [
 		label: "Returns & Refunds",
 		paragraphs: [
 			"Returns and exchanges are accepted within 14 days of delivery for unused, unworn pieces returned with original tags and packaging.",
-			"Once we receive and inspect the return, refunds are issued to the original payment method within 5–7 business days.",
+			"Once we receive and inspect the return, refunds are issued to the original payment method within 10–15 business days.",
 			"For made-to-measure adjustments arranged after your order, our team will guide you on the right next step.",
 		],
 	},

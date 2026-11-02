@@ -300,7 +300,7 @@ export default function AccountPage() {
           aria-label="My Account"
         >
           <Image
-            src="/products/man-image-103.webp"
+            src="/products/archivist/7.webp"
             alt=""
             fill
             priority

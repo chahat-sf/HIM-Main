@@ -42,7 +42,7 @@ type ProductRow = RowDataPacket & {
 
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const DEFAULT_SHIP =
-	"Complimentary shipping on prepaid orders within India. Delivery typically takes 5–7 business days. Returns and exchanges within 14 days of delivery.";
+	"Complimentary shipping on prepaid orders within India. Delivery typically takes 10–15 business days. Returns and exchanges within 14 days of delivery.";
 
 function parseJsonArray<T>(value: unknown, fallback: T[]): T[] {
 	if (value == null) return fallback;

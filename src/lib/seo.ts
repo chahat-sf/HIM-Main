@@ -15,7 +15,7 @@ export const SEO_IMAGES = {
 	home: "/products/pdp-hero.webp",
 	collection: "/products/man-image-100.webp",
 	house: "/lookbook/man-on-car.webp",
-	contact: "/products/man-image-103.webp",
+	contact: "/products/low/archivist/7.webp",
 	legal: "/products/man-image-102.webp",
 } as const;
 

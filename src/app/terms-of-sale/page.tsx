@@ -40,16 +40,23 @@ export default function TermsOfSalePage() {
           ],
         },
         {
-          heading: "5. Shipping and Delivery",
+          heading: "5. Order Cancellation",
           body: [
-            "HIM World aims to process and dispatch orders within the estimated timelines communicated at checkout or in the order confirmation.",
+            "Because every piece is crafted specifically for you, we can amend or cancel your order only before production begins.",
+            "Once your fabric is allocated and preparation has started, cancellations are no longer possible.",
+          ],
+        },
+        {
+          heading: "6. Shipping and Delivery",
+          body: [
+            "HIM World aims to process and dispatch orders within the estimated timelines communicated at checkout or in the order confirmation. Orders within India typically arrive in 10–15 business days.",
             "Delivery timelines are estimates and may vary due to location, courier operations, customs procedures, public holidays, or circumstances beyond our reasonable control.",
             "Customers are responsible for providing accurate delivery information. Any additional costs arising from incorrect addresses or failed delivery attempts may be charged where permitted by applicable law.",
             "Risk and responsibility for products during delivery will be governed by applicable law and the delivery arrangements specified by HIM World.",
           ],
         },
         {
-          heading: "6. Returns, Exchanges, and Refunds",
+          heading: "7. Returns, Exchanges, and Refunds",
           body: [
             "We want every purchase to meet your expectations. Eligible products may be returned or exchanged in accordance with our published Return and Refund Policy.",
             "To qualify for a return or exchange, products should generally be unused, unworn, unwashed, and returned with their original tags, packaging, and proof of purchase.",
@@ -59,14 +66,14 @@ export default function TermsOfSalePage() {
           ],
         },
         {
-          heading: "7. Product Care and Authenticity",
+          heading: "8. Product Care and Authenticity",
           body: [
             "At HIM World, we place importance on quality, design, and craftsmanship. Customers are encouraged to follow the care instructions provided with each product to maintain its appearance and longevity.",
             "All products sold through HIM World's official sales channels are represented as genuine HIM World merchandise. Customers are encouraged to purchase through authorised channels to ensure product authenticity.",
           ],
         },
         {
-          heading: "8. Promotional Offers and Gift Cards",
+          heading: "9. Promotional Offers and Gift Cards",
           body: [
             "Promotional offers, discounts, gift cards, and other benefits may be subject to additional terms and conditions.",
             "Unless expressly stated otherwise, promotional offers cannot be combined with other offers, exchanged for cash, or applied retrospectively to completed purchases.",
@@ -74,35 +81,35 @@ export default function TermsOfSalePage() {
           ],
         },
         {
-          heading: "9. Intellectual Property",
+          heading: "10. Intellectual Property",
           body: [
             "All content displayed on HIM World's website, including brand names, logos, product images, designs, text, graphics, and other materials, is owned by or licensed to HIM World and is protected by applicable intellectual property laws.",
             "No content may be reproduced, distributed, modified, or commercially used without prior written permission from the relevant rights holder.",
           ],
         },
         {
-          heading: "10. Limitation of Liability",
+          heading: "11. Limitation of Liability",
           body: [
             "To the extent permitted by applicable law, HIM World shall not be liable for indirect or consequential losses arising from the use of our website or the purchase of our products.",
             "Nothing in these Terms of Sale excludes or limits liability where such exclusion or limitation is prohibited by law, including applicable consumer protection rights.",
           ],
         },
         {
-          heading: "11. Privacy and Personal Information",
+          heading: "12. Privacy and Personal Information",
           body: [
             "Personal information collected during the purchasing process will be handled in accordance with HIM World's Privacy Policy and applicable data protection laws.",
             "We use relevant customer information to process orders, facilitate deliveries, provide customer support, and meet applicable legal obligations.",
           ],
         },
         {
-          heading: "12. Governing Law and Dispute Resolution",
+          heading: "13. Governing Law and Dispute Resolution",
           body: [
             "These Terms of Sale shall be governed by the laws applicable in the relevant jurisdiction, subject to any mandatory consumer protection laws that apply to the customer.",
             "Any disputes arising from a purchase will be addressed in accordance with applicable law and the dispute resolution procedures available in the relevant jurisdiction.",
           ],
         },
         {
-          heading: "13. Contact Information",
+          heading: "14. Contact Information",
           body: [
             "For questions regarding these Terms of Sale, orders, or purchases, please contact us through the official contact details provided on HIM World's website.",
             "By completing a purchase, you acknowledge that you have read and understood these Terms of Sale.",

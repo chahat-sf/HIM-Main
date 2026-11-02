@@ -21,7 +21,7 @@ export default function ContactPage() {
 			<main className={styles.page}>
 				<section className={styles.hero} aria-label="Contact">
 					<Image
-						src="/products/man-image-103.webp"
+						src="/products/low/archivist/7.webp"
 						alt=""
 						fill
 						priority
