@@ -1,5 +1,4 @@
 -- Set iii/ signature shots as card + PDP first image (prepend; keep gallery after).
--- Skip THE ARCHIVIST (no signature in iii/).
 
 UPDATE products
 SET image_url = '/products/nocturne/signature.webp',
@@ -15,6 +14,11 @@ UPDATE products
 SET image_url = '/products/composure/signature.webp',
     images_json = CAST('["/products/composure/signature.webp","/products/composure/1.webp","/products/composure/2.webp","/products/composure/3.webp","/products/composure/4.webp","/products/composure/5.webp","/products/composure/6.webp","/products/composure/7.webp","/products/composure/8.webp"]' AS JSON)
 WHERE name = 'THE COMPOSURE' OR slug = 'the-composure-black-cotton-velvet-jacket';
+
+UPDATE products
+SET image_url = '/products/archivist/signature.webp',
+    images_json = CAST('["/products/archivist/signature.webp","/products/archivist/4.webp","/products/archivist/2.webp","/products/archivist/3.webp","/products/archivist/1.webp","/products/archivist/5.webp","/products/archivist/6.webp","/products/archivist/7.webp","/products/archivist/8.webp"]' AS JSON)
+WHERE name = 'THE ARCHIVIST' OR slug = 'the-archivist-houndstooth-wool-overcoat';
 
 UPDATE products
 SET image_url = '/products/exception/signature.webp',
