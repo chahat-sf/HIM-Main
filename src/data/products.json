@@ -1,0 +1,140 @@
+[
+  {
+    "id": "the-overture",
+    "name": "The Overture",
+    "productName": "Ivory Pinstripe Tailored Suit",
+    "fabric": "Refined terry rayon blend with a smooth texture and an elegant finish.",
+    "meaning": "An overture is an introduction that sets the tone for what follows. Refined, composed and quietly commanding, this piece makes a sophisticated first impression through timeless tailoring.",
+    "description": "The Ivory Pinstripe Tailored Suit combines an elegant ivory finish with subtle pinstripe detailing and an impeccably tailored silhouette. Defined by clean lines and structured construction, it embodies understated luxury and modern refinement.",
+    "marketingLine": "Every great impression begins somewhere.",
+    "alternatives": [
+      "The First Impression",
+      "The Prelude",
+      "The Opening Act"
+    ],
+    "details": [
+      "Refined terry rayon blend",
+      "Elegant ivory finish",
+      "Subtle pinstripe detailing",
+      "Impeccably tailored silhouette",
+      "Clean lines and structured construction",
+      "Understated detailing with a sophisticated appeal",
+      "A timeless expression of classic tailoring and modern refinement"
+    ]
+  },
+  {
+    "id": "the-signal",
+    "name": "The Signal",
+    "productName": "Electric Chartreuse Double-Breasted Jacket",
+    "fabric": "Distinctive felt fabric blend with a structured feel and refined finish.",
+    "meaning": "A signal is a distinctive sign that communicates presence and intent. Bold, unmistakable and impossible to overlook, this piece represents individuality and the confidence to stand apart.",
+    "description": "The Electric Chartreuse Double-Breasted Jacket makes a striking statement through its vibrant colour and refined construction. Its structured silhouette and precise tailoring balance bold expression with sophisticated craftsmanship, creating a look that commands attention.",
+    "marketingLine": "Make your presence impossible to ignore.",
+    "alternatives": [
+      "The Frequency",
+      "The Voltage",
+      "The Statement"
+    ],
+    "details": [
+      "Distinctive felt fabric blend",
+      "Striking electric chartreuse finish",
+      "Refined double-breasted construction",
+      "Defined silhouette with structured tailoring",
+      "Bold colour statement balanced by precise craftsmanship",
+      "Designed for an unmistakable and confident presence",
+      "Contemporary expression of individuality and sophistication"
+    ]
+  },
+  {
+    "id": "the-offset",
+    "name": "The Offset",
+    "productName": "Houndstooth-Check Cropped Blazer",
+    "fabric": "Premium wool blend with a refined texture and distinctive houndstooth pattern.",
+    "meaning": "An offset represents a deliberate departure from the expected. Inspired by traditional tailoring but reimagined through contemporary proportions, this piece challenges convention while retaining a sense of heritage.",
+    "description": "The Houndstooth-Check Cropped Blazer reinterprets a timeless pattern through a contemporary cropped silhouette. Crafted from a premium wool blend, its structured construction and precise tailoring bring together heritage aesthetics and modern menswear design.",
+    "marketingLine": "Tradition, with a different perspective.",
+    "alternatives": [
+      "The Departure",
+      "The Contrast",
+      "The Disruption"
+    ],
+    "details": [
+      "Premium wool blend",
+      "Classic houndstooth pattern with a distinctive finish",
+      "Contemporary cropped silhouette",
+      "Structured construction with precise tailoring",
+      "A modern interpretation of traditional checks",
+      "Designed to redefine classic menswear proportions",
+      "A considered blend of heritage aesthetics and contemporary design"
+    ]
+  },
+  {
+    "id": "the-operator",
+    "name": "The Operator",
+    "productName": "Dark Tailored Utility Jacket",
+    "fabric": "Premium terry rayon fabric blend with a refined texture and structured finish.",
+    "meaning": "An operator is someone who understands how to navigate situations with precision, control and intent. This piece reflects quiet authority, functional intelligence and an understated sense of confidence.",
+    "description": "The Dark Tailored Utility Jacket brings together sharp tailoring and contemporary utility-inspired construction. Its refined dark finish, clean lines and understated detailing create a composed silhouette that balances everyday functionality with modern sophistication.",
+    "marketingLine": "Precision in every move.",
+    "alternatives": [
+      "The Strategist",
+      "The Authority",
+      "The Tactician"
+    ],
+    "details": [
+      "Premium terry rayon fabric blend",
+      "Sharp, precisely defined tailoring",
+      "Contemporary utility-inspired construction",
+      "Refined dark finish with an urban sensibility",
+      "Clean lines and understated detailing",
+      "Designed for a composed, confident presence",
+      "A seamless balance of functional design and modern sophistication"
+    ]
+  },
+  {
+    "id": "the-diplomat",
+    "name": "The Diplomat",
+    "productName": "Structured Stand-Collar Jacket",
+    "fabric": "Premium banana crepe fabric with a refined texture and sophisticated finish.",
+    "meaning": "A diplomat represents composure, intelligence and the ability to command respect without demanding attention. Defined by restraint and quiet authority, this piece reflects effortless polish and timeless sophistication.",
+    "description": "The Structured Stand-Collar Jacket is defined by its distinctive collar and clean, architectural silhouette. Crafted from premium banana crepe, its refined construction and minimal detailing create an understated expression of contemporary elegance and quiet authority.",
+    "marketingLine": "Authority never needs to announce itself.",
+    "alternatives": [
+      "The Statesman",
+      "The Ambassador",
+      "The Envoy"
+    ],
+    "details": [
+      "Premium banana crepe fabric",
+      "Distinctive structured stand-collar design",
+      "Clean lines with a well-defined silhouette",
+      "Refined construction with a sophisticated finish",
+      "Minimal detailing for an understated appeal",
+      "Designed to convey effortless polish and quiet authority",
+      "A timeless interpretation of contemporary elegance"
+    ]
+  },
+  {
+    "id": "the-reserve",
+    "name": "The Reserve",
+    "productName": "Camel Double-Breasted Cropped Jacket",
+    "fabric": "Premium felt fabric blend with a rich texture and warm, refined finish.",
+    "meaning": "Reserve represents restraint, self-assurance and the confidence to hold something back. Inspired by understated luxury, this piece embodies quiet confidence, considered design and effortless sophistication.",
+    "description": "The Camel Double-Breasted Cropped Jacket combines a rich camel tone with elegant double-breasted construction and sharp tailoring. Its contemporary cropped proportions and structured silhouette create a refined balance of classic sophistication and modern design.",
+    "marketingLine": "The confidence of holding nothing back.",
+    "alternatives": [
+      "The Composure",
+      "The Standard",
+      "The Quiet Luxury"
+    ],
+    "details": [
+      "Premium felt fabric blend",
+      "Rich camel tone with a warm, refined finish",
+      "Elegant double-breasted construction",
+      "Sharp tailoring with a structured silhouette",
+      "Contemporary cropped proportions",
+      "Clean detailing with an understated finish",
+      "Designed to embody quiet confidence and effortless sophistication"
+    ]
+  }
+]
