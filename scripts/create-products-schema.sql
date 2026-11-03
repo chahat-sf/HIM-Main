@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS products (
   size_fit TEXT NULL,
   shipping TEXT NULL,
   pdp_layout ENUM('outfit', 'single') NOT NULL DEFAULT 'outfit',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_products_slug (slug)

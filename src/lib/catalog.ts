@@ -111,9 +111,11 @@ const SELECT_COLS = `
   shipping, pdp_layout
 `;
 
+const ACTIVE_WHERE = "is_active = 1";
+
 export async function listProducts(): Promise<CatalogProduct[]> {
 	const [rows] = await dbExecute<ProductRow[]>(
-		`SELECT ${SELECT_COLS} FROM products ORDER BY id ASC`,
+		`SELECT ${SELECT_COLS} FROM products WHERE ${ACTIVE_WHERE} ORDER BY id ASC`,
 	);
 	return (rows as ProductRow[]).map(mapRow);
 }
@@ -123,7 +125,7 @@ export async function getProductBySlug(
 ): Promise<CatalogProduct | null> {
 	if (!slug) return null;
 	const [rows] = await dbExecute<ProductRow[]>(
-		`SELECT ${SELECT_COLS} FROM products WHERE slug = :slug LIMIT 1`,
+		`SELECT ${SELECT_COLS} FROM products WHERE slug = :slug AND ${ACTIVE_WHERE} LIMIT 1`,
 		{ slug },
 	);
 	const row = (rows as ProductRow[])[0];
@@ -134,7 +136,7 @@ export async function getProductById(
 	id: number,
 ): Promise<CatalogProduct | null> {
 	const [rows] = await dbExecute<ProductRow[]>(
-		`SELECT ${SELECT_COLS} FROM products WHERE id = :id LIMIT 1`,
+		`SELECT ${SELECT_COLS} FROM products WHERE id = :id AND ${ACTIVE_WHERE} LIMIT 1`,
 		{ id },
 	);
 	const row = (rows as ProductRow[])[0];
@@ -148,7 +150,7 @@ export async function resolvePdpLayout(slug: string): Promise<PdpLayout> {
 
 export async function listProductSlugs(): Promise<string[]> {
 	const [rows] = await dbExecute<RowDataPacket[]>(
-		"SELECT slug FROM products ORDER BY id ASC",
+		`SELECT slug FROM products WHERE ${ACTIVE_WHERE} ORDER BY id ASC`,
 	);
 	return (rows as RowDataPacket[]).map((r) => String(r.slug));
 }
@@ -160,7 +162,7 @@ export async function listRelatedProducts(
 ): Promise<CatalogProduct[]> {
 	const safeLimit = Math.max(1, Math.min(24, Math.floor(limit)));
 	const [rows] = await dbExecute<ProductRow[]>(
-		`SELECT ${SELECT_COLS} FROM products WHERE slug <> :slug ORDER BY id ASC LIMIT ${safeLimit}`,
+		`SELECT ${SELECT_COLS} FROM products WHERE slug <> :slug AND ${ACTIVE_WHERE} ORDER BY id ASC LIMIT ${safeLimit}`,
 		{ slug },
 	);
 	return (rows as ProductRow[]).map(mapRow);
