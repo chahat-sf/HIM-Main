@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import NavigationOverlay from "@/components/NavigationOverlay";
-import BackgroundMusic from "@/components/BackgroundMusic";
+// import BackgroundMusic from "@/components/BackgroundMusic";
 import ToastHost from "@/components/Toast";
 import { SessionProvider } from "@/components/SessionProvider";
 import { CartProvider } from "@/components/CartProvider";
@@ -98,7 +98,7 @@ export default function RootLayout({
 							<PostHogProviderGate>
 								{children}
 								<NavigationOverlay />
-								<BackgroundMusic />
+								{/* <BackgroundMusic /> */}
 								<ToastHost />
 							</PostHogProviderGate>
 						</WishlistProvider>
