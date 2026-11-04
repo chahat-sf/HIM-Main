@@ -71,7 +71,7 @@ function LookbookFeatureVideo() {
       preload="none"
       className="summer-feature-video"
     >
-      <source src="/videos/footer-video.mp4" type="video/mp4" />
+      <source src="/videos/Landscape.mp4" type="video/mp4" />
     </video>
   );
 }
@@ -374,22 +374,34 @@ export default function Lookbook() {
         /* LOWER VIDEO FEATURE */
 
         .summer-feature {
-          width: 100%;
-          display: grid;
-          grid-template-columns: 1fr 1.23fr;
-          min-height: 480px;
-          border-top: 1px solid rgba(255, 255, 255, 0.25);
-        }
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.23fr;
+  min-height: 0;                      /* was 480px */
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
 
-        .summer-feature-media {
-          position: relative;
-          min-width: 0;
-          min-height: 480px;
-          height: 100%;
-          align-self: stretch;
-          overflow: hidden;
-          background: #17120e;
-        }
+.summer-feature-media {
+  position: relative;
+  min-width: 0;
+  min-height: 0;                      /* was 480px */
+  height: clamp(320px, 28vw, 500px);  /* container height: change this to resize */
+  align-self: stretch;
+  overflow: hidden;
+  background: #17120e;
+}
+
+.summer-feature-media :global(.summer-feature-video) {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.12);             /* crops the black bars baked into the video */
+  transform-origin: center;
+}
 
         /* :global — video lives in LookbookFeatureVideo; scoped jsx won't reach it */
         .summer-feature-media :global(.summer-feature-video) {
@@ -602,9 +614,9 @@ export default function Lookbook() {
           }
 
           .summer-feature-media {
-            min-height: 260px;
-            height: 260px;
-          }
+  min-height: 0;
+  height: clamp(280px, 40vw, 420px);
+}
 
           .summer-feature-content {
             padding: 36px 24px;
