@@ -624,30 +624,98 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
         }
 
         .him-nav-link {
+          position: relative;
+          display: inline-block;
           font-family: ${NAV_FONT};
-          font-size: 9px;
-          font-weight: 400;
-          letter-spacing: 1.5px;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           text-decoration: none;
           white-space: nowrap;
-          transition: color 200ms ease;
+          transition:
+            color 220ms ease,
+            letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .him-nav-link::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -4px;
+          height: 1px;
+          transform: scaleX(0);
+          transform-origin: left center;
+          transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          pointer-events: none;
+        }
+
+        .him-nav-link:hover,
+        .him-nav-link:focus-visible {
+          letter-spacing: 0.2em;
+        }
+
+        .him-nav-link:hover::after,
+        .him-nav-link:focus-visible::after {
+          transform: scaleX(1);
         }
 
         .him-nav--transparent .him-nav-link {
-          color: rgba(255, 255, 255, 0.72);
+          color: rgba(255, 255, 255, 0.92);
+          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+          animation: him-nav-link-idle 3.6s ease-in-out infinite;
         }
 
-        .him-nav--transparent .him-nav-link:hover {
+        .him-nav--transparent .him-nav-link::after {
+          background: rgba(255, 255, 255, 0.9);
+        }
+
+        .him-nav--transparent .him-nav-link:hover,
+        .him-nav--transparent .him-nav-link:focus-visible {
           color: #fff;
+          animation: none;
         }
 
         .him-nav--solid .him-nav-link {
-          color: rgba(17, 17, 17, 0.72);
+          color: rgba(17, 17, 17, 0.88);
         }
 
-        .him-nav--solid .him-nav-link:hover {
+        .him-nav--solid .him-nav-link::after {
+          background: rgba(17, 17, 17, 0.85);
+        }
+
+        .him-nav--solid .him-nav-link:hover,
+        .him-nav--solid .him-nav-link:focus-visible {
           color: #111;
+        }
+
+        @keyframes him-nav-link-idle {
+          0%,
+          100% {
+            opacity: 0.78;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .him-nav-link,
+          .him-nav-link::after {
+            transition: none;
+            animation: none !important;
+          }
+
+          .him-nav-link:hover,
+          .him-nav-link:focus-visible {
+            letter-spacing: 0.14em;
+          }
+
+          .him-nav-link:hover::after,
+          .him-nav-link:focus-visible::after {
+            transform: scaleX(1);
+          }
         }
 
         .him-nav-logo {
