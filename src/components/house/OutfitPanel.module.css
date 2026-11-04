@@ -1,9 +1,13 @@
 .stack {
+  --field-width: min(220px, 70vw);
+  --field-value-size: 13px;
+  --field-label-size: 11px;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: 100%;
+  width: var(--field-width);
+  max-width: 100%;
   pointer-events: auto;
   filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55));
   visibility: hidden;
@@ -46,11 +50,12 @@
 
 .title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--field-label-size);
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
 }
 
@@ -80,7 +85,7 @@
 
 .list {
   --option-pad-y: 9px;
-  --option-font: 14px;
+  --option-font: var(--field-value-size);
   --option-lh: 1.15;
   --option-gap: 4px;
   --option-block: calc(var(--option-font) * var(--option-lh) + var(--option-pad-y) * 2);
@@ -90,13 +95,16 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  /* Show 3.5 options; rest scroll. */
+  /*
+    Always peek half of the 4th option so scroll is obvious:
+    [1][g][2][g][3][g][4 half] → 3.5 blocks + 3 gaps
+  */
   max-height: calc(3.5 * var(--option-block) + 3 * var(--option-gap));
-  overflow-y: auto;
+  overflow-y: scroll;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
 }
 
 .list::-webkit-scrollbar {
@@ -111,9 +119,13 @@
 .option {
   all: unset;
   box-sizing: border-box;
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: var(--option-pad-y) 12px;
+  /* Fixed height so max-height peek math matches rendered rows. */
+  height: var(--option-block);
+  min-height: var(--option-block);
+  padding: 0 12px;
   border-radius: 8px;
   cursor: pointer;
   font-size: var(--option-font);
@@ -153,7 +165,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: min(220px, 70vw);
+  width: var(--field-width);
+  max-width: 100%;
   padding: 10px 12px;
   border-radius: 12px;
   border: 2px solid #0a0a0a;
@@ -184,7 +197,7 @@
 }
 
 .launcherTitle {
-  font-size: 11px;
+  font-size: var(--field-label-size);
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -197,7 +210,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--field-value-size);
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
@@ -217,16 +230,11 @@
     border-radius: 12px;
   }
 
-  .title {
-    font-size: 13px;
-  }
-
   .list {
     --option-pad-y: 8px;
-    --option-font: 13px;
   }
 
   .option {
-    padding: var(--option-pad-y) 10px;
+    padding: 0 10px;
   }
 }
