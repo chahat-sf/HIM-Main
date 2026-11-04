@@ -18,16 +18,17 @@ type ProgressiveImageProps = Omit<ImageProps, "src" | "onLoad" | "placeholder"> 
 	wrapperClassName?: string;
 };
 
-function preload(url: string): Promise<void> {
+/** Resolves true only when the URL loads; 404s must not promote a blank mid/high layer. */
+function preload(url: string): Promise<boolean> {
 	return new Promise((resolve) => {
 		if (!url || typeof window === "undefined") {
-			resolve();
+			resolve(false);
 			return;
 		}
 		const img = new window.Image();
 		img.decoding = "async";
-		img.onload = () => resolve();
-		img.onerror = () => resolve();
+		img.onload = () => resolve(true);
+		img.onerror = () => resolve(false);
 		img.src = url;
 	});
 }
@@ -69,16 +70,16 @@ export default function ProgressiveImage({
 
 		(async () => {
 			if (maxRank >= TIER_RANK.mid && hasMid) {
-				await preload(tiers.mid);
+				const ok = await preload(tiers.mid);
 				if (cancelled) return;
-				setReadyMid(true);
+				if (ok) setReadyMid(true);
 			} else if (maxRank >= TIER_RANK.mid) {
 				setReadyMid(true);
 			}
 			if (maxRank >= TIER_RANK.high && hasHigh) {
-				await preload(tiers.high);
+				const ok = await preload(tiers.high);
 				if (cancelled) return;
-				setReadyHigh(true);
+				if (ok) setReadyHigh(true);
 			} else if (maxRank >= TIER_RANK.high) {
 				setReadyHigh(true);
 			}

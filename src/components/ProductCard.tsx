@@ -271,6 +271,26 @@ export default function ProductCard({
       </div>
 
       <style jsx>{`
+        .product-card-body {
+          transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @media (hover: hover) {
+          .product-card:hover .product-card-body {
+            transform: translateY(-4px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .product-card-body {
+            transition: none;
+          }
+
+          .product-card:hover .product-card-body {
+            transform: none;
+          }
+        }
+
         .product-card-nav {
           position: absolute;
           top: 50%;

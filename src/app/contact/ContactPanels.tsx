@@ -5,18 +5,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import {
-	ArrowRight,
 	Clock,
 	Mail,
-	MapPin,
 	MessageCircle,
 	Phone,
 	Ruler,
-	Sparkles,
 	UserRound,
 } from "lucide-react";
 import ContactForm from "./ContactForm";
-import StudioMap from "./StudioMap";
 import styles from "./contact.module.css";
 
 gsap.registerPlugin(useGSAP);
@@ -28,8 +24,6 @@ function prefersReducedMotion() {
 	);
 }
 
-const STUDIO_ADDRESS = "789, Sector-43, Gurgaon";
-const STUDIO_MAPS_URL = "https://maps.google.com/?q=789+Sector+43+Gurgaon";
 const PHONE_DISPLAY = "+91 99111 67778";
 const PHONE_TEL = "+919911167778";
 const EMAIL = "support@thehim.in";
@@ -56,12 +50,6 @@ const CARE_ROWS = [
 		href: `https://wa.me/${PHONE_TEL.replace("+", "")}`,
 	},
 	{
-		icon: MapPin,
-		label: "Our Studio",
-		value: STUDIO_ADDRESS,
-		href: STUDIO_MAPS_URL,
-	},
-	{
 		icon: Clock,
 		label: "Hours",
 		value: "Mon–Sat, 11am – 7pm IST",
@@ -79,11 +67,6 @@ const CONCIERGE_SERVICES = [
 		icon: Ruler,
 		title: "Fit consultation",
 		text: "A call to take your measurements and perfect the fit after you order.",
-	},
-	{
-		icon: Sparkles,
-		title: "Studio visit",
-		text: "Book time at our Gurgaon studio for a private, considered appointment.",
 	},
 ] as const;
 
@@ -276,29 +259,6 @@ export default function ContactPanels() {
 								</a>
 							</div>
 						</div>
-
-						<div className={styles.studio}>
-							<StudioMap label={STUDIO_ADDRESS} href={STUDIO_MAPS_URL} />
-							<div className={styles.studioFooter}>
-								<div className={styles.studioCopy}>
-									<p className={styles.studioTitle}>Visit Our Studio</p>
-									<p className={styles.studioSub}>{STUDIO_ADDRESS}</p>
-								</div>
-								<a
-									href={STUDIO_MAPS_URL}
-									className={styles.bookBtn}
-									target="_blank"
-									rel="noopener noreferrer"
-								>
-									Book a Visit
-									<ArrowRight
-										size={12}
-										strokeWidth={1.25}
-										absoluteStrokeWidth={false}
-									/>
-								</a>
-							</div>
-						</div>
 					</section>
 
 					<ContactForm />
@@ -316,8 +276,8 @@ export default function ContactPanels() {
 							HIM CONCIERGE
 						</h2>
 						<p className={styles.cardLead}>
-							A private line for styling, fit, and studio appointments. Tell us
-							what you need, we&apos;ll arrange the next step with you.
+							A private line for styling and fit. Tell us what you need,
+							we&apos;ll arrange the next step with you.
 						</p>
 
 						<ul className={styles.conciergeList}>

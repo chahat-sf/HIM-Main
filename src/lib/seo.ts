@@ -173,16 +173,16 @@ export const PAGE_SEO = {
 		ogDescription: "Click the window. Find your look.",
 	},
 	contact: {
-		title: "Contact HIM World | Customer Care & Gurgaon Studio",
+		title: "Contact HIM World | Customer Care",
 		description:
-			"Contact HIM World for order support, styling advice or returns. Visit our studio at Sector-43, Gurgaon, Mon-Sat 11am-7pm, or call +91 99111 67778.",
+			"Contact HIM World for order support, styling advice or returns. Reach us Mon-Sat 11am-7pm IST at +91 99111 67778 or support@thehim.in.",
 		path: "/contact",
 		image: {
 			url: SEO_IMAGES.contact,
 			alt: "Contact HIM World customer care",
 		},
 		absoluteTitle: true,
-		ogTitle: "Visit the HIM World Studio, Gurgaon",
+		ogTitle: "Contact HIM World",
 		ogDescription: "Styling advice, order support and fittings.",
 	},
 	legals: {

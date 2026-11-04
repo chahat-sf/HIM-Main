@@ -14,6 +14,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
 import ProgressiveImage from "@/components/ProgressiveImage";
+import RevealOnScroll from "@/components/RevealOnScroll";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -633,7 +634,7 @@ function ExistingProductsGrid({
         .bestsellers-section {
           border-left: 25px solid #000;
           border-right: 25px solid #000;
-          padding: 0 30px 56px;
+          padding: 0 30px 88px;
         }
         .bestsellers-scroller {
           scrollbar-width: none;
@@ -767,7 +768,7 @@ function ExistingProductsGrid({
           .bestsellers-section {
             border-left-width: 12px;
             border-right-width: 0;
-            padding: 0 0 40px 16px;
+            padding: 0 0 64px 16px;
           }
           .bestsellers-header {
             padding-right: 16px;
@@ -784,7 +785,7 @@ function ExistingProductsGrid({
           .bestsellers-section {
             border-left-width: 0;
             border-right-width: 0;
-            padding: 0 0 32px 14px;
+            padding: 0 0 56px 14px;
           }
           .bestsellers-header {
             padding-right: 14px;
@@ -1246,7 +1247,7 @@ function ProvisionsSection() {
   return (
     <section
       className="relative w-full overflow-hidden"
-      style={{ background: "#090504" }}
+      style={{ background: "#090504", paddingTop: "clamp(48px, 8vw, 96px)" }}
     >
       <div
         className="relative w-full overflow-hidden"
@@ -1399,12 +1400,17 @@ export default function ProductsSection({
 }) {
   return (
     <>
-      <ExistingProductsGrid initialProducts={products} />
+      <RevealOnScroll>
+        <ExistingProductsGrid initialProducts={products} />
+      </RevealOnScroll>
 
-      <EditorialCollage />
+      <RevealOnScroll>
+        <EditorialCollage />
+      </RevealOnScroll>
 
-      {/* LAST SECTION */}
-      <ProvisionsSection />
+      <RevealOnScroll>
+        <ProvisionsSection />
+      </RevealOnScroll>
     </>
   );
 }

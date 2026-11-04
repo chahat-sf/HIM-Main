@@ -272,7 +272,7 @@ function CollectionPageInner({
           background: #fff;
           color: #111;
           min-height: 100vh;
-          overflow-x: clip;
+          /* No overflow-x clip here — it breaks position:sticky on .collection-bar. */
           max-width: 100%;
         }
 
@@ -352,7 +352,7 @@ function CollectionPageInner({
         #collection-listing {
           height: 0;
           overflow: hidden;
-          scroll-margin-top: 0;
+          scroll-margin-top: 52px;
         }
 
         .collection-bar {
@@ -362,11 +362,11 @@ function CollectionPageInner({
           gap: 12px;
           padding: 0 clamp(16px, 4vw, 56px);
           height: 52px;
-          border-bottom: 1px solid rgba(0,0,0,0.1);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
           background: #fff;
           position: sticky;
           top: 0;
-          z-index: 30;
+          z-index: 40;
           max-width: 100%;
           min-width: 0;
           box-sizing: border-box;
@@ -445,6 +445,8 @@ function CollectionPageInner({
           margin: 0 clamp(16px, 4vw, 56px);
           margin-top: 24px;
           margin-bottom: clamp(40px, 5vw, 64px);
+          overflow-x: clip;
+          max-width: 100%;
         }
 
         .product-card {

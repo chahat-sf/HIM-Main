@@ -36,9 +36,13 @@ body {
 }
 
 .group:hover .him-card-media img,
-.him-card-media:hover img,
-.product-card:hover .him-card-media img {
+.him-card-media:hover img {
   transform: scale(1.12);
+}
+
+/* Product cards: softer +0.03 zoom (rest 1.06 → 1.09) */
+.product-card:hover .him-card-media img {
+  transform: scale(1.09);
 }
 
 @media (prefers-reduced-motion: reduce) {
