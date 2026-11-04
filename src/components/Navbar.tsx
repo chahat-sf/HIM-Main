@@ -34,7 +34,10 @@ const ICON_STROKE = 1.25;
 const NAV_FONT = "var(--font-nav), monospace";
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 
-const leftLinks = [{ label: "EXPLORE", href: "/collection" }];
+const leftLinks = [
+  { label: "EXPLORE", href: "/collection" },
+  { label: "CONCIERGE", href: "/contact?tab=concierge" },
+];
 
 type SearchProduct = {
   id: number;
@@ -234,6 +237,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
 
   const menuItems: MenuItem[] = [
     { key: "explore", label: "Explore", href: "/collection" },
+    { key: "concierge", label: "Concierge", href: "/contact?tab=concierge" },
     {
       key: "search",
       label: "Search",

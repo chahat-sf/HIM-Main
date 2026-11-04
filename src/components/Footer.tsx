@@ -416,16 +416,59 @@ export default function Footer() {
         }
 
         .him-footer-col-list :global(a) {
-          color: rgba(245, 241, 233, 0.78);
-          font-size: 10px;
+          position: relative;
+          display: inline-block;
+          color: rgba(245, 241, 233, 0.88);
+          font-size: 11px;
+          font-weight: 500;
           letter-spacing: 0.8px;
           text-decoration: none;
           text-transform: uppercase;
-          transition: color 160ms ease;
+          transition:
+            color 160ms ease,
+            letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .him-footer-col-list :global(a):hover {
+        .him-footer-col-list :global(a)::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -3px;
+          height: 1px;
+          background: rgba(255, 255, 255, 0.9);
+          transform: scaleX(0);
+          transform-origin: left center;
+          transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          pointer-events: none;
+        }
+
+        .him-footer-col-list :global(a):hover,
+        .him-footer-col-list :global(a):focus-visible {
           color: #ffffff;
+          letter-spacing: 1.4px;
+        }
+
+        .him-footer-col-list :global(a):hover::after,
+        .him-footer-col-list :global(a):focus-visible::after {
+          transform: scaleX(1);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .him-footer-col-list :global(a),
+          .him-footer-col-list :global(a)::after {
+            transition: color 160ms ease;
+          }
+
+          .him-footer-col-list :global(a):hover,
+          .him-footer-col-list :global(a):focus-visible {
+            letter-spacing: 0.8px;
+          }
+
+          .him-footer-col-list :global(a):hover::after,
+          .him-footer-col-list :global(a):focus-visible::after {
+            transform: scaleX(1);
+          }
         }
 
         /* Newsletter — true center column */

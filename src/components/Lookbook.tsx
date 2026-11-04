@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import RevealOnScroll from "@/components/RevealOnScroll";
@@ -175,12 +174,11 @@ export default function Lookbook() {
                 movement and a more considered tomorrow.
               </p>
 
-              <Link href="/collection" className="summer-feature-link">
+              {/* <Link href="/collection" className="summer-feature-link">
                 <span className="summer-feature-cta">
-                  {/* <span className="summer-feature-cta-label">OUR BRAND</span> */}
-                  {/* <Arrow /> */}
+                  <span className="summer-feature-cta-label">EXPLORE COLLECTION</span>
                 </span>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </section>
@@ -462,27 +460,42 @@ export default function Lookbook() {
         }
 
         .summer-feature-cta {
+          position: relative;
           display: inline-flex;
           flex-direction: row;
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
           padding-bottom: 4px;
-          border-bottom: 1px solid #292724;
           color: #292724;
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
+          font-size: 12px;
+          font-weight: 600;
           line-height: 1;
           text-decoration: none;
           text-transform: uppercase;
           white-space: nowrap;
-          transition: opacity 160ms ease;
+        }
+
+        .summer-feature-cta::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 1px;
+          background: #292724;
+          opacity: 0.4;
+          transform: scaleX(1);
+          transform-origin: left center;
+          transition: opacity 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          pointer-events: none;
         }
 
         .summer-feature-cta-label {
           display: inline;
+          letter-spacing: 0.12em;
+          transition: letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .summer-feature-cta :global(.summer-feature-cta-arrow) {
@@ -490,8 +503,31 @@ export default function Lookbook() {
           flex-shrink: 0;
         }
 
-        .summer-feature-cta:hover {
-          opacity: 0.55;
+        .summer-feature-link:hover .summer-feature-cta::after,
+        .summer-feature-link:focus-visible .summer-feature-cta::after {
+          opacity: 1;
+        }
+
+        .summer-feature-link:hover .summer-feature-cta-label,
+        .summer-feature-link:focus-visible .summer-feature-cta-label {
+          letter-spacing: 0.16em;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .summer-feature-cta::after,
+          .summer-feature-cta-label {
+            transition: none;
+          }
+
+          .summer-feature-link:hover .summer-feature-cta-label,
+          .summer-feature-link:focus-visible .summer-feature-cta-label {
+            letter-spacing: 0.12em;
+          }
+
+          .summer-feature-link:hover .summer-feature-cta::after,
+          .summer-feature-link:focus-visible .summer-feature-cta::after {
+            opacity: 1;
+          }
         }
 
         /* TABLET */

@@ -2,7 +2,7 @@ import HomeGate from "@/components/HomeGate";
 import HeroSection from "@/components/HeroSection";
 import FlythroughLazy from "@/components/house/FlythroughLazy";
 import ProductsSection from "@/components/ProductsSection";
-import Lookbook from "@/components/Lookbook";
+import LookbookLazy from "@/components/LookbookLazy";
 import Footer from "@/components/Footer";
 import DeferredMount from "@/components/DeferredMount";
 import { listProducts } from "@/lib/catalog";
@@ -25,7 +25,7 @@ export default async function Home() {
 				{/* Bestsellers stay in the SSR tree for SEO — do not DeferredMount. */}
 				<ProductsSection products={products} />
 				<DeferredMount minHeight="60vh">
-					<Lookbook />
+					<LookbookLazy />
 				</DeferredMount>
 				<DeferredMount minHeight="40vh">
 					<Footer />
