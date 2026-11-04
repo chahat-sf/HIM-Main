@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import RevealOnScroll from "@/components/RevealOnScroll";
 
 const lookbooks = [
   {
@@ -87,10 +88,11 @@ export default function Lookbook() {
   };
 
   return (
-    <section className="lookbook-section">
-      {/* STORIES HEADER */}
+    <RevealOnScroll>
+      <section className="lookbook-section">
+        {/* STORIES HEADER */}
 
-      {/* <div className="lookbook-header">
+        {/* <div className="lookbook-header">
         <div className="lookbook-header-title">STORIES</div>
 
         <a href="#lookbooks" className="lookbook-header-link">
@@ -99,12 +101,12 @@ export default function Lookbook() {
         </a>
       </div> */}
 
-      {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
+        {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
 
-      {/* <div id="lookbooks" className="lookbook-grid">
+        {/* <div id="lookbooks" className="lookbook-grid">
         {lookbooks.map((lookbook, index) => (
           <article className="lookbook-card" key={lookbook.title}> */}
-      {/* <div className="lookbook-image">
+        {/* <div className="lookbook-image">
               <div className="lookbook-image-reveal">
                 <div className="lookbook-image-frame">
                   <Image
@@ -119,7 +121,7 @@ export default function Lookbook() {
                 </div>
               </div>
             </div> */}
-      {/* 
+        {/* 
             <div className="lookbook-content">
               <p className="lookbook-category">
                 {index === 0
@@ -154,38 +156,38 @@ export default function Lookbook() {
         ))}
       </div> */}
 
-      {/* LOWER VIDEO FEATURE */}
+        {/* LOWER VIDEO FEATURE */}
 
-      <section className="summer-feature">
-        <div className="summer-feature-media">
-          <LookbookFeatureVideo />
-        </div>
-
-        <div className="summer-feature-content">
-          <div className="summer-feature-inner">
-            {/* <span className="summer-feature-label">OUR APPROACH</span> */}
-
-            <h2>WHERE THE DAY UNFOLDS</h2>
-
-            <p>
-              Him is about clothes that live with you in the routine,
-              the detours and everything in between. Designed for comfort,
-              movement and a more considered tomorrow.
-            </p>
-
-            <Link href="/collection" className="summer-feature-link">
-              <span className="summer-feature-cta">
-                {/* <span className="summer-feature-cta-label">OUR BRAND</span> */}
-                {/* <Arrow /> */}
-              </span>
-            </Link>
+        <section className="summer-feature">
+          <div className="summer-feature-media">
+            <LookbookFeatureVideo />
           </div>
-        </div>
-      </section>
 
-      {/* STYLES */}
+          <div className="summer-feature-content">
+            <div className="summer-feature-inner">
+              {/* <span className="summer-feature-label">OUR APPROACH</span> */}
 
-      <style jsx>{`
+              <h2>WHERE THE DAY UNFOLDS</h2>
+
+              <p>
+                Him is about clothes that live with you in the routine,
+                the detours and everything in between. Designed for comfort,
+                movement and a more considered tomorrow.
+              </p>
+
+              <Link href="/collection" className="summer-feature-link">
+                <span className="summer-feature-cta">
+                  {/* <span className="summer-feature-cta-label">OUR BRAND</span> */}
+                  {/* <Arrow /> */}
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* STYLES */}
+
+        <style jsx>{`
         .lookbook-section {
           width: 100%;
           background: #121212;
@@ -649,6 +651,7 @@ export default function Lookbook() {
           }
         }
       `}</style>
-    </section>
+      </section>
+    </RevealOnScroll>
   );
 }

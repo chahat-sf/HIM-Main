@@ -14,6 +14,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCardMedia from "@/components/ProductCardMedia";
 import ProgressiveImage from "@/components/ProgressiveImage";
+import RevealOnScroll from "@/components/RevealOnScroll";
 
 // Shared black <-> white scroll-turn colors
 const BG_DARK = "#0a0806";
@@ -1399,12 +1400,17 @@ export default function ProductsSection({
 }) {
   return (
     <>
-      <ExistingProductsGrid initialProducts={products} />
+      <RevealOnScroll>
+        <ExistingProductsGrid initialProducts={products} />
+      </RevealOnScroll>
 
-      <EditorialCollage />
+      <RevealOnScroll>
+        <EditorialCollage />
+      </RevealOnScroll>
 
-      {/* LAST SECTION */}
-      <ProvisionsSection />
+      <RevealOnScroll>
+        <ProvisionsSection />
+      </RevealOnScroll>
     </>
   );
 }

@@ -7,6 +7,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
+import RevealOnScroll from "@/components/RevealOnScroll";
 
 type FooterLink = { label: string; href: string };
 
@@ -118,214 +119,215 @@ export default function Footer() {
   };
 
   return (
-    <footer className="him-footer">
-      {/* Centered logo */}
-      <div className="him-footer-logo-wrap">
-        <Link href="/" aria-label="HIM home">
-          <Image
-            src="/homepage/him-logo.webp"
-            alt="HIM"
-            width={100}
-            height={35}
-            className="him-footer-logo-img"
-          />
-        </Link>
-      </div>
-
-      {/* Main grid */}
-      <div className="him-footer-grid" role="contentinfo" aria-label="Main footer">
-        {/* HELP */}
-        <nav className="him-footer-col him-footer-col--help" aria-label="Help">
-          <button
-            type="button"
-            className="him-footer-col-toggle"
-            aria-expanded={open === "help"}
-            onClick={() => toggle("help")}
-          >
-            <span className="him-footer-col-title">HELP</span>
-            <AccordionChevron open={open === "help"} />
-          </button>
-          <p className="him-footer-col-title him-footer-col-title--desktop">
-            HELP
-          </p>
-          <div
-            className={`him-footer-col-panel${open === "help" ? " is-open" : ""}`}
-          >
-            <div className="him-footer-col-panel-inner">
-              <ul className="him-footer-col-list">
-                {HELP_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <Link href={link.href}>{link.label}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </nav>
-
-        {/* LINKS */}
-        <nav className="him-footer-col him-footer-col--links" aria-label="Links">
-          <button
-            type="button"
-            className="him-footer-col-toggle"
-            aria-expanded={open === "links"}
-            onClick={() => toggle("links")}
-          >
-            <span className="him-footer-col-title">LINKS</span>
-            <AccordionChevron open={open === "links"} />
-          </button>
-          <p className="him-footer-col-title him-footer-col-title--desktop">
-            LINKS
-          </p>
-          <div
-            className={`him-footer-col-panel${open === "links" ? " is-open" : ""}`}
-          >
-            <div className="him-footer-col-panel-inner">
-              <ul className="him-footer-col-list">
-                {LINKS.map((link) => (
-                  <li key={link.label}>
-                    <Link href={link.href}>{link.label}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </nav>
-
-        {/* NEWSLETTER (center) */}
-        <div className="him-footer-newsletter">
-          <form
-            className="him-footer-newsletter-form"
-            onSubmit={onNewsletterSubmit}
-          >
-            <label
-              className="him-footer-col-title him-footer-newsletter-label"
-              htmlFor="NewsletterForm--footer"
-            >
-              SIGN UP TO OUR NEWSLETTER
-            </label>
-            <div className="him-footer-newsletter-field">
-              <input
-                id="NewsletterForm--footer"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.currentTarget.value);
-                  if (status !== "idle") {
-                    setStatus("idle");
-                    setStatusMessage("");
-                  }
-                }}
-                placeholder="Email address"
-                aria-label="Email address"
-                autoComplete="email"
-                required
-                disabled={submitting}
-              />
-              <button
-                type="submit"
-                aria-label="Subscribe"
-                disabled={submitting}
-              >
-                <ArrowRight size={14} strokeWidth={1.25} aria-hidden />
-              </button>
-            </div>
-            <p className="him-footer-newsletter-copy">
-              For tailored offers and news on our latest collections.
-            </p>
-            {statusMessage ? (
-              <p
-                className={`him-footer-newsletter-status${status === "error" ? " is-error" : " is-success"
-                  }`}
-                role="status"
-              >
-                {statusMessage}
-              </p>
-            ) : null}
-          </form>
+    <RevealOnScroll>
+      <footer className="him-footer">
+        {/* Centered logo */}
+        <div className="him-footer-logo-wrap">
+          <Link href="/" aria-label="HIM home">
+            <Image
+              src="/homepage/him-logo.webp"
+              alt="HIM"
+              width={100}
+              height={35}
+              className="him-footer-logo-img"
+            />
+          </Link>
         </div>
 
-        {/* LEGAL AND COOKIES */}
-        <nav
-          className="him-footer-col him-footer-col--legal"
-          aria-label="Legal and cookies"
-        >
-          <button
-            type="button"
-            className="him-footer-col-toggle"
-            aria-expanded={open === "legal"}
-            onClick={() => toggle("legal")}
-          >
-            <span className="him-footer-col-title">LEGAL AND COOKIES</span>
-            <AccordionChevron open={open === "legal"} />
-          </button>
-          <p className="him-footer-col-title him-footer-col-title--desktop">
-            LEGAL AND COOKIES
-          </p>
-          <div
-            className={`him-footer-col-panel${open === "legal" ? " is-open" : ""}`}
-          >
-            <div className="him-footer-col-panel-inner">
-              <ul className="him-footer-col-list">
-                {LEGAL_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <Link href={link.href}>{link.label}</Link>
-                  </li>
-                ))}
-              </ul>
+        {/* Main grid */}
+        <div className="him-footer-grid" role="contentinfo" aria-label="Main footer">
+          {/* HELP */}
+          <nav className="him-footer-col him-footer-col--help" aria-label="Help">
+            <button
+              type="button"
+              className="him-footer-col-toggle"
+              aria-expanded={open === "help"}
+              onClick={() => toggle("help")}
+            >
+              <span className="him-footer-col-title">HELP</span>
+              <AccordionChevron open={open === "help"} />
+            </button>
+            <p className="him-footer-col-title him-footer-col-title--desktop">
+              HELP
+            </p>
+            <div
+              className={`him-footer-col-panel${open === "help" ? " is-open" : ""}`}
+            >
+              <div className="him-footer-col-panel-inner">
+                <ul className="him-footer-col-list">
+                  {HELP_LINKS.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
-        {/* SOCIAL */}
-        <nav
-          className="him-footer-col him-footer-col--social"
-          aria-label="Social"
-        >
-          <button
-            type="button"
-            className="him-footer-col-toggle"
-            aria-expanded={open === "social"}
-            onClick={() => toggle("social")}
-          >
-            <span className="him-footer-col-title">SOCIAL</span>
-            <AccordionChevron open={open === "social"} />
-          </button>
-          <p className="him-footer-col-title him-footer-col-title--desktop">
-            SOCIAL
-          </p>
-          <div
-            className={`him-footer-col-panel${open === "social" ? " is-open" : ""}`}
-          >
-            <div className="him-footer-col-panel-inner">
-              <ul className="him-footer-col-list">
-                {SOCIAL_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+          {/* LINKS */}
+          <nav className="him-footer-col him-footer-col--links" aria-label="Links">
+            <button
+              type="button"
+              className="him-footer-col-toggle"
+              aria-expanded={open === "links"}
+              onClick={() => toggle("links")}
+            >
+              <span className="him-footer-col-title">LINKS</span>
+              <AccordionChevron open={open === "links"} />
+            </button>
+            <p className="him-footer-col-title him-footer-col-title--desktop">
+              LINKS
+            </p>
+            <div
+              className={`him-footer-col-panel${open === "links" ? " is-open" : ""}`}
+            >
+              <div className="him-footer-col-panel-inner">
+                <ul className="him-footer-col-list">
+                  {LINKS.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
+          </nav>
+
+          {/* NEWSLETTER (center) */}
+          <div className="him-footer-newsletter">
+            <form
+              className="him-footer-newsletter-form"
+              onSubmit={onNewsletterSubmit}
+            >
+              <label
+                className="him-footer-col-title him-footer-newsletter-label"
+                htmlFor="NewsletterForm--footer"
+              >
+                SIGN UP TO OUR NEWSLETTER
+              </label>
+              <div className="him-footer-newsletter-field">
+                <input
+                  id="NewsletterForm--footer"
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.currentTarget.value);
+                    if (status !== "idle") {
+                      setStatus("idle");
+                      setStatusMessage("");
+                    }
+                  }}
+                  placeholder="Email address"
+                  aria-label="Email address"
+                  autoComplete="email"
+                  required
+                  disabled={submitting}
+                />
+                <button
+                  type="submit"
+                  aria-label="Subscribe"
+                  disabled={submitting}
+                >
+                  <ArrowRight size={14} strokeWidth={1.25} aria-hidden />
+                </button>
+              </div>
+              <p className="him-footer-newsletter-copy">
+                For tailored offers and news on our latest collections.
+              </p>
+              {statusMessage ? (
+                <p
+                  className={`him-footer-newsletter-status${status === "error" ? " is-error" : " is-success"
+                    }`}
+                  role="status"
+                >
+                  {statusMessage}
+                </p>
+              ) : null}
+            </form>
           </div>
-        </nav>
-      </div>
 
-      <hr className="him-footer-rule" />
+          {/* LEGAL AND COOKIES */}
+          <nav
+            className="him-footer-col him-footer-col--legal"
+            aria-label="Legal and cookies"
+          >
+            <button
+              type="button"
+              className="him-footer-col-toggle"
+              aria-expanded={open === "legal"}
+              onClick={() => toggle("legal")}
+            >
+              <span className="him-footer-col-title">LEGAL AND COOKIES</span>
+              <AccordionChevron open={open === "legal"} />
+            </button>
+            <p className="him-footer-col-title him-footer-col-title--desktop">
+              LEGAL AND COOKIES
+            </p>
+            <div
+              className={`him-footer-col-panel${open === "legal" ? " is-open" : ""}`}
+            >
+              <div className="him-footer-col-panel-inner">
+                <ul className="him-footer-col-list">
+                  {LEGAL_LINKS.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </nav>
 
-      <div className="him-footer-bottom">
-        <p className="him-footer-copyright">
-          © HIM. ALL RIGHTS RESERVED.
-        </p>
-        <p className="him-footer-locale">INDIA</p>
-      </div>
+          {/* SOCIAL */}
+          <nav
+            className="him-footer-col him-footer-col--social"
+            aria-label="Social"
+          >
+            <button
+              type="button"
+              className="him-footer-col-toggle"
+              aria-expanded={open === "social"}
+              onClick={() => toggle("social")}
+            >
+              <span className="him-footer-col-title">SOCIAL</span>
+              <AccordionChevron open={open === "social"} />
+            </button>
+            <p className="him-footer-col-title him-footer-col-title--desktop">
+              SOCIAL
+            </p>
+            <div
+              className={`him-footer-col-panel${open === "social" ? " is-open" : ""}`}
+            >
+              <div className="him-footer-col-panel-inner">
+                <ul className="him-footer-col-list">
+                  {SOCIAL_LINKS.map((link) => (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </nav>
+        </div>
 
-      <style jsx>{`
+        <hr className="him-footer-rule" />
+
+        <div className="him-footer-bottom">
+          <p className="him-footer-copyright">
+            © HIM. ALL RIGHTS RESERVED.
+          </p>
+          <p className="him-footer-locale">INDIA</p>
+        </div>
+
+        <style jsx>{`
         .him-footer {
           width: 100%;
           color: #f5f1e9;
@@ -618,6 +620,7 @@ export default function Footer() {
           }
         }
       `}</style>
-    </footer>
+      </footer>
+    </RevealOnScroll>
   );
 }
