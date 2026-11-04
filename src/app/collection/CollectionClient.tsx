@@ -149,7 +149,7 @@ function CollectionPageInner({
         {/* ── HERO BANNER ─────────────────────────────────────────── */}
         <div className="collection-hero">
           <ProgressiveImage
-            src="/products/collection-hero.webp"
+            src="/products/collectionpage-banner.webp"
             alt="All New Essentials"
             fill
             priority
