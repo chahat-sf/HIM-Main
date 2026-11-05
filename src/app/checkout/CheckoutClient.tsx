@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
@@ -60,6 +60,201 @@ type VerifyResponse = {
 	error?: string;
 };
 
+type AddressFormProps = {
+	line1: string;
+	line2: string;
+	city: string;
+	state: string;
+	postalCode: string;
+	country: string;
+	saving: boolean;
+	showCancel?: boolean;
+	onLine1: (value: string) => void;
+	onLine2: (value: string) => void;
+	onCity: (value: string) => void;
+	onState: (value: string) => void;
+	onPostalCode: (value: string) => void;
+	onCountry: (value: string) => void;
+	onCancel?: () => void;
+	onSubmit: (e: FormEvent) => void;
+};
+
+function CheckoutAddressForm({
+	line1,
+	line2,
+	city,
+	state,
+	postalCode,
+	country,
+	saving,
+	showCancel = false,
+	onLine1,
+	onLine2,
+	onCity,
+	onState,
+	onPostalCode,
+	onCountry,
+	onCancel,
+	onSubmit,
+}: AddressFormProps) {
+	return (
+		<form className="caf" onSubmit={onSubmit}>
+			<label className="caf-field">
+				<span>Address line 1</span>
+				<input
+					value={line1}
+					onChange={(e) => onLine1(e.target.value)}
+					required
+				/>
+			</label>
+			<label className="caf-field">
+				<span>Address line 2</span>
+				<input value={line2} onChange={(e) => onLine2(e.target.value)} />
+			</label>
+			<div className="caf-row">
+				<label className="caf-field">
+					<span>City</span>
+					<input
+						value={city}
+						onChange={(e) => onCity(e.target.value)}
+						required
+					/>
+				</label>
+				<label className="caf-field">
+					<span>State</span>
+					<input
+						value={state}
+						onChange={(e) => onState(e.target.value)}
+						required
+					/>
+				</label>
+			</div>
+			<div className="caf-row">
+				<label className="caf-field">
+					<span>Postal code</span>
+					<input
+						value={postalCode}
+						onChange={(e) => onPostalCode(e.target.value)}
+						required
+					/>
+				</label>
+				<label className="caf-field">
+					<span>Country</span>
+					<input
+						value={country}
+						onChange={(e) => onCountry(e.target.value)}
+						required
+					/>
+				</label>
+			</div>
+			<div className="caf-actions">
+				<button type="submit" className="caf-submit" disabled={saving}>
+					{saving ? "Saving…" : "SAVE ADDRESS"}
+				</button>
+				{showCancel ? (
+					<button
+						type="button"
+						className="caf-cancel"
+						disabled={saving}
+						onClick={onCancel}
+					>
+						Cancel
+					</button>
+				) : null}
+			</div>
+
+			<style jsx>{`
+				.caf {
+					display: grid;
+					gap: 14px;
+					width: 100%;
+				}
+				.caf-field {
+					display: grid;
+					gap: 6px;
+					font-size: 11px;
+					letter-spacing: 0.12em;
+					color: ${MUTED};
+					text-transform: uppercase;
+					min-width: 0;
+				}
+				.caf-field input {
+					width: 100%;
+					box-sizing: border-box;
+					background: transparent;
+					border: 1px solid ${BORDER};
+					color: ${INK};
+					padding: 10px 12px;
+					font-size: 14px;
+					letter-spacing: 0;
+					text-transform: none;
+					outline: none;
+				}
+				.caf-field input:focus {
+					border-color: ${GOLD};
+				}
+				.caf-row {
+					display: grid;
+					grid-template-columns: 1fr 1fr;
+					gap: 12px;
+				}
+				.caf-actions {
+					display: flex;
+					flex-wrap: wrap;
+					align-items: center;
+					gap: 14px 18px;
+					margin-top: 4px;
+				}
+				.caf-submit {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					min-height: 42px;
+					padding: 0 18px;
+					background: transparent;
+					color: ${INK};
+					border: 1px solid ${BORDER};
+					font-size: 11px;
+					letter-spacing: 0.18em;
+					cursor: pointer;
+				}
+				.caf-submit:hover:not(:disabled) {
+					border-color: ${GOLD};
+					color: ${GOLD};
+				}
+				.caf-submit:disabled {
+					opacity: 0.55;
+					cursor: not-allowed;
+				}
+				.caf-cancel {
+					border: none;
+					background: transparent;
+					padding: 0;
+					font-family: ${SANS};
+					font-size: 11px;
+					letter-spacing: 0.14em;
+					text-transform: uppercase;
+					color: ${GOLD};
+					cursor: pointer;
+					border-bottom: 1px solid transparent;
+				}
+				.caf-cancel:hover:not(:disabled) {
+					border-bottom-color: ${GOLD};
+				}
+				.caf-cancel:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+				@media (max-width: 520px) {
+					.caf-row {
+						grid-template-columns: 1fr;
+					}
+				}
+			`}</style>
+		</form>
+	);
+}
+
 export default function CheckoutClient() {
 	const router = useRouter();
 	const { items, itemCount, loading: cartLoading, isAuthenticated } =
@@ -73,6 +268,9 @@ export default function CheckoutClient() {
 	const [paying, setPaying] = useState(false);
 	const [error, setError] = useState("");
 	const [savingAddress, setSavingAddress] = useState(false);
+	const [addressModalOpen, setAddressModalOpen] = useState(false);
+	const [addingAddress, setAddingAddress] = useState(false);
+	const [modalError, setModalError] = useState("");
 
 	const [line1, setLine1] = useState("");
 	const [line2, setLine2] = useState("");
@@ -80,6 +278,30 @@ export default function CheckoutClient() {
 	const [state, setState] = useState("");
 	const [postalCode, setPostalCode] = useState("");
 	const [country, setCountry] = useState("India");
+
+	function clearAddressForm() {
+		setLine1("");
+		setLine2("");
+		setCity("");
+		setState("");
+		setPostalCode("");
+		setCountry("India");
+	}
+
+	function closeAddressModal() {
+		setAddressModalOpen(false);
+		setAddingAddress(false);
+		setModalError("");
+		clearAddressForm();
+	}
+
+	function openAddressModal() {
+		setError("");
+		setModalError("");
+		setAddingAddress(false);
+		clearAddressForm();
+		setAddressModalOpen(true);
+	}
 
 	useEffect(() => {
 		let cancelled = false;
@@ -123,10 +345,25 @@ export default function CheckoutClient() {
 	const tax = Math.round(subtotal * 0.07);
 	const total = subtotal + tax;
 
+	useEffect(() => {
+		if (!addressModalOpen) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") closeAddressModal();
+		};
+		window.addEventListener("keydown", onKey);
+		const prev = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		return () => {
+			window.removeEventListener("keydown", onKey);
+			document.body.style.overflow = prev;
+		};
+	}, [addressModalOpen]);
+
 	async function onSaveAddress(e: FormEvent) {
 		e.preventDefault();
 		setSavingAddress(true);
-		setError("");
+		const setSaveError = addressModalOpen ? setModalError : setError;
+		setSaveError("");
 		try {
 			const res = await fetch("/api/account/addresses", {
 				method: "POST",
@@ -139,19 +376,32 @@ export default function CheckoutClient() {
 					state,
 					postalCode,
 					country,
+					isDefault: (account?.addresses.length ?? 0) === 0,
 				}),
 			});
-			const body = (await res.json()) as AccountPayload & { error?: string };
+			const body = (await res.json()) as AccountPayload & {
+				error?: string;
+				createdAddressId?: number;
+			};
 			if (!res.ok) {
-				setError(body.error || "Unable to save address.");
+				setSaveError(body.error || "Unable to save address.");
 				return;
 			}
 			setAccount(body);
+			const createdId = body.createdAddressId;
 			const preferred =
-				body.addresses.find((a) => a.isDefault) ?? body.addresses[0] ?? null;
+				(createdId
+					? body.addresses.find((a) => a.id === createdId)
+					: null) ??
+				body.addresses.find((a) => a.isDefault) ??
+				body.addresses[0] ??
+				null;
 			setSelectedAddressId(preferred?.id ?? null);
+			clearAddressForm();
+			setAddingAddress(false);
+			if (addressModalOpen) closeAddressModal();
 		} catch {
-			setError("Unable to save address.");
+			setSaveError("Unable to save address.");
 		} finally {
 			setSavingAddress(false);
 		}
@@ -261,6 +511,36 @@ export default function CheckoutClient() {
 	}
 
 	const addresses: Address[] = account?.addresses ?? [];
+	const selectedAddress =
+		addresses.find((a) => a.id === selectedAddressId) ??
+		addresses.find((a) => a.isDefault) ??
+		addresses[0] ??
+		null;
+
+	const addressForm = (
+		<CheckoutAddressForm
+			line1={line1}
+			line2={line2}
+			city={city}
+			state={state}
+			postalCode={postalCode}
+			country={country}
+			saving={savingAddress}
+			showCancel={addingAddress}
+			onLine1={setLine1}
+			onLine2={setLine2}
+			onCity={setCity}
+			onState={setState}
+			onPostalCode={setPostalCode}
+			onCountry={setCountry}
+			onCancel={() => {
+				clearAddressForm();
+				setAddingAddress(false);
+				setModalError("");
+			}}
+			onSubmit={onSaveAddress}
+		/>
+	);
 
 	return (
 		<>
@@ -287,101 +567,38 @@ export default function CheckoutClient() {
 					) : (
 						<div className="co-grid">
 							<section className="co-panel" aria-label="Shipping">
-								<p className="co-panel-title">SHIPPING ADDRESS</p>
-
-								{addresses.length > 0 ? (
-									<ul className="co-address-list">
-										{addresses.map((addr) => (
-											<li key={addr.id}>
-												<label className="co-address-card">
-													<input
-														type="radio"
-														name="address"
-														checked={selectedAddressId === addr.id}
-														onChange={() => setSelectedAddressId(addr.id)}
-													/>
-													<span>
-														<span className="co-address-label">
-															{addr.label}
-														</span>
-														{addr.lines.map((line) => (
-															<span key={line} className="co-address-line">
-																{line}
-															</span>
-														))}
-													</span>
-												</label>
-											</li>
-										))}
-									</ul>
-								) : (
-									<form className="co-form" onSubmit={onSaveAddress}>
-										<label>
-											Address line 1
-											<input
-												value={line1}
-												onChange={(e) => setLine1(e.target.value)}
-												required
-											/>
-										</label>
-										<label>
-											Address line 2
-											<input
-												value={line2}
-												onChange={(e) => setLine2(e.target.value)}
-											/>
-										</label>
-										<div className="co-form-row">
-											<label>
-												City
-												<input
-													value={city}
-													onChange={(e) => setCity(e.target.value)}
-													required
-												/>
-											</label>
-											<label>
-												State
-												<input
-													value={state}
-													onChange={(e) => setState(e.target.value)}
-													required
-												/>
-											</label>
-										</div>
-										<div className="co-form-row">
-											<label>
-												Postal code
-												<input
-													value={postalCode}
-													onChange={(e) => setPostalCode(e.target.value)}
-													required
-												/>
-											</label>
-											<label>
-												Country
-												<input
-													value={country}
-													onChange={(e) => setCountry(e.target.value)}
-													required
-												/>
-											</label>
-										</div>
+								<div className="co-panel-head">
+									<p className="co-panel-title">SHIPPING ADDRESS</p>
+									{addresses.length > 0 ? (
 										<button
-											type="submit"
-											className="co-btn-secondary"
-											disabled={savingAddress}
+											type="button"
+											className="co-text-btn"
+											onClick={openAddressModal}
 										>
-											{savingAddress ? "Saving…" : "SAVE ADDRESS"}
+											Change address
 										</button>
-									</form>
-								)}
+									) : null}
+								</div>
 
-								{addresses.length > 0 && (
-									<p className="co-hint">
-										Need a different address? Update it in{" "}
-										<Link href="/account">My Account</Link>.
-									</p>
+								{selectedAddress ? (
+									<div className="co-address-current">
+										<span className="co-address-label">
+											{selectedAddress.label}
+											{selectedAddress.isDefault ? (
+												<span className="co-address-default">
+													{" "}
+													· Default
+												</span>
+											) : null}
+										</span>
+										{selectedAddress.lines.map((line) => (
+											<span key={line} className="co-address-line">
+												{line}
+											</span>
+										))}
+									</div>
+								) : (
+									addressForm
 								)}
 							</section>
 
@@ -461,6 +678,93 @@ export default function CheckoutClient() {
 			</main>
 			<Footer />
 
+			{addressModalOpen ? (
+				<div
+					className="co-modal"
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="co-address-modal-title"
+					onClick={closeAddressModal}
+				>
+					<div
+						className="co-modal-panel"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<header className="co-modal-head">
+							<p id="co-address-modal-title" className="co-modal-title">
+								{addingAddress ? "ADD ADDRESS" : "SELECT ADDRESS"}
+							</p>
+							<button
+								type="button"
+								className="co-modal-close"
+								aria-label="Close"
+								onClick={closeAddressModal}
+							>
+								<X
+									size={18}
+									strokeWidth={1.25}
+									absoluteStrokeWidth={false}
+									aria-hidden
+								/>
+							</button>
+						</header>
+
+						{modalError ? <p className="co-error">{modalError}</p> : null}
+
+						{addingAddress ? (
+							addressForm
+						) : (
+							<>
+								<ul className="co-address-list co-address-list-modal">
+									{addresses.map((addr) => (
+										<li key={addr.id}>
+											<label className="co-address-card">
+												<input
+													type="radio"
+													name="modal-address"
+													checked={selectedAddressId === addr.id}
+													onChange={() => {
+														setSelectedAddressId(addr.id);
+														closeAddressModal();
+													}}
+												/>
+												<span>
+													<span className="co-address-label">
+														{addr.label}
+														{addr.isDefault ? (
+															<span className="co-address-default">
+																{" "}
+																· Default
+															</span>
+														) : null}
+													</span>
+													{addr.lines.map((line) => (
+														<span key={line} className="co-address-line">
+															{line}
+														</span>
+													))}
+												</span>
+											</label>
+										</li>
+									))}
+								</ul>
+								<button
+									type="button"
+									className="co-text-btn co-modal-add"
+									onClick={() => {
+										setModalError("");
+										clearAddressForm();
+										setAddingAddress(true);
+									}}
+								>
+									Add new address
+								</button>
+							</>
+						)}
+					</div>
+				</div>
+			) : null}
+
 			<style jsx>{`
 				.co-page {
 					min-height: 100vh;
@@ -518,11 +822,25 @@ export default function CheckoutClient() {
 					border: 1px solid ${BORDER};
 					padding: 24px;
 				}
+				.co-panel-head {
+					display: flex;
+					align-items: baseline;
+					justify-content: space-between;
+					gap: 16px;
+					margin-bottom: 18px;
+				}
 				.co-panel-title {
-					margin: 0 0 18px;
+					margin: 0;
 					font-size: 11px;
 					letter-spacing: 0.2em;
 					color: ${MUTED};
+				}
+				.co-panel > .co-panel-title {
+					margin-bottom: 18px;
+				}
+				.co-address-current {
+					border: 1px solid ${RULE};
+					padding: 14px;
 				}
 				.co-address-list {
 					list-style: none;
@@ -530,6 +848,14 @@ export default function CheckoutClient() {
 					padding: 0;
 					display: grid;
 					gap: 12px;
+				}
+				.co-address-list-modal {
+					max-height: min(52vh, 360px);
+					overflow-y: auto;
+					overscroll-behavior: contain;
+					padding-right: 4px;
+					scrollbar-width: thin;
+					scrollbar-color: ${RULE} transparent;
 				}
 				.co-address-card {
 					display: grid;
@@ -551,49 +877,79 @@ export default function CheckoutClient() {
 					margin-bottom: 6px;
 					color: ${GOLD};
 				}
+				.co-address-default {
+					color: ${MUTED};
+					letter-spacing: 0.12em;
+				}
 				.co-address-line {
 					display: block;
 					font-size: 13px;
 					line-height: 1.45;
 					color: ${MUTED_SOFT};
 				}
-				.co-hint {
-					margin: 16px 0 0;
-					font-size: 12px;
-					color: ${MUTED};
+				.co-modal {
+					position: fixed;
+					inset: 0;
+					z-index: 80;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					padding: 24px 16px;
+					background: rgba(0, 0, 0, 0.72);
 				}
-				.co-hint :global(a) {
-					color: ${GOLD};
-					text-decoration: underline;
-					text-underline-offset: 3px;
-				}
-				.co-form {
-					display: grid;
-					gap: 14px;
-				}
-				.co-form label {
-					display: grid;
-					gap: 6px;
-					font-size: 11px;
-					letter-spacing: 0.12em;
-					color: ${MUTED};
-					text-transform: uppercase;
-				}
-				.co-form input {
-					background: transparent;
+				.co-modal-panel {
+					width: min(520px, 100%);
+					max-height: min(86vh, 720px);
+					overflow-y: auto;
+					background: ${BG};
 					border: 1px solid ${BORDER};
+					padding: 22px 22px 24px;
+				}
+				.co-modal-head {
+					display: flex;
+					align-items: center;
+					justify-content: space-between;
+					gap: 16px;
+					margin-bottom: 18px;
+				}
+				.co-modal-title {
+					margin: 0;
+					font-size: 11px;
+					letter-spacing: 0.2em;
+					color: ${MUTED};
+				}
+				.co-modal-close {
+					border: none;
+					background: transparent;
+					color: ${MUTED_SOFT};
+					padding: 4px;
+					cursor: pointer;
+					display: inline-flex;
+				}
+				.co-modal-close:hover {
 					color: ${INK};
-					padding: 10px 12px;
-					font-size: 14px;
-					outline: none;
 				}
-				.co-form input:focus {
-					border-color: ${GOLD};
+				.co-modal-add {
+					margin-top: 16px;
 				}
-				.co-form-row {
-					display: grid;
-					grid-template-columns: 1fr 1fr;
-					gap: 12px;
+				.co-text-btn {
+					border: none;
+					background: transparent;
+					padding: 0;
+					font-family: ${SANS};
+					font-size: 11px;
+					letter-spacing: 0.14em;
+					text-transform: uppercase;
+					color: ${GOLD};
+					cursor: pointer;
+					border-bottom: 1px solid transparent;
+				}
+				.co-text-btn:hover:not(:disabled) {
+					border-bottom-color: ${GOLD};
+				}
+				.co-text-btn:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
 				}
 				.co-lines {
 					list-style: none;
@@ -689,9 +1045,6 @@ export default function CheckoutClient() {
 				}
 				@media (max-width: 860px) {
 					.co-grid {
-						grid-template-columns: 1fr;
-					}
-					.co-form-row {
 						grid-template-columns: 1fr;
 					}
 				}

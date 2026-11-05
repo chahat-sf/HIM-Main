@@ -37,7 +37,7 @@ export default function WishlistPage() {
       <main className="wish-page">
         <section className="wish-hero" aria-label="Wishlist">
           <Image
-            src="/products/man-image-103.webp"
+            src="/products/low/archivist/7.webp"
             alt=""
             fill
             priority

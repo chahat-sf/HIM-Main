@@ -25,7 +25,12 @@ import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
-import { SIZE_FIT_NOTE } from "@/lib/size-chart";
+import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
+import {
+  PDP_POLICY_SECTIONS,
+  PDP_SUPPORT_LINKS,
+} from "@/lib/pdp-policies";
+import { getProductSeo } from "@/lib/product-seo";
 
 function PlayBadge() {
   return (
@@ -94,6 +99,7 @@ export default function PdpOutfit({
   related: CatalogProduct[];
 }) {
   const slug = product.slug;
+  const productSeo = getProductSeo(slug);
   const MEDIA = buildPdpMedia(product);
   const PRODUCT = {
     name: product.name,
@@ -106,6 +112,7 @@ export default function PdpOutfit({
     details: product.details,
     fabric: product.fabric,
   };
+  const mainImageAlt = productSeo?.mainImageAlt ?? PRODUCT.name;
 
   const [selectedColor, setSelectedColor] = useState(
     PRODUCT.colors[0]?.name ?? "",
@@ -296,7 +303,7 @@ export default function PdpOutfit({
                         key={item.src}
                         src={item.src}
                         maxTier="high"
-                        alt={i === activeImg ? PRODUCT.name : ""}
+                        alt={i === activeImg ? mainImageAlt : ""}
                         fill
                         priority={i === 0}
                         quality={85}
@@ -415,7 +422,10 @@ export default function PdpOutfit({
             )}
 
             {/* Size selector */}
-            <p className="pdp-size-note">{SIZE_FIT_NOTE}</p>
+            <aside className="pdp-size-note" aria-label="Fit guidance">
+              <p className="pdp-size-note-title">{SIZE_FIT_HEADLINE}</p>
+              <p className="pdp-size-note-body">{SIZE_FIT_NOTE}</p>
+            </aside>
 
             <div className="pdp-size-head">
               <label htmlFor="pdp-size" className="pdp-field-label">SIZE</label>
@@ -511,8 +521,50 @@ export default function PdpOutfit({
                 )}
               </Accordion>
               <Accordion label="Fabric" focus="fabric">
-                <p>{PRODUCT.fabric}</p>
+                {PRODUCT.fabric
+                  .split(/\n+/)
+                  .map((para) => para.replace(/\s+/g, " ").trim())
+                  .filter(Boolean)
+                  .map((para) => (
+                    <p key={para}>{para}</p>
+                  ))}
               </Accordion>
+              {PDP_POLICY_SECTIONS.map((section) => (
+                <Accordion key={section.id} label={section.label}>
+                  {section.paragraphs.map((para) => (
+                    <p key={para}>{para}</p>
+                  ))}
+                  {section.id === "support" ? (
+                    <>
+                      <ul className="pdp-policy-contacts">
+                        {PDP_SUPPORT_LINKS.map((row) => (
+                          <li key={row.label}>
+                            <span>{row.label}</span>
+                            <a
+                              href={row.href}
+                              {...(row.href.startsWith("http")
+                                ? {
+                                  target: "_blank",
+                                  rel: "noopener noreferrer",
+                                }
+                                : {})}
+                            >
+                              {row.value}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                      <p>
+                        Or visit our{" "}
+                        <Link href="/contact" className="pdp-policy-link">
+                          Contact
+                        </Link>{" "}
+                        page for more ways to reach us.
+                      </p>
+                    </>
+                  ) : null}
+                </Accordion>
+              ))}
             </div>
 
             {/* ── MORE WAYS TO WEAR IT ───────────────── */}
@@ -879,13 +931,30 @@ export default function PdpOutfit({
 
         /* Size */
         .pdp-size-note {
-          margin: 0 0 calc(16 * var(--u));
+          margin: 0 0 calc(20 * var(--u));
+          padding: 14px 16px;
+          border-left: 2px solid var(--pdp-ink);
+          background: #f5f3ef;
+        }
+
+        .pdp-size-note-title {
+          margin: 0;
+          font-family: var(--pdp-sans);
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.35;
+          letter-spacing: 0.02em;
+          color: var(--pdp-ink);
+        }
+
+        .pdp-size-note-body {
+          margin: 6px 0 0;
           font-family: var(--pdp-sans);
           font-size: 12px;
           font-weight: 400;
-          line-height: 1.55;
+          line-height: 1.5;
           letter-spacing: 0.01em;
-          color: var(--pdp-muted);
+          color: #3d3d3d;
         }
 
         .pdp-size-head {
@@ -1145,6 +1214,53 @@ export default function PdpOutfit({
 
         .pdp-accordion-body p {
           margin: 0;
+        }
+
+        .pdp-accordion-body p + p {
+          margin-top: 12px;
+        }
+
+        .pdp-policy-contacts {
+          list-style: none;
+          margin: 12px 0 0;
+          padding: 0;
+        }
+
+        .pdp-policy-contacts li {
+          display: flex;
+          gap: 12px;
+          align-items: baseline;
+          font-family: var(--pdp-sans);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .pdp-policy-contacts li + li {
+          margin-top: 8px;
+        }
+
+        .pdp-policy-contacts span {
+          flex: 0 0 72px;
+          color: var(--pdp-muted);
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 10px;
+        }
+
+        .pdp-policy-contacts a,
+        .pdp-policy-link {
+          color: var(--pdp-ink);
+          text-decoration: none;
+          border-bottom: 1px solid currentColor;
+        }
+
+        .pdp-policy-contacts a:hover,
+        .pdp-policy-link:hover {
+          opacity: 0.7;
+        }
+
+        .pdp-policy-contacts + p {
+          margin-top: 12px;
         }
 
         .pdp-details-list {

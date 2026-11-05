@@ -1,29 +1,67 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import SiteShell from "@/components/SiteShell";
 import HimWaySection from "@/components/HimWaySection";
-import { Suspense, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import ProgressiveImage from "@/components/ProgressiveImage";
+import { Suspense, useMemo, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import ProductCard from "@/components/ProductCard";
+import {
+  categoryHref,
+  COLLECTION_CATEGORY_PATHS,
+  isCollectionCategoryPath,
+} from "@/lib/seo";
+
+gsap.registerPlugin(useGSAP);
 
 const BASE_FILTERS = ["ALL"] as const;
 
-function categoryHref(filter: string) {
-  return filter === "ALL" ? "/collection" : `/collection?category=${filter}`;
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function resolveActiveFilter(
+  categories: string[],
+  initialCategory: string | undefined,
+  pathname: string,
+  rawCategory: string | null,
+): string {
+  const pathSlug = pathname.replace(/^\/collection\/?/, "").split("/")[0] || "";
+  const pathCategory = isCollectionCategoryPath(pathSlug)
+    ? COLLECTION_CATEGORY_PATHS[pathSlug]
+    : null;
+  return (
+    (initialCategory && categories.includes(initialCategory)
+      ? initialCategory
+      : null) ||
+    (pathCategory && categories.includes(pathCategory) ? pathCategory : null) ||
+    (rawCategory && categories.includes(rawCategory) ? rawCategory : null) ||
+    "ALL"
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────
 function CollectionPageInner({
   products,
+  initialCategory,
 }: {
   products: CatalogProduct[];
+  initialCategory?: string;
 }) {
-  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const indicatorReady = useRef(false);
 
   const categories = useMemo(() => {
     const set = new Set(
@@ -32,9 +70,14 @@ function CollectionPageInner({
     return [...BASE_FILTERS, ...Array.from(set).sort()];
   }, [products]);
 
-  const rawCategory = searchParams.get("category");
-  const activeFilter =
-    rawCategory && categories.includes(rawCategory) ? rawCategory : "ALL";
+  const [activeFilter, setActiveFilterState] = useState(() =>
+    resolveActiveFilter(
+      categories,
+      initialCategory,
+      pathname,
+      searchParams.get("category"),
+    ),
+  );
 
   const filtered =
     activeFilter === "ALL"
@@ -42,8 +85,62 @@ function CollectionPageInner({
       : products.filter((p) => p.category === activeFilter);
 
   const setActiveFilter = (filter: string) => {
-    router.replace(categoryHref(filter), { scroll: false });
+    setActiveFilterState(filter);
+    window.history.replaceState(null, "", categoryHref(filter));
   };
+
+  const { contextSafe } = useGSAP({ scope: tabListRef });
+
+  const syncIndicator = contextSafe((immediate = false) => {
+    const list = tabListRef.current;
+    const indicator = indicatorRef.current;
+    if (!list || !indicator) return;
+    const active = list.querySelector<HTMLElement>("[data-tab-active='true']");
+    if (!active) return;
+    const reduce = prefersReducedMotion();
+    const duration =
+      immediate || reduce || !indicatorReady.current ? 0 : 0.4;
+    gsap.to(indicator, {
+      x: active.offsetLeft,
+      width: active.offsetWidth,
+      height: active.offsetHeight,
+      duration,
+      ease: "power3.out",
+      overwrite: true,
+    });
+    indicatorReady.current = true;
+  });
+
+  useGSAP(
+    () => {
+      syncIndicator();
+      const onResize = () => syncIndicator(true);
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    },
+    { dependencies: [activeFilter, categories], scope: tabListRef },
+  );
+
+  useGSAP(
+    () => {
+      const grid = gridRef.current;
+      if (!grid || grid.children.length === 0) return;
+      const reduce = prefersReducedMotion();
+      gsap.fromTo(
+        grid.children,
+        { autoAlpha: 0, y: reduce ? 0 : 14 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: reduce ? 0.01 : 0.38,
+          stagger: reduce ? 0 : 0.045,
+          ease: "power2.out",
+          overwrite: true,
+        },
+      );
+    },
+    { dependencies: [activeFilter, filtered.length], scope: gridRef },
+  );
 
   return (
     <SiteShell>
@@ -51,15 +148,15 @@ function CollectionPageInner({
 
         {/* ── HERO BANNER ─────────────────────────────────────────── */}
         <div className="collection-hero">
-          <Image
-            src="/products/collection-hero.webp"
+          <ProgressiveImage
+            src="/products/collectionpage-banner.webp"
             alt="All New Essentials"
             fill
             priority
             quality={80}
             sizes="100vw"
             className="object-cover"
-            style={{ objectPosition: "22% 40%" }}
+            style={{ objectPosition: "center 35%" }}
           />
           {/* overlay */}
           <div className="collection-hero-overlay" />
@@ -82,11 +179,19 @@ function CollectionPageInner({
 
         {/* ── FILTER BAR ──────────────────────────────────────────── */}
         <div className="collection-bar">
-          <div className="collection-bar-left">
+          <div className="collection-bar-left" ref={tabListRef} role="tablist" aria-label="Product categories">
+            <span
+              className="collection-filter-indicator"
+              ref={indicatorRef}
+              aria-hidden
+            />
             {categories.map((f) => (
               <button
                 key={f}
                 type="button"
+                role="tab"
+                aria-selected={activeFilter === f}
+                data-tab-active={activeFilter === f ? "true" : undefined}
                 onClick={() => setActiveFilter(f)}
                 className={`collection-filter-btn${activeFilter === f ? " active" : ""}`}
               >
@@ -100,7 +205,7 @@ function CollectionPageInner({
         </div>
 
         {/* ── PRODUCT GRID ─────────────────────────────────────────── */}
-        <div className="collection-grid">
+        <div className="collection-grid" ref={gridRef}>
           {filtered.map((product) => (
             <ProductCard
               key={product.slug}
@@ -167,7 +272,7 @@ function CollectionPageInner({
           background: #fff;
           color: #111;
           min-height: 100vh;
-          overflow-x: clip;
+          /* No overflow-x clip here — it breaks position:sticky on .collection-bar. */
           max-width: 100%;
         }
 
@@ -213,14 +318,14 @@ function CollectionPageInner({
           margin-bottom: 12px;
         }
 
-        .collection-hero-title {
+.collection-hero-title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(30px, 4.5vw, 64px);
+  font-size: 36px !important;
   font-weight: 400;
   line-height: 0.95;
   letter-spacing: -0.5px;
@@ -247,7 +352,7 @@ function CollectionPageInner({
         #collection-listing {
           height: 0;
           overflow: hidden;
-          scroll-margin-top: 0;
+          scroll-margin-top: 52px;
         }
 
         .collection-bar {
@@ -257,17 +362,18 @@ function CollectionPageInner({
           gap: 12px;
           padding: 0 clamp(16px, 4vw, 56px);
           height: 52px;
-          border-bottom: 1px solid rgba(0,0,0,0.1);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
           background: #fff;
           position: sticky;
           top: 0;
-          z-index: 30;
+          z-index: 40;
           max-width: 100%;
           min-width: 0;
           box-sizing: border-box;
         }
 
         .collection-bar-left {
+          position: relative;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -283,7 +389,21 @@ function CollectionPageInner({
           display: none;
         }
 
+        .collection-filter-indicator {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 0;
+          border: 1px solid #111;
+          pointer-events: none;
+          z-index: 0;
+          box-sizing: border-box;
+        }
+
         .collection-filter-btn {
+          position: relative;
+          z-index: 1;
           flex: 0 0 auto;
           padding: 5px 12px;
           border: 1px solid transparent;
@@ -295,14 +415,13 @@ function CollectionPageInner({
           text-transform: uppercase;
           color: rgba(0,0,0,0.45);
           cursor: pointer;
-          transition: all 150ms ease;
+          transition: color 160ms ease;
           white-space: nowrap;
         }
 
         .collection-filter-btn:hover,
         .collection-filter-btn.active {
           color: #111;
-          border-color: #111;
         }
 
         .collection-count {
@@ -326,6 +445,8 @@ function CollectionPageInner({
           margin: 0 clamp(16px, 4vw, 56px);
           margin-top: 24px;
           margin-bottom: clamp(40px, 5vw, 64px);
+          overflow-x: clip;
+          max-width: 100%;
         }
 
         .product-card {
@@ -577,7 +698,7 @@ function CollectionPageInner({
           }
 
           .collection-hero-title {
-            font-size: clamp(28px, 8vw, 44px);
+            font-size: clamp(24px, 7vw, 38px);
           }
 
           /* More ways to wear it → swipeable row on phones */
@@ -605,12 +726,17 @@ function CollectionPageInner({
 
 export default function CollectionClient({
   products,
+  initialCategory,
 }: {
   products: CatalogProduct[];
+  initialCategory?: string;
 }) {
   return (
     <Suspense fallback={null}>
-      <CollectionPageInner products={products} />
+      <CollectionPageInner
+        products={products}
+        initialCategory={initialCategory}
+      />
     </Suspense>
   );
 }

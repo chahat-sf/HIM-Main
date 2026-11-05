@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS products (
   slug VARCHAR(160) NOT NULL,
   name VARCHAR(255) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  fabric VARCHAR(255) NULL,
+  fabric TEXT NULL,
   description TEXT NULL,
   marketing_line VARCHAR(512) NULL,
   alternatives_json JSON NULL,
@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS products (
   size_fit TEXT NULL,
   shipping TEXT NULL,
   pdp_layout ENUM('outfit', 'single') NOT NULL DEFAULT 'outfit',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_products_slug (slug)

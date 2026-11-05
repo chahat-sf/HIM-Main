@@ -16,7 +16,14 @@ type ContactBody = {
 	message?: string;
 };
 
-const SUBJECTS = new Set(["order", "styling", "returns", "press", "other"]);
+const SUBJECTS = new Set([
+	"order",
+	"styling",
+	"concierge",
+	"returns",
+	"press",
+	"other",
+]);
 
 export async function POST(request: Request) {
 	try {

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import RevealOnScroll from "@/components/RevealOnScroll";
 
 const lookbooks = [
   {
@@ -71,7 +71,7 @@ function LookbookFeatureVideo() {
       preload="none"
       className="summer-feature-video"
     >
-      <source src="/videos/footer-video.mp4" type="video/mp4" />
+      <source src="/videos/Landscape.mp4" type="video/mp4" />
     </video>
   );
 }
@@ -87,10 +87,11 @@ export default function Lookbook() {
   };
 
   return (
-    <section className="lookbook-section">
-      {/* STORIES HEADER */}
+    <RevealOnScroll>
+      <section className="lookbook-section">
+        {/* STORIES HEADER */}
 
-      {/* <div className="lookbook-header">
+        {/* <div className="lookbook-header">
         <div className="lookbook-header-title">STORIES</div>
 
         <a href="#lookbooks" className="lookbook-header-link">
@@ -99,12 +100,12 @@ export default function Lookbook() {
         </a>
       </div> */}
 
-      {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
+        {/* STORY CARDS — GRID ON DESKTOP, SLIDER ON MOBILE */}
 
-      {/* <div id="lookbooks" className="lookbook-grid">
+        {/* <div id="lookbooks" className="lookbook-grid">
         {lookbooks.map((lookbook, index) => (
           <article className="lookbook-card" key={lookbook.title}> */}
-      {/* <div className="lookbook-image">
+        {/* <div className="lookbook-image">
               <div className="lookbook-image-reveal">
                 <div className="lookbook-image-frame">
                   <Image
@@ -119,7 +120,7 @@ export default function Lookbook() {
                 </div>
               </div>
             </div> */}
-      {/* 
+        {/* 
             <div className="lookbook-content">
               <p className="lookbook-category">
                 {index === 0
@@ -154,38 +155,37 @@ export default function Lookbook() {
         ))}
       </div> */}
 
-      {/* LOWER VIDEO FEATURE */}
+        {/* LOWER VIDEO FEATURE */}
 
-      <section className="summer-feature">
-        <div className="summer-feature-media">
-          <LookbookFeatureVideo />
-        </div>
-
-        <div className="summer-feature-content">
-          <div className="summer-feature-inner">
-            {/* <span className="summer-feature-label">OUR APPROACH</span> */}
-
-            <h2>WHERE THE DAY UNFOLDS</h2>
-
-            <p>
-              Him is about clothes that live with you — in the routine,
-              the detours and everything in between. Designed for comfort,
-              movement and a more considered tomorrow.
-            </p>
-
-            <Link href="/collection" className="summer-feature-link">
-              <span className="summer-feature-cta">
-                {/* <span className="summer-feature-cta-label">OUR BRAND</span> */}
-                {/* <Arrow /> */}
-              </span>
-            </Link>
+        <section className="summer-feature">
+          <div className="summer-feature-media">
+            <LookbookFeatureVideo />
           </div>
-        </div>
-      </section>
 
-      {/* STYLES */}
+          <div className="summer-feature-content">
+            <div className="summer-feature-inner">
+              {/* <span className="summer-feature-label">OUR APPROACH</span> */}
 
-      <style jsx>{`
+              <h2>WHERE THE DAY UNFOLDS</h2>
+
+              <p>
+                Him is about clothes that live with you in the routine,
+                the detours and everything in between. Designed for comfort,
+                movement and a more considered tomorrow.
+              </p>
+
+              {/* <Link href="/collection" className="summer-feature-link">
+                <span className="summer-feature-cta">
+                  <span className="summer-feature-cta-label">EXPLORE COLLECTION</span>
+                </span>
+              </Link> */}
+            </div>
+          </div>
+        </section>
+
+        {/* STYLES */}
+
+        <style jsx>{`
         .lookbook-section {
           width: 100%;
           background: #121212;
@@ -374,22 +374,34 @@ export default function Lookbook() {
         /* LOWER VIDEO FEATURE */
 
         .summer-feature {
-          width: 100%;
-          display: grid;
-          grid-template-columns: 1fr 1.23fr;
-          min-height: 480px;
-          border-top: 1px solid rgba(255, 255, 255, 0.25);
-        }
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.23fr;
+  min-height: 0;                      /* was 480px */
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
 
-        .summer-feature-media {
-          position: relative;
-          min-width: 0;
-          min-height: 480px;
-          height: 100%;
-          align-self: stretch;
-          overflow: hidden;
-          background: #17120e;
-        }
+.summer-feature-media {
+  position: relative;
+  min-width: 0;
+  min-height: 0;                      /* was 480px */
+  height: clamp(320px, 28vw, 500px);  /* container height: change this to resize */
+  align-self: stretch;
+  overflow: hidden;
+  background: #17120e;
+}
+
+.summer-feature-media :global(.summer-feature-video) {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.12);             /* crops the black bars baked into the video */
+  transform-origin: center;
+}
 
         /* :global — video lives in LookbookFeatureVideo; scoped jsx won't reach it */
         .summer-feature-media :global(.summer-feature-video) {
@@ -460,27 +472,42 @@ export default function Lookbook() {
         }
 
         .summer-feature-cta {
+          position: relative;
           display: inline-flex;
           flex-direction: row;
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
           padding-bottom: 4px;
-          border-bottom: 1px solid #292724;
           color: #292724;
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
+          font-size: 12px;
+          font-weight: 600;
           line-height: 1;
           text-decoration: none;
           text-transform: uppercase;
           white-space: nowrap;
-          transition: opacity 160ms ease;
+        }
+
+        .summer-feature-cta::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 1px;
+          background: #292724;
+          opacity: 0.4;
+          transform: scaleX(1);
+          transform-origin: left center;
+          transition: opacity 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          pointer-events: none;
         }
 
         .summer-feature-cta-label {
           display: inline;
+          letter-spacing: 0.12em;
+          transition: letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .summer-feature-cta :global(.summer-feature-cta-arrow) {
@@ -488,8 +515,31 @@ export default function Lookbook() {
           flex-shrink: 0;
         }
 
-        .summer-feature-cta:hover {
-          opacity: 0.55;
+        .summer-feature-link:hover .summer-feature-cta::after,
+        .summer-feature-link:focus-visible .summer-feature-cta::after {
+          opacity: 1;
+        }
+
+        .summer-feature-link:hover .summer-feature-cta-label,
+        .summer-feature-link:focus-visible .summer-feature-cta-label {
+          letter-spacing: 0.16em;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .summer-feature-cta::after,
+          .summer-feature-cta-label {
+            transition: none;
+          }
+
+          .summer-feature-link:hover .summer-feature-cta-label,
+          .summer-feature-link:focus-visible .summer-feature-cta-label {
+            letter-spacing: 0.12em;
+          }
+
+          .summer-feature-link:hover .summer-feature-cta::after,
+          .summer-feature-link:focus-visible .summer-feature-cta::after {
+            opacity: 1;
+          }
         }
 
         /* TABLET */
@@ -602,9 +652,9 @@ export default function Lookbook() {
           }
 
           .summer-feature-media {
-            min-height: 260px;
-            height: 260px;
-          }
+  min-height: 0;
+  height: clamp(280px, 40vw, 420px);
+}
 
           .summer-feature-content {
             padding: 36px 24px;
@@ -649,6 +699,7 @@ export default function Lookbook() {
           }
         }
       `}</style>
-    </section>
+      </section>
+    </RevealOnScroll>
   );
 }

@@ -841,29 +841,43 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
         <DragGuide visible={dragGuide && interactMode && !interactLoading} onDismiss={dismissDragGuide} />
       </div>
 
-      {!embedded && (
-        <div
-          aria-hidden={ready}
+      {/* Initial warm — same HIM GIF as interact/outfit wait (incl. embedded home). */}
+      <div
+        role="status"
+        aria-busy={!ready}
+        aria-live="polite"
+        aria-label="Loading"
+        aria-hidden={ready}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background:
+            "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
+          opacity: ready ? 0 : 1,
+          pointerEvents: ready ? "none" : "auto",
+          transition: "opacity 0.45s ease",
+        }}
+      >
+        {/* Native <img> so animated GIF frames play (next/image can flatten). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/him-loader.gif"
+          alt=""
+          width={160}
+          height={284}
+          aria-hidden
+          draggable={false}
           style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 40,
-            display: "grid",
-            placeItems: "center",
-            background: "#1a120c",
-            opacity: ready ? 0 : 1,
-            pointerEvents: ready ? "none" : "auto",
-            transition: "opacity 0.45s ease",
+            width: "min(160px, 28vw)",
+            height: "auto",
+            objectFit: "contain",
           }}
-        >
-          <p
-            className="m-0 text-[12px] tracking-[0.22em] uppercase"
-            style={{ fontFamily: sans, color: "#1a120c" }}
-          >
-            Loading
-          </p>
-        </div>
-      )}
+        />
+      </div>
     </Root>
   );
 }

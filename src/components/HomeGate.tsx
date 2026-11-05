@@ -8,8 +8,15 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	useSyncExternalStore,
 	type ReactNode,
 } from "react";
+import RouteLoading from "@/components/RouteLoading";
+
+const GATE_BG =
+	"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
+
+const emptySubscribe = () => () => { };
 
 type HomeLoadApi = {
 	reportHeroProgress: (pct: number) => void;
@@ -18,6 +25,52 @@ type HomeLoadApi = {
 };
 
 const HomeLoadContext = createContext<HomeLoadApi | null>(null);
+
+/**
+ * Survives client navigations away from `/` and back.
+ * Module flag resets on full reload; session key is cleared on reload so the
+ * progress gate shows again after refresh.
+ */
+let homeGateEnteredThisLoad = false;
+const GATE_ENTERED_KEY = "him-home-gate-entered";
+/** Clear legacy key that used to skip the gate entirely after reload. */
+const LEGACY_GATE_KEY = "him-home-gate-done";
+
+// Run once when the client bundle loads — before any HomeGate paint.
+if (typeof window !== "undefined") {
+	try {
+		sessionStorage.removeItem(LEGACY_GATE_KEY);
+		const nav = performance.getEntriesByType("navigation")[0] as
+			| PerformanceNavigationTiming
+			| undefined;
+		if (nav?.type === "reload") sessionStorage.removeItem(GATE_ENTERED_KEY);
+	} catch {
+		/* ignore */
+	}
+}
+
+function markHomeGateEntered() {
+	homeGateEnteredThisLoad = true;
+	try {
+		sessionStorage.setItem(GATE_ENTERED_KEY, "1");
+	} catch {
+		/* ignore */
+	}
+}
+
+function isClientRevisit(): boolean {
+	if (typeof window === "undefined") return false;
+	if (homeGateEnteredThisLoad) return true;
+	try {
+		return sessionStorage.getItem(GATE_ENTERED_KEY) === "1";
+	} catch {
+		return false;
+	}
+}
+
+export function hasEnteredHomeGate() {
+	return isClientRevisit();
+}
 
 export function useHomeLoad() {
 	return useContext(HomeLoadContext);
@@ -33,7 +86,12 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	const [heroPct, setHeroPct] = useState(0);
 	const [heroReady, setHeroReady] = useState(false);
 	const [houseReady, setHouseReady] = useState(false);
+	// Always false on SSR + first paint (hydration-safe).
 	const [started, setStarted] = useState(false);
+	// Next still SSRs `/` on client navigations — wait until client before choosing
+	// progress vs GIF so the progress pill never paints on revisit.
+	const gateReady = useSyncExternalStore(emptySubscribe, () => true, () => false);
+	const revisit = gateReady && isClientRevisit();
 	const [displayPct, setDisplayPct] = useState(0);
 	const [revealed, setRevealed] = useState(false);
 	const magneticZoneRef = useRef<HTMLDivElement>(null);
@@ -70,13 +128,22 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	// Keep reportHouseReady for Flythrough callers; it no longer blocks the gate.
 	void houseReady;
 
+	// Revisit: once hero is ready, open home and restart the hero video.
 	useEffect(() => {
+		if (!revisit || started || !pageReady) return;
+		window.scrollTo(0, 0);
+		setStarted(true);
+		window.dispatchEvent(new Event("him-start"));
+	}, [revisit, started, pageReady]);
+
+	useEffect(() => {
+		if (!gateReady || revisit) return;
 		targetPctRef.current = pageReady ? 100 : progress;
-	}, [progress, pageReady]);
+	}, [progress, pageReady, revisit, gateReady]);
 
 	// Smooth fill + label via rAF so discrete frame/house jumps do not restart CSS transitions.
 	useEffect(() => {
-		if (revealed) return;
+		if (!gateReady || revisit || revealed) return;
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		let raf = 0;
 		const tick = () => {
@@ -93,34 +160,35 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 		};
 		raf = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(raf);
-	}, [revealed]);
+	}, [revealed, revisit, gateReady]);
 
 	useEffect(() => {
-		if (!pageReady || revealed) return;
+		if (!gateReady || revisit || !pageReady || revealed || started) return;
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		// Wait until the smoothed bar is near 100%, then hold a beat and show the CTA.
+		// Wait until the smoothed bar is near 100%, then show the clickable welcome CTA.
 		let timer = 0;
 		const check = () => {
 			if (displayPctRef.current < 99.5 && !reduce) {
 				timer = window.setTimeout(check, 50);
 				return;
 			}
-			timer = window.setTimeout(() => setRevealed(true), reduce ? 80 : 400);
+			// Short beat only — keep the button disabled as briefly as possible.
+			timer = window.setTimeout(() => setRevealed(true), reduce ? 0 : 120);
 		};
-		timer = window.setTimeout(check, reduce ? 0 : 120);
+		timer = window.setTimeout(check, reduce ? 0 : 40);
 		return () => window.clearTimeout(timer);
-	}, [pageReady, revealed]);
+	}, [pageReady, revealed, started, revisit, gateReady]);
 
-	// Soft-unlock: slow/dead network should not sit on 0% forever — reveal the CTA.
+	// Soft-unlock: slow/dead network should not sit forever.
 	useEffect(() => {
-		if (pageReady || started) return;
+		if (!gateReady || pageReady || started) return;
 		const timer = window.setTimeout(() => {
 			setHeroReady(true);
 			setHeroPct(100);
 			setHouseReady(true);
-		}, 8000);
+		}, revisit ? 4000 : 8000);
 		return () => window.clearTimeout(timer);
-	}, [pageReady, started]);
+	}, [pageReady, started, revisit, gateReady]);
 
 	// Reload often restores scroll mid-page behind the gate — pin to top until enter.
 	useEffect(() => {
@@ -232,76 +300,90 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 	return (
 		<HomeLoadContext.Provider value={api}>
 			{children}
-			<div
-				aria-hidden={started}
-				className={`fixed inset-0 z-100 flex flex-col items-center justify-center transition-opacity duration-700 ${started ? "opacity-0 pointer-events-none" : "opacity-100"
-					}`}
-				style={{
-					background:
-						"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
-				}}
-			>
+			{!gateReady ? (
 				<div
-					ref={magneticZoneRef}
-					className="magnetic-zone"
+					aria-hidden
+					className="fixed inset-0 z-1100!"
+					style={{ background: GATE_BG }}
+				/>
+			) : revisit ? (
+				<RouteLoading
+					visible={!started}
+					className="z-1100!"
+				/>
+			) : (
+				<div
+					aria-hidden={started}
+					className={`fixed inset-0 flex flex-col items-center justify-center transition-opacity duration-700 ${started ? "opacity-0 pointer-events-none" : "opacity-100"
+						}`}
 					style={{
-						display: "grid",
-						placeItems: "center",
-						width: "min(100vw, 28rem)",
-						height: revealed ? "min(60vh, 20rem)" : "auto",
-						touchAction: "none",
+						zIndex: 1100,
+						background: GATE_BG,
 					}}
 				>
-					<button
-						ref={magneticBtnRef}
-						type="button"
-						className={`magnetic-btn${revealed ? " magnetic-btn--ready" : " magnetic-btn--loading"}`}
-						disabled={!revealed}
-						aria-busy={!revealed}
-						aria-label={revealed ? "welcome to the HIM world" : `Loading ${displayPct}%`}
-						onClick={() => {
-							if (!revealed) return;
-							window.scrollTo(0, 0);
-							setStarted(true);
-							// Unlock house AudioContext on the same user gesture.
-							window.dispatchEvent(new Event("him-start"));
+					<div
+						ref={magneticZoneRef}
+						className="magnetic-zone"
+						style={{
+							display: "grid",
+							placeItems: "center",
+							width: "min(100vw, 28rem)",
+							height: revealed ? "min(60vh, 20rem)" : "auto",
+							touchAction: "manipulation",
 						}}
 					>
-						{!revealed && (
-							<span
-								ref={progressFillRef}
-								className="magnetic-btn__progress"
-								style={{ transform: "scaleX(0)" }}
-								aria-hidden
-							/>
-						)}
-						<span className="magnetic-btn__hover" aria-hidden />
-						<span
-							ref={magneticLabelRef}
-							className="magnetic-btn__label"
-							style={{ display: "grid", placeItems: "center" }}
+						<button
+							ref={magneticBtnRef}
+							type="button"
+							className={`magnetic-btn${revealed ? " magnetic-btn--ready" : " magnetic-btn--loading"}`}
+							disabled={!revealed}
+							aria-busy={!revealed}
+							aria-label={revealed ? "welcome to the HIM world" : `Loading ${displayPct}%`}
+							onClick={() => {
+								if (!revealed || started) return;
+								window.scrollTo(0, 0);
+								markHomeGateEntered();
+								setStarted(true);
+								// Unlock house AudioContext on the same user gesture.
+								window.dispatchEvent(new Event("him-start"));
+							}}
 						>
-							{/* Visible copy swaps; hidden sizer keeps loading pill = welcome button size. */}
-							<span className="magnetic-btn__copy" style={{ gridArea: "1 / 1", whiteSpace: "nowrap" }}>
-								{revealed ? "welcome to the HIM world" : `${displayPct}%`}
-							</span>
 							{!revealed && (
 								<span
-									className="magnetic-btn__sizer"
+									ref={progressFillRef}
+									className="magnetic-btn__progress"
+									style={{ transform: "scaleX(0)" }}
 									aria-hidden
-									style={{
-										gridArea: "1 / 1",
-										visibility: "hidden",
-										whiteSpace: "nowrap",
-									}}
-								>
-									welcome to the HIM world
-								</span>
+								/>
 							)}
-						</span>
-					</button>
+							<span className="magnetic-btn__hover" aria-hidden />
+							<span
+								ref={magneticLabelRef}
+								className="magnetic-btn__label"
+								style={{ display: "grid", placeItems: "center" }}
+							>
+								{/* Visible copy swaps; hidden sizer keeps loading pill = welcome button size. */}
+								<span className="magnetic-btn__copy" style={{ gridArea: "1 / 1", whiteSpace: "nowrap" }}>
+									{revealed ? "welcome to the HIM world" : `${displayPct}%`}
+								</span>
+								{!revealed && (
+									<span
+										className="magnetic-btn__sizer"
+										aria-hidden
+										style={{
+											gridArea: "1 / 1",
+											visibility: "hidden",
+											whiteSpace: "nowrap",
+										}}
+									>
+										welcome to the HIM world
+									</span>
+								)}
+							</span>
+						</button>
+					</div>
 				</div>
-			</div>
+			)}
 			<style jsx global>{`
 				.magnetic-btn {
 					--him-ivory: rgba(244, 231, 204, 0.94);
@@ -348,6 +430,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 
 				.magnetic-btn--ready {
 					cursor: pointer;
+					pointer-events: auto;
 					will-change: transform;
 				}
 

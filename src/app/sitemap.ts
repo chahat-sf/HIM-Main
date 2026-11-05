@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listProductSlugs } from "@/lib/catalog";
+import { CATEGORY_SEO } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -16,6 +17,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		lastModified: new Date(),
 		changeFrequency: "weekly" as const,
 		priority: 0.7,
+	}));
+
+	const categories = Object.values(CATEGORY_SEO).map((cat) => ({
+		url: `${base}${cat.path}`,
+		lastModified: new Date(),
+		changeFrequency: "weekly" as const,
+		priority: 0.8,
 	}));
 
 	return [
@@ -37,6 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			changeFrequency: "weekly",
 			priority: 0.9,
 		},
+		...categories,
 		{
 			url: `${base}/contact`,
 			lastModified: new Date(),

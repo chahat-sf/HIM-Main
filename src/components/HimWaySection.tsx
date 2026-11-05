@@ -138,27 +138,42 @@ export default function HimWaySection() {
         }
 
         .him-way-cta {
+          position: relative;
           display: inline-flex;
           flex-direction: row;
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
           padding-bottom: 4px;
-          border-bottom: 1px solid var(--hw-ink);
           color: var(--hw-ink);
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
+          font-size: 12px;
+          font-weight: 600;
           line-height: 1;
           text-decoration: none;
           text-transform: uppercase;
           white-space: nowrap;
-          transition: opacity 160ms ease;
+        }
+
+        .him-way-cta::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 1px;
+          background: var(--hw-ink);
+          opacity: 0.4;
+          transform: scaleX(1);
+          transform-origin: left center;
+          transition: opacity 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          pointer-events: none;
         }
 
         .him-way-cta-label {
           display: inline;
+          letter-spacing: 0.12em;
+          transition: letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .him-way-cta :global(.him-way-cta-arrow) {
@@ -166,8 +181,31 @@ export default function HimWaySection() {
           flex-shrink: 0;
         }
 
-        .him-way-cta:hover {
-          opacity: 0.55;
+        .him-way-cta-link:hover .him-way-cta::after,
+        .him-way-cta-link:focus-visible .him-way-cta::after {
+          opacity: 1;
+        }
+
+        .him-way-cta-link:hover .him-way-cta-label,
+        .him-way-cta-link:focus-visible .him-way-cta-label {
+          letter-spacing: 0.16em;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .him-way-cta::after,
+          .him-way-cta-label {
+            transition: none;
+          }
+
+          .him-way-cta-link:hover .him-way-cta-label,
+          .him-way-cta-link:focus-visible .him-way-cta-label {
+            letter-spacing: 0.12em;
+          }
+
+          .him-way-cta-link:hover .him-way-cta::after,
+          .him-way-cta-link:focus-visible .him-way-cta::after {
+            opacity: 1;
+          }
         }
 
         .him-way-grid {

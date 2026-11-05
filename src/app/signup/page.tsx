@@ -108,11 +108,18 @@ function SignupForm() {
       subtitle="Register for a more considered wardrobe."
       imageSrc="/products/man-image-104.webp"
     >
-      <form className="auth-form" onSubmit={onSubmit} noValidate>
+      <form
+        className="auth-form"
+        method="post"
+        autoComplete="on"
+        onSubmit={onSubmit}
+        noValidate
+      >
         <div className="auth-field">
           <label htmlFor="signup-name">Full name</label>
           <input
             id="signup-name"
+            name="name"
             type="text"
             autoComplete="name"
             placeholder="Aarav Sharma"
@@ -126,6 +133,7 @@ function SignupForm() {
           <label htmlFor="signup-email">Email</label>
           <input
             id="signup-email"
+            name="email"
             type="email"
             autoComplete="email"
             placeholder="you@email.com"
@@ -139,6 +147,7 @@ function SignupForm() {
           <label htmlFor="signup-phone">Phone (optional)</label>
           <input
             id="signup-phone"
+            name="tel"
             type="tel"
             autoComplete="tel"
             placeholder="+91 98765 43210"
@@ -152,6 +161,7 @@ function SignupForm() {
           <div className="auth-password-wrap">
             <input
               id="signup-password"
+              name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="At least 8 characters"
@@ -174,6 +184,7 @@ function SignupForm() {
           <label htmlFor="signup-confirm">Confirm password</label>
           <input
             id="signup-confirm"
+            name="confirm-password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder="••••••••"

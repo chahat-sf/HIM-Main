@@ -27,7 +27,7 @@ export default function AuthShell({
   eyebrow,
   title,
   subtitle,
-  imageSrc = "/products/man-image-103.webp",
+  imageSrc = "/products/low/archivist/7.webp",
   children,
 }: AuthShellProps) {
   return (

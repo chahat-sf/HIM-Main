@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import {
-	JACKET_SIZE_CHART,
-	SIZE_CHART_FOOTER,
-	SIZE_FIT_NOTE,
-} from "@/lib/size-chart";
+import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 
 type SizeChartModalProps = {
 	open: boolean;
@@ -77,9 +73,6 @@ export default function SizeChartModal({ open, onClose }: SizeChartModalProps) {
 						<p id="him-size-chart-title" className="him-size-chart-title">
 							SIZE CHART
 						</p>
-						<p className="him-size-chart-sub">
-							Indian men’s jacket (inches)
-						</p>
 					</div>
 					<button
 						type="button"
@@ -96,41 +89,16 @@ export default function SizeChartModal({ open, onClose }: SizeChartModalProps) {
 					</button>
 				</header>
 
-				<p className="him-size-chart-note">{SIZE_FIT_NOTE}</p>
-
-				<div className="him-size-chart-scroll">
-					<table className="him-size-chart-table">
-						<thead>
-							<tr>
-								<th scope="col">Size</th>
-								<th scope="col">Chest</th>
-								<th scope="col">Shoulder</th>
-								<th scope="col">Sleeve</th>
-								<th scope="col">Length</th>
-							</tr>
-						</thead>
-						<tbody>
-							{JACKET_SIZE_CHART.map((row) => (
-								<tr key={row.size}>
-									<th scope="row">{row.size}</th>
-									<td>{row.chest}</td>
-									<td>{row.shoulder}</td>
-									<td>{row.sleeve}</td>
-									<td>{row.length}</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+				<div className="him-size-chart-note">
+					<p className="him-size-chart-note-title">{SIZE_FIT_HEADLINE}</p>
+					<p className="him-size-chart-note-body">{SIZE_FIT_NOTE}</p>
 				</div>
-
-				<p className="him-size-chart-footer">{SIZE_CHART_FOOTER}</p>
 			</div>
 
 			<style jsx>{`
 				.him-size-chart {
 					--sc-ink: #111;
 					--sc-muted: #6b6b6b;
-					--sc-line: rgba(17, 17, 17, 0.16);
 					--sc-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
 					--sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
 					position: fixed;
@@ -150,7 +118,7 @@ export default function SizeChartModal({ open, onClose }: SizeChartModalProps) {
 				}
 
 				.him-size-chart-panel {
-					width: min(100%, 520px);
+					width: min(100%, 420px);
 					max-height: min(88vh, 640px);
 					overflow: auto;
 					padding: 28px 24px 24px;
@@ -186,15 +154,6 @@ export default function SizeChartModal({ open, onClose }: SizeChartModalProps) {
 					text-transform: uppercase;
 				}
 
-				.him-size-chart-sub {
-					margin: 6px 0 0;
-					font-family: var(--sc-sans);
-					font-size: 12px;
-					font-weight: 400;
-					letter-spacing: 0.02em;
-					color: var(--sc-muted);
-				}
-
 				.him-size-chart-close {
 					display: grid;
 					place-items: center;
@@ -209,58 +168,27 @@ export default function SizeChartModal({ open, onClose }: SizeChartModalProps) {
 				}
 
 				.him-size-chart-note {
-					margin: 0 0 20px;
+					margin: 0;
+					padding: 14px 16px;
+					border-left: 2px solid var(--sc-ink);
+					background: #f5f3ef;
+				}
+
+				.him-size-chart-note-title {
+					margin: 0;
+					font-family: var(--sc-sans);
+					font-size: 14px;
+					font-weight: 600;
+					line-height: 1.35;
+					color: var(--sc-ink);
+				}
+
+				.him-size-chart-note-body {
+					margin: 6px 0 0;
 					font-family: var(--sc-sans);
 					font-size: 13px;
 					line-height: 1.55;
-					color: var(--sc-muted);
-				}
-
-				.him-size-chart-scroll {
-					overflow-x: auto;
-					-webkit-overflow-scrolling: touch;
-					margin: 0 -4px 18px;
-					padding: 0 4px;
-				}
-
-				.him-size-chart-table {
-					width: 100%;
-					min-width: 360px;
-					border-collapse: collapse;
-					font-family: var(--sc-sans);
-					font-size: 12px;
-					letter-spacing: 0.04em;
-				}
-
-				.him-size-chart-table th,
-				.him-size-chart-table td {
-					padding: 10px 8px;
-					text-align: center;
-					border-bottom: 1px solid var(--sc-line);
-					font-weight: 400;
-				}
-
-				.him-size-chart-table thead th {
-					font-size: 9px;
-					font-weight: 500;
-					letter-spacing: 0.12em;
-					text-transform: uppercase;
-					color: var(--sc-muted);
-					border-bottom-color: var(--sc-ink);
-				}
-
-				.him-size-chart-table tbody th {
-					text-align: left;
-					font-weight: 500;
-					letter-spacing: 0.08em;
-				}
-
-				.him-size-chart-footer {
-					margin: 0;
-					font-family: var(--sc-sans);
-					font-size: 11px;
-					line-height: 1.5;
-					color: var(--sc-muted);
+					color: #3d3d3d;
 				}
 
 				@media (max-width: 480px) {

@@ -36,8 +36,14 @@ export function productVideoPoster(videoUrl: string): string {
 	return videoUrl.replace(/\.mp4$/i, "-poster.webp");
 }
 
+/** Card-only signature masters — keep off the PDP gallery (too compressed for hero). */
+export function isCardSignatureImage(src: string): boolean {
+	return /\/signature\.webp$/i.test(src.trim());
+}
+
 export function buildPdpMedia(product: CatalogProduct): PdpMediaItem[] {
-	const items: PdpMediaItem[] = product.images.map((src) => ({
+	const gallery = product.images.filter((src) => !isCardSignatureImage(src));
+	const items: PdpMediaItem[] = gallery.map((src) => ({
 		kind: "image" as const,
 		src,
 	}));

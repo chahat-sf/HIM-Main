@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Navbar from "./Navbar";
-import { useHomeLoad } from "./HomeGate";
+import { hasEnteredHomeGate, useHomeLoad } from "./HomeGate";
 
 const HERO_VIDEO = "/homepage/Hero-video-Section.mp4";
 /** Slightly before EOS so browsers still have a decodable frame to paint. */
@@ -265,7 +265,7 @@ export default function HeroSection() {
     };
 
     const playOnce = () => {
-      if (disposed || started || reduceMotion) return;
+      if (disposed || reduceMotion) return;
       if (!ready) {
         pendingStart = true;
         return;
@@ -274,9 +274,10 @@ export default function HeroSection() {
       pendingStart = false;
       finished = false;
       scrolledAway = false;
-      // Only seek if needed — a seek-to-0 hitch right before play feels choppy.
+      // Always restart from the beginning (including home revisits).
       try {
-        if (video.currentTime > 0.02) video.currentTime = 0;
+        video.pause();
+        video.currentTime = 0;
       } catch {
         /* ignore seek errors before metadata */
       }
@@ -380,6 +381,12 @@ export default function HeroSection() {
     reportBuffered();
     if (!ready) video.load();
 
+    // Soft-skipped gate on client revisit — start (or queue) as soon as buffered.
+    if (hasEnteredHomeGate()) {
+      pendingStart = true;
+      if (ready) playOnce();
+    }
+
     return () => {
       disposed = true;
       peekingRef.current = false;
@@ -455,6 +462,8 @@ export default function HeroSection() {
           <br />
           moves you.
         </h1>
+
+        <p className="him-hero-seo-sub">Luxury Menswear by HIM World</p>
 
         <p className="him-hero-text">
           Timeless fits, modern details and colours that go anywhere.
@@ -532,6 +541,16 @@ export default function HeroSection() {
           font-variant: small-caps;
           line-height: 0.88;
           letter-spacing: 0.01em;
+        }
+
+        .him-hero-seo-sub {
+          margin: 12px 0 0;
+          color: rgba(255, 255, 255, 0.72);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: clamp(11px, 0.8vw, 14px);
+          font-weight: 400;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
         }
 
         .him-hero-text {
