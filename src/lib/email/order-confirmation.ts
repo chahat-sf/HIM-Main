@@ -17,6 +17,13 @@ export type OrderEmailData = {
 	taxCents: number;
 	totalCents: number;
 	items: OrderEmailItem[];
+	customerName: string;
+	customerEmail: string;
+	customerPhone: string;
+	/** Shipping address lines, already ordered top to bottom. */
+	addressLines: string[];
+	/** Razorpay payment id, when the order is paid. */
+	paymentId: string;
 };
 
 const BRAND = {
@@ -26,6 +33,20 @@ const BRAND = {
 	line: "#d9d3ca",
 	button: "#1e1210",
 };
+
+const SERIF = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
+const SANS = "Jost,'Helvetica Neue',Helvetica,Arial,sans-serif";
+
+function infoBlock(title: string, lines: string[]): string {
+	const body = lines
+		.filter(Boolean)
+		.map(
+			(l) =>
+				`<div style="font-size:13px;line-height:20px;color:${BRAND.ink};">${esc(l)}</div>`,
+		)
+		.join("");
+	return `<div style="font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:${BRAND.ink};margin-bottom:10px;">${title}</div>${body}`;
+}
 
 export function siteUrl(): string {
 	return (process.env.SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
@@ -69,22 +90,22 @@ function itemRow(item: OrderEmailItem, currency: string): string {
 			? `<div style="font-size:15px;line-height:24px;color:${BRAND.muted};">${label}: ${esc(value)}</div>`
 			: "";
 	const img = item.image
-		? `<img src="${esc(absolute(item.image))}" width="140" alt="${esc(item.name)}" style="display:block;width:140px;border-radius:14px;border:0;">`
+		? `<img src="${esc(absolute(item.image))}" width="170" alt="${esc(item.name)}" style="display:block;width:170px;border-radius:14px;border:0;">`
 		: "";
 	return `
 <tr>
-  <td style="padding:12px 0;border-bottom:1px solid ${BRAND.line};">
+  <td style="padding:10px 0;border-bottom:1px solid ${BRAND.line};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td width="140" valign="top" style="padding-right:20px;">${img}</td>
+        <td width="170" valign="top" style="padding-right:24px;">${img}</td>
         <td valign="top">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:.5px;text-transform:uppercase;color:${BRAND.ink};">${esc(item.name)}</div>
+          <div style="font-family:${SERIF};font-size:24px;letter-spacing:.5px;text-transform:uppercase;color:${BRAND.ink};">${esc(item.name)}</div>
           <div style="height:10px;"></div>
           ${detail("Color", item.color)}
           ${detail("Size", item.size)}
           ${detail("Quantity", String(item.qty))}
         </td>
-        <td valign="top" align="right" style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:${BRAND.ink};white-space:nowrap;">${money(item.unitPriceCents * item.qty, currency)}</td>
+        <td valign="top" align="right" style="font-family:${SERIF};font-size:22px;color:${BRAND.ink};white-space:nowrap;">${money(item.unitPriceCents * item.qty, currency)}</td>
       </tr>
     </table>
   </td>
@@ -92,11 +113,11 @@ function itemRow(item: OrderEmailItem, currency: string): string {
 }
 
 function totalRow(label: string, value: string, big = false): string {
-	const size = big ? "28px" : "18px";
+	const size = big ? "30px" : "19px";
 	return `
 <tr>
-  <td style="padding:4px 0;font-family:Georgia,'Times New Roman',serif;font-size:${size};color:${BRAND.ink};">${label}</td>
-  <td align="right" style="padding:4px 0;font-family:Georgia,'Times New Roman',serif;font-size:${size};color:${BRAND.ink};">${value}</td>
+  <td style="padding:4px 0;font-family:${SERIF};font-size:${size};color:${BRAND.ink};">${label}</td>
+  <td align="right" style="padding:4px 0;font-family:${SERIF};font-size:${size};color:${BRAND.ink};">${value}</td>
 </tr>`;
 }
 
@@ -113,14 +134,14 @@ export function renderOrderConfirmationEmail(data: OrderEmailData): string {
 	const whatsapp = process.env.SOCIAL_WHATSAPP_URL || "";
 	const youtube = process.env.SOCIAL_YOUTUBE_URL || "";
 	const social = [
-		["Instagram", instagram],
-		["WhatsApp", whatsapp],
-		["YouTube", youtube],
+		["Instagram", "instagram", instagram],
+		["WhatsApp", "whatsapp", whatsapp],
+		["YouTube", "youtube", youtube],
 	]
-		.filter(([, href]) => href)
+		.filter(([, , href]) => href)
 		.map(
-			([label, href]) =>
-				`<a href="${esc(href)}" style="color:${BRAND.ink};text-decoration:none;margin-left:16px;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">${label}</a>`,
+			([label, icon, href]) =>
+				`<a href="${esc(href)}" style="text-decoration:none;margin-left:18px;"><img src="${base}/email/${icon}.png" width="24" height="24" alt="${label}" style="border:0;vertical-align:middle;"></a>`,
 		)
 		.join("");
 
@@ -130,6 +151,24 @@ export function renderOrderConfirmationEmail(data: OrderEmailData): string {
 			? totalRow("Tax", money(data.taxCents, data.currency))
 			: "";
 
+	const legalLink = (label: string, path: string) =>
+		`<a href="${base}${path}" style="color:${BRAND.ink};text-decoration:none;">${label}</a>`;
+	const legalLinks = [
+		legalLink("Terms", "/terms-of-sale"),
+		legalLink("Privacy", "/privacy-policy"),
+		legalLink("Shipping", "/terms-of-sale"),
+		legalLink("Returns &amp; Cancellation", "/terms-of-sale"),
+		legalLink("Grievance Officer", "/legals"),
+	].join(`<span style="color:${BRAND.muted};">&nbsp;&middot;&nbsp;</span>`);
+	const businessName =
+		process.env.BUSINESS_NAME || "[Registered business name]";
+	const businessAddress =
+		process.env.BUSINESS_ADDRESS || "[Registered address]";
+	const gstin = process.env.BUSINESS_GSTIN || "[XXXXXXXXXXXXXXX]";
+
+	const fitText = (text: string, first = false) =>
+		`<p style="margin:${first ? "18px" : "14px"} 0 0;font-size:15px;line-height:24px;color:${BRAND.ink};">${text}</p>`;
+
 	return `<!doctype html>
 <html lang="en">
 <head>
@@ -137,41 +176,77 @@ export function renderOrderConfirmationEmail(data: OrderEmailData): string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>${esc(orderConfirmationSubject(data))}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:${BRAND.bg};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.bg};">
 <tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${BRAND.bg};">
   <tr><td style="font-size:0;line-height:0;"><img src="${esc(heroUrl)}" width="600" alt="HIM" style="display:block;width:100%;height:auto;border:0;"></td></tr>
-  <tr><td align="center" style="padding:36px 24px 0;font-family:Helvetica,Arial,sans-serif;">
+  <tr><td align="center" style="padding:32px 24px 0;font-family:${SANS};">
     <div style="font-size:14px;letter-spacing:3px;color:${BRAND.muted};text-transform:uppercase;">Order confirmed</div>
-    <h1 style="margin:22px 0 0;font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:40px;line-height:46px;color:${BRAND.ink};">Your order is confirmed</h1>
-    <p style="margin:20px 0 0;font-size:17px;line-height:26px;color:${BRAND.ink};">We'll let you know as soon as your order ships.<br>Here are the details:</p>
-    <div style="margin-top:36px;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.ink};">Order No. #${esc(data.orderNumber)}</div>
+    <h1 style="margin:18px 0 0;font-family:${SERIF};font-weight:500;font-size:46px;line-height:50px;color:${BRAND.ink};">Your order is confirmed</h1>
+    <p style="margin:20px 0 0;font-size:16px;line-height:22px;color:${BRAND.ink};">Your payment has reached us, and your order is<br>now in our hands. Here are the details:</p>
+    <div style="margin-top:34px;font-size:17px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:${BRAND.ink};">Order No. #${esc(data.orderNumber)}</div>
     <div style="margin-top:6px;font-size:15px;color:${BRAND.muted};">${formatDate(data.placedAt)}</div>
-    <div style="margin-top:28px;">
-      <a href="${base}/account" style="display:inline-block;background:${BRAND.button};color:#ffffff;text-decoration:none;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;padding:18px 44px;border-radius:40px;">View your order &rarr;</a>
+    <div style="margin-top:26px;">
+      <a href="${base}/account" style="display:inline-block;background:${BRAND.button};color:#ffffff;text-decoration:none;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;padding:19px 46px;border-radius:40px;">View your order &rarr;</a>
     </div>
   </td></tr>
-  <tr><td style="padding:40px 28px 0;font-family:Helvetica,Arial,sans-serif;">
+  <tr><td align="center" style="padding:52px 40px 0;font-family:${SANS};">
+    <div style="font-family:${SERIF};font-size:32px;line-height:38px;color:${BRAND.ink};">Now, the fit.</div>
+    ${fitText("You’ve shared your usual size. Good.<br>That’s where we begin, not where we stop.", true)}
+    ${fitText("Our team will personally reach out to you to take your<br>measurements and understand how you like to wear what you wear.<br>Every piece is made to sit the way it should on you. No more, no less.")}
+    ${fitText("Keep your phone close. We’ll be in touch soon.")}
+  </td></tr>
+  <tr><td style="padding:40px 36px 0;font-family:${SANS};">
     <div style="border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid ${BRAND.line};padding-top:12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;padding-top:8px;">
       ${totalRow("Subtotal", money(data.subtotalCents, data.currency))}
       ${tax}
       ${totalRow("Shipping", "Free")}
-      <tr><td colspan="2" style="height:8px;"></td></tr>
+      <tr><td colspan="2" style="height:6px;"></td></tr>
       ${totalRow("Total", money(data.totalCents, data.currency), true)}
     </table>
+    <div style="margin-top:4px;font-size:11px;color:${BRAND.muted};">Inclusive of all taxes</div>
+    <div style="margin-top:26px;border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:26px;">
+      <tr>
+        <td width="50%" valign="top">${infoBlock("Delivery address", [data.customerName, ...data.addressLines])}</td>
+        <td width="50%" valign="top">${infoBlock("Your details", [data.customerName, data.customerEmail, data.customerPhone])}</td>
+      </tr>
+      <tr><td colspan="2" style="height:28px;"></td></tr>
+      <tr>
+        <td width="50%" valign="top">${infoBlock("Delivery", ["Standard delivery · Free", "Timeline shared after your fit call"])}</td>
+        <td width="50%" valign="top">${infoBlock("Payment", ["Paid online", data.paymentId ? `Transaction ID: ${data.paymentId}` : ""])}</td>
+      </tr>
+    </table>
+    <div style="margin-top:30px;border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
   </td></tr>
-  <tr><td style="padding:32px 28px 32px;">
-    <div style="border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;font-family:Helvetica,Arial,sans-serif;">
+  <tr><td align="center" style="padding:30px 40px 0;font-family:${SANS};">
+    <div style="font-family:${SERIF};font-size:30px;line-height:36px;color:${BRAND.ink};">Returns &amp; exchanges</div>
+    <p style="margin:12px 0 0;font-size:14px;line-height:22px;color:${BRAND.ink};">Ready-to-wear and made-to-measure pieces follow different terms.<br>The full details are on our policy page.</p>
+    <div style="margin-top:22px;">
+      <a href="${base}/terms-of-sale" style="display:inline-block;color:${BRAND.ink};text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:14px 38px;border:1px solid ${BRAND.ink};border-radius:40px;">View policy</a>
+    </div>
+    <div style="margin:30px 0 0;border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
+  </td></tr>
+  <tr><td align="center" style="padding:24px 28px 0;font-family:${SANS};">
+    <div style="font-size:14px;line-height:20px;color:${BRAND.ink};">Questions before we call? Simply reply to this email.</div>
+    <div style="margin-top:22px;font-family:${SERIF};font-size:26px;color:${BRAND.ink};">It’s just him.</div>
+    <div style="margin-top:8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.muted};">Team HIM</div>
+  </td></tr>
+  <tr><td style="padding:36px 36px 36px;font-family:${SANS};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td><a href="${base}"><img src="${esc(logoUrl)}" width="90" alt="him" style="display:block;border:0;"></a></td>
         <td align="right">${social}</td>
       </tr>
     </table>
+    <div style="margin-top:26px;text-align:center;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;line-height:16px;">${legalLinks}</div>
+    <div style="margin-top:14px;text-align:center;font-size:10px;line-height:16px;color:${BRAND.muted};">HIM never asks for payment through links on WhatsApp, SMS or email. Pay only on ${esc(base.replace(/^https?:\/\//, ""))}, and disregard any unusual payment request.</div>
+    <div style="margin-top:12px;text-align:center;font-size:10px;line-height:16px;color:${BRAND.muted};">${esc(businessName)} &middot; ${esc(businessAddress)} &middot; GSTIN: ${esc(gstin)}</div>
   </td></tr>
 </table>
 </td></tr>
