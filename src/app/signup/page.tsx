@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthShell, { AuthCrossLink } from "@/components/AuthShell";
 import {
+  googleAuthError,
+  googleAuthHref,
   pathFromReferrer,
   safeNextPath,
   withNextQuery,
@@ -27,8 +29,16 @@ function SignupForm() {
   const [confirm, setConfirm] = useState("");
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const message = googleAuthError(searchParams.get("error"));
+    if (message) setError(message);
+  }, [searchParams]);
 
   useEffect(() => {
     if (nextParam) return;
@@ -37,6 +47,39 @@ function SignupForm() {
     if (!from) return;
     router.replace(withNextQuery("/signup", from));
   }, [nextParam, router]);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
+
+  const signupBody = () => ({
+    fullName: fullName.trim(),
+    email: email.trim(),
+    phone: phone.trim() || undefined,
+    password,
+  });
+
+  const sendCode = async () => {
+    const res = await fetch("/api/auth/signup/otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(signupBody()),
+    });
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    if (!res.ok) {
+      setError(body?.error || "We couldn't send the verification email.");
+      return false;
+    }
+    setCodeSent(true);
+    setResendIn(30);
+    setOtp("");
+    return true;
+  };
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -59,6 +102,23 @@ function SignupForm() {
       return;
     }
 
+    if (!codeSent) {
+      setSubmitting(true);
+      try {
+        await sendCode();
+      } catch {
+        setError("We couldn't send the verification email. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/auth/signup", {
@@ -66,10 +126,8 @@ function SignupForm() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          phone: phone.trim() || undefined,
-          password,
+          ...signupBody(),
+          otp: otp.trim(),
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -108,6 +166,11 @@ function SignupForm() {
       subtitle="Register for a more considered wardrobe."
       imageSrc="/products/man-image-104.webp"
     >
+      <a className="auth-google" href={googleAuthHref("/signup", nextParam)}>
+        <GoogleMark />
+        Continue with Google
+      </a>
+      <p className="auth-or">or</p>
       <form
         className="auth-form"
         method="post"
@@ -194,6 +257,52 @@ function SignupForm() {
           />
         </div>
 
+        {codeSent && (
+          <div className="auth-field">
+            <label htmlFor="signup-otp">Verification code</label>
+            <p className="auth-footer-note" style={{ margin: 0, textAlign: "left" }}>
+              We sent a 6-digit code to {email.trim()}. It expires in 10 minutes.
+            </p>
+            <input
+              id="signup-otp"
+              name="one-time-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="6-digit code"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              required
+            />
+            <button
+              type="button"
+              className="auth-link"
+              disabled={submitting || resendIn > 0}
+              onClick={async () => {
+                setError("");
+                setSubmitting(true);
+                try {
+                  await sendCode();
+                } catch {
+                  setError("We couldn't send the verification email. Please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              style={{
+                alignSelf: "flex-start",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: resendIn > 0 ? "default" : "pointer",
+              }}
+            >
+              {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+            </button>
+          </div>
+        )}
+
         <label className="auth-check">
           <input
             type="checkbox"
@@ -220,7 +329,13 @@ function SignupForm() {
           disabled={submitting}
           style={{ background: "#c4a574", color: "#111" }}
         >
-          {submitting ? "Creating account…" : "Create account"}
+          {submitting
+            ? codeSent
+              ? "Verifying…"
+              : "Sending code…"
+            : codeSent
+              ? "Verify"
+              : "Send code"}
         </button>
       </form>
 
@@ -230,6 +345,14 @@ function SignupForm() {
         label="Sign in"
       />
     </AuthShell>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#EA4335" d="M9 7.2v3.5h4.9c-.2 1.2-1.5 3.5-4.9 3.5A5.7 5.7 0 1 1 9 3.3c1.6 0 2.7.7 3.3 1.3l2.3-2.2C13.3 1.1 11.4 0 9 0 4 0 0 4 0 9s4 9 9 9c5.2 0 8.6-3.6 8.6-8.7 0-.6 0-1-.1-1.4H9z" />
+    </svg>
   );
 }
 

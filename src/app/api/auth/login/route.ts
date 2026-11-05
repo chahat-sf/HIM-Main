@@ -66,8 +66,16 @@ export async function POST(request: Request) {
 		);
 		const user = rows?.[0];
 
-		const hash = user ? String(user.password_hash) : DUMMY_PASSWORD_HASH;
+		const hash = user?.password_hash
+			? String(user.password_hash)
+			: DUMMY_PASSWORD_HASH;
 		const ok = await verifyPassword(password, hash);
+		if (user && !user.password_hash) {
+			return NextResponse.json(
+				{ error: "This account uses Google sign-in." },
+				{ status: 401 },
+			);
+		}
 		if (!user || !ok) {
 			return NextResponse.json(
 				{ error: "Invalid email or password." },

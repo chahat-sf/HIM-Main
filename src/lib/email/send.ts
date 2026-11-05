@@ -6,6 +6,7 @@ import {
 	renderOrderConfirmationEmail,
 	type OrderEmailData,
 } from "@/lib/email/order-confirmation";
+import { renderSignupOtpEmail, signupOtpSubject } from "@/lib/email/signup-otp";
 
 let transporter: Transporter | null = null;
 
@@ -93,6 +94,31 @@ async function loadOrderEmailData(
 			image: String(row.image_url ?? ""),
 		})),
 	};
+}
+
+/** Send the signup code. Returns false when SMTP is missing or the send fails. */
+export async function sendSignupOtpEmail(
+	to: string,
+	code: string,
+): Promise<boolean> {
+	const mailer = getTransporter();
+	if (!mailer) {
+		console.error("signup otp email skipped: SMTP_* env vars not configured");
+		return false;
+	}
+	try {
+		await mailer.sendMail({
+			from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+			to,
+			subject: signupOtpSubject(),
+			html: renderSignupOtpEmail(code),
+		});
+		return true;
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "send failed";
+		console.error("signup otp email failed", message);
+		return false;
+	}
 }
 
 /** Send the order confirmation. Never throws: email must not break checkout. */

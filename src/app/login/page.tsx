@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthShell, { AuthCrossLink } from "@/components/AuthShell";
 import {
+  googleAuthError,
+  googleAuthHref,
   pathFromReferrer,
   safeNextPath,
   withNextQuery,
@@ -26,6 +28,11 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const message = googleAuthError(searchParams.get("error"));
+    if (message) setError(message);
+  }, [searchParams]);
 
   useEffect(() => {
     if (nextParam) return;
@@ -92,6 +99,11 @@ function LoginForm() {
       subtitle="A more considered wardrobe begins here."
       imageSrc="/products/low/archivist/7.webp"
     >
+      <a className="auth-google" href={googleAuthHref("/login", nextParam)}>
+        <GoogleMark />
+        Continue with Google
+      </a>
+      <p className="auth-or">or</p>
       <form
         className="auth-form"
         method="post"
@@ -170,6 +182,14 @@ function LoginForm() {
         label="Create account"
       />
     </AuthShell>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#EA4335" d="M9 7.2v3.5h4.9c-.2 1.2-1.5 3.5-4.9 3.5A5.7 5.7 0 1 1 9 3.3c1.6 0 2.7.7 3.3 1.3l2.3-2.2C13.3 1.1 11.4 0 9 0 4 0 0 4 0 9s4 9 9 9c5.2 0 8.6-3.6 8.6-8.7 0-.6 0-1-.1-1.4H9z" />
+    </svg>
   );
 }
 

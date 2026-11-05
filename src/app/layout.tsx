@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost, Space_Mono } from "next/font/google";
 import NavigationOverlay from "@/components/NavigationOverlay";
@@ -7,6 +8,7 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { CartProvider } from "@/components/CartProvider";
 import { WishlistProvider } from "@/components/WishlistProvider";
 import PostHogProviderGate from "@/components/PostHogProviderGate";
+import GoogleAuthHandoff from "@/components/GoogleAuthHandoff";
 import { getSiteUrl } from "@/lib/site-url";
 import { SEO_IMAGES } from "@/lib/seo";
 import "./globals.css";
@@ -96,6 +98,9 @@ export default function RootLayout({
 					<CartProvider>
 						<WishlistProvider>
 							<PostHogProviderGate>
+								<Suspense fallback={null}>
+									<GoogleAuthHandoff />
+								</Suspense>
 								{children}
 								<NavigationOverlay />
 								{/* <BackgroundMusic /> */}

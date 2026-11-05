@@ -265,6 +265,50 @@ export default function AuthShell({
           border-bottom-color: ${AUTH_INK};
         }
 
+        .auth-google {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          width: 100%;
+          height: 48px;
+          border: 1px solid ${AUTH_BORDER};
+          background: transparent;
+          color: ${AUTH_INK};
+          text-decoration: none;
+          font-family: ${AUTH_SANS};
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          box-sizing: border-box;
+          margin-bottom: 16px;
+        }
+
+        .auth-google:hover {
+          border-color: rgba(255, 255, 255, 0.55);
+        }
+
+        .auth-or {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 0 0 16px;
+          color: ${AUTH_MUTED};
+          font-family: ${AUTH_SANS};
+          font-size: 10px;
+          letter-spacing: 1.4px;
+          text-transform: uppercase;
+        }
+
+        .auth-or::before,
+        .auth-or::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: ${AUTH_BORDER};
+        }
+
         .auth-submit {
           display: flex;
           align-items: center;

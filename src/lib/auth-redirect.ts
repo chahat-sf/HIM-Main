@@ -37,6 +37,32 @@ export function buildLoginHref(pathname: string, search = ""): string {
   return `/login?next=${encodeURIComponent(next)}`;
 }
 
+export function googleAuthHref(
+  returnTo: "/login" | "/signup",
+  next: string | null,
+): string {
+  const params = new URLSearchParams();
+  params.set("return", returnTo);
+  const safe = next ? safeNextPath(next) : "/";
+  if (safe !== "/") params.set("next", safe);
+  return `/api/auth/google?${params.toString()}`;
+}
+
+export function googleAuthError(code: string | null): string {
+  switch (code) {
+    case "google_denied":
+      return "Google sign-in was cancelled.";
+    case "google_email":
+      return "Google did not share a verified email address.";
+    case "google_state":
+      return "Google sign-in expired. Please try again.";
+    case "google_failed":
+      return "Unable to sign in with Google. Please try again.";
+    default:
+      return "";
+  }
+}
+
 export function withNextQuery(href: string, next: string | null): string {
   const safe = next ? safeNextPath(next) : "/";
   if (safe === "/") return href;
