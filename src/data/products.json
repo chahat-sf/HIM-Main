@@ -136,5 +136,29 @@
       "Clean detailing with an understated finish",
       "Designed to embody quiet confidence and effortless sophistication"
     ]
+  },
+  {
+    "id": "the-majesty",
+    "name": "The Majesty",
+    "productName": "Olive Tailored Utility Jacket",
+    "fabric": "",
+    "meaning": "Majesty represents authority, confidence and commanding presence. Defined by strength and understated elegance, this piece embodies refined utility and the quiet confidence of contemporary design.",
+    "description": "The Olive Tailored Utility Jacket combines a refined olive-toned finish with a sharp, structured silhouette. Distinctive front flap detailing and a full-length metallic zip closure bring functional character to its contemporary design. Defined by a structured collar, precision-cut seams and a contoured fit, it delivers a polished interpretation of modern utility.",
+    "marketingLine": "Presence that speaks without introduction.",
+    "alternatives": [
+      "The Sovereign",
+      "The Dominion",
+      "The Monarch"
+    ],
+    "details": [
+      "Refined olive-toned finish",
+      "Sharp, tailored silhouette",
+      "Distinctive front flap detailing",
+      "Full-length metallic zip closure",
+      "Structured collar with clean lines",
+      "Precision-cut seams for a contoured fit",
+      "Designed for a polished, contemporary appearance",
+      "Modern utility with understated sophistication"
+    ]
   }
 ]
