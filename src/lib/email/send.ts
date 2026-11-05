@@ -32,7 +32,8 @@ async function loadOrderEmailData(
 	const db = getDb();
 	const [orders] = await db.query<RowDataPacket[]>(
 		`SELECT o.order_number, o.currency, o.subtotal_cents, o.tax_cents,
-            o.total_cents, o.placed_at, u.email
+            o.total_cents, o.placed_at, o.address_snapshot,
+            o.razorpay_payment_id, u.email, u.full_name, u.phone
      FROM orders o
      JOIN users u ON u.id = o.user_id
      WHERE o.id = :orderId
@@ -55,8 +56,28 @@ async function loadOrderEmailData(
 		{ orderId },
 	);
 
+	let addr: Record<string, unknown> = {};
+	try {
+		const raw = order.address_snapshot;
+		addr = typeof raw === "string" ? JSON.parse(raw) : (raw ?? {});
+	} catch {
+		addr = {};
+	}
+	const text = (v: unknown) => (v ? String(v) : "");
+	const addressLines = [
+		text(addr.line1),
+		text(addr.line2),
+		[text(addr.city), text(addr.state)].filter(Boolean).join(", "),
+		[text(addr.postalCode), text(addr.country)].filter(Boolean).join(", "),
+	].filter(Boolean);
+
 	return {
 		to: String(order.email),
+		customerName: String(addr.fullName || order.full_name || ""),
+		customerEmail: String(order.email),
+		customerPhone: String(order.phone ?? ""),
+		addressLines,
+		paymentId: String(order.razorpay_payment_id ?? ""),
 		orderNumber: String(order.order_number),
 		placedAt: order.placed_at ? new Date(order.placed_at) : new Date(),
 		currency: String(order.currency || "INR"),
