@@ -2,7 +2,7 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OUTFIT_COUNT, OUTFIT_NAMES } from "./characters";
 import styles from "./OutfitPanel.module.css";
 
@@ -165,6 +165,21 @@ export default function OutfitPanel({
     if (openRef.current) return;
     showExpanded(true);
   });
+
+  useEffect(() => {
+    if (minimized) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!openRef.current) return;
+      const root = rootRef.current;
+      const target = event.target;
+      if (!root || !(target instanceof Node) || root.contains(target)) return;
+      collapse();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [collapse, minimized]);
 
   const label = items[selected] ?? items[0] ?? "Outfit";
 

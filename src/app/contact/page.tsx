@@ -1,10 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
-import {
-	Headphones,
-	RefreshCw,
-	Ruler,
-} from "lucide-react";
+import { Headphones, Ruler } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
@@ -46,17 +42,6 @@ export default function ContactPage() {
 
 				<section className={styles.trust} aria-label="Customer promises">
 					<div className={styles.trustInner}>
-						<div className={styles.trustItem}>
-							<span className={styles.trustIcon} aria-hidden>
-								<RefreshCw
-									size={22}
-									strokeWidth={1.25}
-									absoluteStrokeWidth={false}
-								/>
-							</span>
-							<p className={styles.trustLabel}>Worldwide Returns</p>
-							<p className={styles.trustSub}>Easy exchanges within 14 days</p>
-						</div>
 						<div className={styles.trustItem}>
 							<span className={styles.trustIcon} aria-hidden>
 								<Ruler
