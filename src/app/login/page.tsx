@@ -97,7 +97,7 @@ function LoginForm() {
       eyebrow="ACCOUNT"
       title="SIGN IN"
       subtitle="A more considered wardrobe begins here."
-      imageSrc="/products/low/archivist/7.webp"
+      imageSrc="/products/archivist/7.webp"
     >
       <a className="auth-google" href={googleAuthHref("/login", nextParam)}>
         <GoogleMark />
