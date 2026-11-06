@@ -193,7 +193,13 @@ export default function ContactPanels() {
 							aria-controls={`contact-panel-${item.id}`}
 							data-tab-active={selected ? "true" : undefined}
 							tabIndex={selected ? 0 : -1}
-							className={`${styles.tab}${selected ? ` ${styles.tabActive}` : ""}`}
+							className={[
+								styles.tab,
+								item.id === "concierge" ? styles.tabConcierge : "",
+								selected ? styles.tabActive : "",
+							]
+								.filter(Boolean)
+								.join(" ")}
 							onClick={() => setTab(item.id)}
 						>
 							{item.label}

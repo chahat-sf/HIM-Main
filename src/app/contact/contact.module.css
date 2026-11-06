@@ -120,6 +120,33 @@
   color: #ffffff;
 }
 
+.tabConcierge {
+  align-self: center;
+  margin: 6px 10px;
+  padding: 7px 14px;
+  border: 1px solid #c4a574;
+  border-radius: 999px;
+  background: rgba(196, 165, 116, 0.18);
+  color: #f3e6c8;
+  letter-spacing: 1.8px;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.tabConcierge:hover {
+  background: rgba(196, 165, 116, 0.32);
+  color: #fff8ea;
+}
+
+.tabActive.tabConcierge,
+.tabActive.tabConcierge:hover {
+  background: #c4a574;
+  border-color: #c4a574;
+  color: #1a120c;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
