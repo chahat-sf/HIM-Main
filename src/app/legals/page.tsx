@@ -1,9 +1,11 @@
 import LegalPageShell from "@/components/LegalPageShell";
+import { getBusinessProfile } from "@/lib/business";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
 export const metadata = buildPageMetadata(PAGE_SEO.legals);
 
 export default function LegalsPage() {
+  const business = getBusinessProfile();
   return (
     <LegalPageShell
       title="Legal"
@@ -12,7 +14,7 @@ export default function LegalsPage() {
         {
           heading: "1. General Information",
           body: [
-            "This website is owned and operated by HIM World. All content on this website is provided for general informational and commercial purposes relating to HIM World and its products.",
+            `This website is owned and operated by ${business.legalName} (trading as HIM World). All content on this website is provided for general informational and commercial purposes relating to HIM World and its products.`,
             "By accessing or using this website, you agree to comply with the applicable terms, policies, and conditions governing its use.",
           ],
         },
@@ -70,8 +72,36 @@ export default function LegalsPage() {
           body: "The use of this website and matters relating to its legal notices shall be governed by applicable laws, subject to mandatory legal protections available to users and consumers in their jurisdiction.",
         },
         {
-          heading: "10. Contact Information",
-          body: "For legal enquiries, intellectual property concerns, or questions regarding this website, please contact HIM World through the official contact details provided on our website.",
+          heading: "10. Registered Business Details",
+          body: "The seller / supplier for goods sold on this website is:",
+          labeled: [
+            { label: "Legal name", text: business.legalName },
+            { label: "Constitution", text: business.constitution },
+            {
+              label: "Registered address",
+              text: business.addressLines.join(", "),
+            },
+            {
+              label: "State",
+              text: `${business.state} (${business.stateCode})`,
+            },
+            { label: "GSTIN", text: business.gstin },
+            { label: "PAN", text: business.pan },
+          ],
+        },
+        {
+          heading: "11. Contact Information",
+          body: [
+            "For legal enquiries, intellectual property concerns, grievance redressal, or questions regarding this website, please contact HIM World through the official channels below.",
+          ],
+          labeled: [
+            { label: "Email", text: "support@thehim.in" },
+            { label: "Mobile", text: "+91 99111 67778" },
+            {
+              label: "Registered office",
+              text: business.addressLines.join(", "),
+            },
+          ],
         },
       ]}
     />

@@ -8,6 +8,10 @@ import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import RevealOnScroll from "@/components/RevealOnScroll";
+import {
+	formatBusinessFooterLine,
+	getBusinessProfile,
+} from "@/lib/business";
 
 type FooterLink = { label: string; href: string };
 
@@ -322,10 +326,13 @@ export default function Footer() {
 
         <div className="him-footer-bottom">
           <p className="him-footer-copyright">
-            © HIM. ALL RIGHTS RESERVED.
+            © {getBusinessProfile().legalName}. ALL RIGHTS RESERVED.
           </p>
           <p className="him-footer-locale">INDIA</p>
         </div>
+        <p className="him-footer-legal-entity">
+          {formatBusinessFooterLine()}
+        </p>
 
         <style jsx>{`
         .him-footer {
@@ -588,6 +595,17 @@ export default function Footer() {
           margin: 0 auto;
         }
 
+        .him-footer-legal-entity {
+          margin: 14px 0 0;
+          text-align: center;
+          font-size: 10px;
+          letter-spacing: 0.04em;
+          line-height: 1.5;
+          color: rgba(245, 241, 233, 0.45);
+          max-width: 720px;
+          margin-left: auto;
+          margin-right: auto;
+        }
         .him-footer-copyright,
         .him-footer-locale {
           margin: 0;

@@ -1,9 +1,11 @@
 import LegalPageShell from "@/components/LegalPageShell";
+import { getBusinessProfile } from "@/lib/business";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
 export const metadata = buildPageMetadata(PAGE_SEO.privacy);
 
 export default function PrivacyPolicyPage() {
+  const business = getBusinessProfile();
   return (
     <LegalPageShell
       title="Privacy Policy"
@@ -12,7 +14,7 @@ export default function PrivacyPolicyPage() {
         {
           heading: "1. Introduction",
           body: [
-            "At HIM World, we value your privacy and are committed to handling your personal information responsibly. This Privacy Policy explains how we collect, use, store, and protect your information when you visit our website, place an order, or interact with our services.",
+            `At HIM World (${business.legalName}), we value your privacy and are committed to handling your personal information responsibly. This Privacy Policy explains how we collect, use, store, and protect your information when you visit our website, place an order, or interact with our services.`,
             "By using our website, you acknowledge the practices described in this Privacy Policy, subject to applicable data protection laws.",
           ],
         },
@@ -151,6 +153,18 @@ export default function PrivacyPolicyPage() {
             {
               label: "Brand",
               text: "HIM World",
+            },
+            {
+              label: "Legal entity",
+              text: business.legalName,
+            },
+            {
+              label: "Registered address",
+              text: business.addressLines.join(", "),
+            },
+            {
+              label: "GSTIN",
+              text: business.gstin,
             },
             {
               label: "Email",

@@ -1,3 +1,7 @@
+import {
+	formatBusinessFooterLine,
+	getBusinessProfile,
+} from "@/lib/business";
 import { siteUrl } from "@/lib/email/order-confirmation";
 
 const BRAND = {
@@ -22,9 +26,14 @@ export function signupOtpSubject(): string {
 	return "Your HIM verification code";
 }
 
-export function renderSignupOtpEmail(code: string): string {
+export function renderSignupOtpEmail(
+	code: string,
+	cids: { logo?: string } = {},
+): string {
 	const base = siteUrl();
-	const logoUrl = `${base}/homepage/him-logo.webp`;
+	const logoUrl = cids.logo
+		? `cid:${cids.logo}`
+		: `${base}/email/him-logo.png`;
 	const host = base.replace(/^https?:\/\//, "");
 	const legal = (label: string, path: string) =>
 		`<a href="${base}${path}" style="color:${BRAND.ink};text-decoration:none;">${label}</a>`;
@@ -33,11 +42,7 @@ export function renderSignupOtpEmail(code: string): string {
 		legal("Privacy", "/privacy-policy"),
 		legal("Grievance Officer", "/legals"),
 	].join(`<span style="color:${BRAND.muted};">&nbsp;&middot;&nbsp;</span>`);
-	const businessName =
-		process.env.BUSINESS_NAME || "[Registered business name]";
-	const businessAddress =
-		process.env.BUSINESS_ADDRESS || "[Registered address]";
-	const gstin = process.env.BUSINESS_GSTIN || "[XXXXXXXXXXXXXXX]";
+	const businessLine = formatBusinessFooterLine(getBusinessProfile());
 
 	return `<!doctype html>
 <html lang="en">
@@ -68,7 +73,7 @@ export function renderSignupOtpEmail(code: string): string {
     <div style="margin-top:8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.muted};text-align:center;">Team HIM</div>
     <div style="margin-top:26px;text-align:center;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;line-height:16px;">${legalLinks}</div>
     <div style="margin-top:14px;text-align:center;font-size:10px;line-height:16px;color:${BRAND.muted};">HIM will not ask for this code on WhatsApp or SMS. Enter it only on ${esc(host)}.</div>
-    <div style="margin-top:12px;text-align:center;font-size:10px;line-height:16px;color:${BRAND.muted};">${esc(businessName)} &middot; ${esc(businessAddress)} &middot; GSTIN: ${esc(gstin)}</div>
+    <div style="margin-top:12px;text-align:center;font-size:10px;line-height:16px;color:${BRAND.muted};">${esc(businessLine)}</div>
   </td></tr>
 </table>
 </td></tr>

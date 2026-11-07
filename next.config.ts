@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
 	images: {
 		qualities: [75, 80, 85, 90, 95],
 	},
+	serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
 	async redirects() {
 		const productRedirects = Object.entries(PRODUCT_SLUG_REDIRECTS).map(
 			([from, to]) => ({

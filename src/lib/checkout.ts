@@ -2,14 +2,17 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { getDb } from "@/lib/db";
 import type { PublicUser } from "@/lib/auth";
 import { sendOrderConfirmationEmail } from "@/lib/email/send";
+import { splitInclusiveGst } from "@/lib/gst";
 import {
 	assertRazorpayConfigured,
 	createRazorpayOrder,
 	getRazorpayKeyId,
 	verifyPaymentSignature,
 } from "@/lib/razorpay";
+import type { OrderConfirmation } from "@/lib/orders";
+import { getOrderConfirmation } from "@/lib/orders";
 
-const TAX_RATE = 0.07;
+export { TAX_RATE, splitInclusiveGst } from "@/lib/gst";
 
 export type CheckoutLine = {
 	productId: number | null;
@@ -60,6 +63,8 @@ export type VerifyCheckoutResult = {
 	orderNumber: string;
 	totalCents: number;
 	currency: string;
+	/** Present when confirmation summary loads after verify. */
+	confirmation?: OrderConfirmation;
 };
 
 function generateOrderNumber(): string {
@@ -72,16 +77,16 @@ function generateOrderNumber(): string {
 }
 
 export function computeTotals(lines: CheckoutLine[]): CheckoutTotals {
-	const subtotalCents = lines.reduce(
+	const totalCents = lines.reduce(
 		(sum, line) => sum + line.unitPriceCents * line.qty,
 		0,
 	);
-	const taxCents = Math.round(subtotalCents * TAX_RATE);
+	const { taxableCents, taxCents } = splitInclusiveGst(totalCents);
 	const itemCount = lines.reduce((sum, line) => sum + line.qty, 0);
 	return {
-		subtotalCents,
+		subtotalCents: taxableCents,
 		taxCents,
-		totalCents: subtotalCents + taxCents,
+		totalCents,
 		itemCount,
 	};
 }
@@ -115,8 +120,7 @@ export async function loadCheckoutLines(
 	);
 
 	return (rows ?? []).map((row) => {
-		const productId =
-			row.product_id == null ? null : Number(row.product_id);
+		const productId = row.product_id == null ? null : Number(row.product_id);
 		return {
 			productId,
 			slug: String(row.catalog_slug || row.product_slug),
@@ -171,11 +175,7 @@ export async function createCheckoutOrder(
 ): Promise<CreateCheckoutResult> {
 	assertRazorpayConfigured();
 
-	const address = await getAddressForUser(
-		user.id,
-		addressId,
-		user.fullName,
-	);
+	const address = await getAddressForUser(user.id, addressId, user.fullName);
 	if (!address) {
 		throw new CheckoutError("Address not found.", 400);
 	}
@@ -327,32 +327,38 @@ export async function verifyCheckoutPayment(
 	const totalCents = Number(row.total_cents);
 	const currency = String(row.currency || "INR");
 
-	if (String(row.payment_status) === "paid") {
-		return { orderId, orderNumber, totalCents, currency };
+	if (String(row.payment_status) !== "paid") {
+		const [updateResult] = await db.execute<ResultSetHeader>(
+			`UPDATE orders
+       SET status = 'processing',
+           payment_status = 'paid',
+           razorpay_payment_id = :paymentId,
+           placed_at = CURRENT_TIMESTAMP
+       WHERE id = :id AND user_id = :userId AND payment_status <> 'paid'`,
+			{
+				id: orderId,
+				userId: user.id,
+				paymentId: input.razorpayPaymentId,
+			},
+		);
+
+		await clearCart(user.id);
+
+		// Only the request that flipped the order to paid sends the email.
+		if (updateResult.affectedRows > 0) {
+			await sendOrderConfirmationEmail(orderId);
+		}
 	}
 
-	const [updateResult] = await db.execute<ResultSetHeader>(
-		`UPDATE orders
-     SET status = 'processing',
-         payment_status = 'paid',
-         razorpay_payment_id = :paymentId,
-         placed_at = CURRENT_TIMESTAMP
-     WHERE id = :id AND user_id = :userId AND payment_status <> 'paid'`,
-		{
-			id: orderId,
-			userId: user.id,
-			paymentId: input.razorpayPaymentId,
-		},
-	);
+	const confirmation = await getOrderConfirmation(user.id, orderNumber);
 
-	await clearCart(user.id);
-
-	// Only the request that flipped the order to paid sends the email.
-	if (updateResult.affectedRows > 0) {
-		await sendOrderConfirmationEmail(orderId);
-	}
-
-	return { orderId, orderNumber, totalCents, currency };
+	return {
+		orderId,
+		orderNumber,
+		totalCents,
+		currency,
+		confirmation: confirmation ?? undefined,
+	};
 }
 
 export class CheckoutError extends Error {

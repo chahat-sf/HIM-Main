@@ -1,5 +1,5 @@
 /**
- * Absolute site origin for metadataBase / Open Graph / sitemap / robots.
+ * Absolute site origin for metadataBase / Open Graph / sitemap / robots / email.
  * Prefer NEXT_PUBLIC_SITE_URL, then SITE_URL (e.g. https://him-main.vercel.app).
  */
 export function getSiteUrl(): string {

@@ -1,16 +1,15 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
+import OrderSummaryPanel from "@/components/checkout/OrderSummaryPanel";
 import type { AccountPayload, Address } from "@/lib/account";
 import { buildLoginHref } from "@/lib/auth-redirect";
-import { toCardImage } from "@/lib/card-image";
 import { notifyCartChanged } from "@/lib/cart-local";
 import { track } from "@/lib/analytics";
 import { useCart } from "@/hooks/useCart";
@@ -18,6 +17,7 @@ import {
 	loadRazorpayScript,
 	type RazorpaySuccessResponse,
 } from "@/lib/razorpay-browser";
+import { splitInclusiveGst } from "@/lib/gst";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -32,10 +32,6 @@ const GOLD = "#c4a574";
 const GOLD_HOVER = "#d4b888";
 const GUTTER = "clamp(16px, 4vw, 60px)";
 const CONTENT_MAX = "1120px";
-
-function fmt(n: number) {
-	return "₹ " + n.toLocaleString("en-IN");
-}
 
 type CreateCheckoutResponse = {
 	orderId: number;
@@ -338,12 +334,15 @@ export default function CheckoutClient() {
 		};
 	}, [router]);
 
-	const subtotal = useMemo(
+	const total = useMemo(
 		() => items.reduce((acc, i) => acc + i.price * i.qty, 0),
 		[items],
 	);
-	const tax = Math.round(subtotal * 0.07);
-	const total = subtotal + tax;
+	const { taxableCents, taxCents } = splitInclusiveGst(
+		Math.round(total * 100),
+	);
+	const subtotal = taxableCents / 100;
+	const tax = taxCents / 100;
 
 	useEffect(() => {
 		if (!addressModalOpen) return;
@@ -493,6 +492,13 @@ export default function CheckoutClient() {
 				},
 			});
 
+			rzp.on("payment.failed", () => {
+				setPaying(false);
+				router.push(
+					`/checkout/failed?order=${encodeURIComponent(created.orderNumber)}`,
+				);
+			});
+
 			rzp.open();
 		} catch (err) {
 			setError(
@@ -548,11 +554,25 @@ export default function CheckoutClient() {
 			<main className="co-page">
 				<div className="co-inner">
 					<header className="co-header">
-						<p className="co-eyebrow">CHECKOUT</p>
-						<h1 className="co-title">Complete your order</h1>
-						<p className="co-sub">
-							Confirm shipping, then pay securely with Razorpay.
-						</p>
+						<Link
+							href="/cart"
+							className="co-back"
+							aria-label="Back to cart"
+						>
+							<ArrowLeft
+								size={20}
+								strokeWidth={1.25}
+								absoluteStrokeWidth={false}
+								aria-hidden
+							/>
+						</Link>
+						<div className="co-header-copy">
+							<p className="co-eyebrow">CHECKOUT</p>
+							<h1 className="co-title">Complete your order</h1>
+							<p className="co-sub">
+								Confirm shipping, then pay securely with Razorpay.
+							</p>
+						</div>
 					</header>
 
 					{error && <p className="co-error">{error}</p>}
@@ -602,76 +622,38 @@ export default function CheckoutClient() {
 								)}
 							</section>
 
-							<aside className="co-panel co-summary" aria-label="Order summary">
-								<p className="co-panel-title">ORDER SUMMARY</p>
-
-								<ul className="co-lines">
-									{items.map((item) => (
-										<li key={item.id} className="co-line">
-											<div className="co-line-img">
-												<Image
-													src={toCardImage(item.image)}
-													alt=""
-													fill
-													sizes="64px"
-													className="object-cover"
-												/>
-											</div>
-											<div className="co-line-meta">
-												<p className="co-line-name">{item.name}</p>
-												<p className="co-line-detail">
-													{[item.size, item.color].filter(Boolean).join(" · ")}
-													{" · "}
-													Qty {item.qty}
-												</p>
-											</div>
-											<p className="co-line-price">
-												{fmt(item.price * item.qty)}
-											</p>
-										</li>
-									))}
-								</ul>
-
-								<div className="co-totals">
-									<div>
-										<span>Subtotal ({itemCount} items)</span>
-										<span>{fmt(subtotal)}</span>
-									</div>
-									<div>
-										<span>Shipping</span>
-										<span className="co-free">Free</span>
-									</div>
-									<div>
-										<span>Estimated Tax</span>
-										<span>{fmt(tax)}</span>
-									</div>
-									<div className="co-total">
-										<span>Total</span>
-										<span>{fmt(total)}</span>
-									</div>
-								</div>
-
-								<button
-									type="button"
-									className="co-btn-primary"
-									onClick={() => void onPay()}
-									disabled={paying || !selectedAddressId}
-								>
-									{paying ? "PROCESSING…" : "PAY WITH RAZORPAY"}{" "}
-									{!paying && (
-										<ArrowRight
-											size={12}
-											strokeWidth={1.25}
-											absoluteStrokeWidth={false}
-											aria-hidden
-										/>
-									)}
-								</button>
-
-								<Link href="/cart" className="co-btn-secondary">
-									BACK TO CART
-								</Link>
-							</aside>
+							<OrderSummaryPanel
+								lines={items.map((item) => ({
+									name: item.name,
+									size: item.size,
+									color: item.color,
+									qty: item.qty,
+									price: item.price,
+									image: item.image,
+								}))}
+								subtotal={subtotal}
+								tax={tax}
+								total={total}
+								itemCount={itemCount}
+								footer={
+									<button
+										type="button"
+										className="co-btn-primary co-pay-btn"
+										onClick={() => void onPay()}
+										disabled={paying || !selectedAddressId}
+									>
+										{paying ? "PROCESSING…" : "PAY WITH RAZORPAY"}{" "}
+										{!paying && (
+											<ArrowRight
+												size={12}
+												strokeWidth={1.25}
+												absoluteStrokeWidth={false}
+												aria-hidden
+											/>
+										)}
+									</button>
+								}
+							/>
 						</div>
 					)}
 				</div>
@@ -778,7 +760,31 @@ export default function CheckoutClient() {
 					margin: 0 auto;
 				}
 				.co-header {
+					display: flex;
+					align-items: flex-start;
+					gap: 14px;
 					margin-bottom: 36px;
+				}
+				.co-back {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					flex-shrink: 0;
+					width: 36px;
+					height: 36px;
+					margin-top: 2px;
+					color: ${INK};
+					text-decoration: none;
+					border: 1px solid transparent;
+					transition: color 160ms ease, border-color 160ms ease;
+				}
+				.co-back:hover {
+					color: ${GOLD};
+					border-color: ${BORDER};
+				}
+				.co-header-copy {
+					min-width: 0;
+					flex: 1;
 				}
 				.co-eyebrow {
 					font-size: 11px;
@@ -951,62 +957,8 @@ export default function CheckoutClient() {
 					opacity: 0.5;
 					cursor: not-allowed;
 				}
-				.co-lines {
-					list-style: none;
-					margin: 0 0 20px;
-					padding: 0;
-					display: grid;
-					gap: 14px;
-				}
-				.co-line {
-					display: grid;
-					grid-template-columns: 56px 1fr auto;
-					gap: 12px;
-					align-items: center;
-				}
-				.co-line-img {
-					position: relative;
-					width: 56px;
-					height: 70px;
-					background: #141414;
-					overflow: hidden;
-				}
-				.co-line-name {
-					margin: 0 0 4px;
-					font-size: 13px;
-					letter-spacing: 0.04em;
-				}
-				.co-line-detail {
-					margin: 0;
-					font-size: 11px;
-					color: ${MUTED};
-				}
-				.co-line-price {
-					margin: 0;
-					font-size: 13px;
-					white-space: nowrap;
-				}
-				.co-totals {
-					border-top: 1px solid ${RULE};
-					padding-top: 16px;
-					display: grid;
-					gap: 10px;
-					margin-bottom: 22px;
-				}
-				.co-totals > div {
-					display: flex;
-					justify-content: space-between;
-					font-size: 13px;
-					color: ${MUTED_SOFT};
-				}
-				.co-free {
-					color: ${GOLD};
-				}
-				.co-total {
-					padding-top: 10px;
-					border-top: 1px solid ${RULE};
-					color: ${INK} !important;
-					font-size: 15px !important;
+				.co-pay-btn {
+					margin-top: 16px;
 				}
 				.co-btn-primary,
 				.co-btn-secondary {

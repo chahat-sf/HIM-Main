@@ -1,9 +1,11 @@
 import LegalPageShell from "@/components/LegalPageShell";
+import { getBusinessProfile } from "@/lib/business";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
 export const metadata = buildPageMetadata(PAGE_SEO.termsOfSale);
 
 export default function TermsOfSalePage() {
+  const business = getBusinessProfile();
   return (
     <LegalPageShell
       title="Terms of Sale"
@@ -12,7 +14,7 @@ export default function TermsOfSalePage() {
         {
           heading: "1. Introduction",
           body: [
-            "These Terms of Sale govern the purchase of products from HIM World through our website and other authorised sales channels. By placing an order, you agree to the terms outlined below.",
+            `These Terms of Sale govern the purchase of products from HIM World, operated by ${business.legalName}, through our website and other authorised sales channels. By placing an order, you agree to the terms outlined below.`,
             "HIM World reserves the right to update these terms from time to time. Any changes will apply to orders placed after the revised terms are published.",
           ],
         },
@@ -26,9 +28,10 @@ export default function TermsOfSalePage() {
         {
           heading: "3. Pricing and Payment",
           body: [
-            "All prices are displayed in the currency specified on our website and are subject to applicable taxes, duties, and delivery charges, as indicated at checkout.",
+            "All prices are displayed in the currency specified on our website and are inclusive of applicable GST (currently 18%), unless otherwise stated at checkout. A tax invoice is issued for paid orders.",
             "HIM World reserves the right to revise prices at any time. Price changes will not affect orders that have already been confirmed, except where a correction is necessary due to an evident pricing error.",
             "Payments must be completed using the payment methods available at checkout. Orders may be subject to verification before confirmation or dispatch.",
+            `Seller GSTIN: ${business.gstin}. Registered office: ${business.addressLines.join(", ")}.`,
           ],
         },
         {
@@ -111,8 +114,18 @@ export default function TermsOfSalePage() {
         {
           heading: "14. Contact Information",
           body: [
-            "For questions regarding these Terms of Sale, orders, or purchases, please contact us through the official contact details provided on HIM World's website.",
+            "For questions regarding these Terms of Sale, orders, or purchases, please contact us through the official channels below.",
             "By completing a purchase, you acknowledge that you have read and understood these Terms of Sale.",
+          ],
+          labeled: [
+            { label: "Seller", text: business.legalName },
+            {
+              label: "Registered address",
+              text: business.addressLines.join(", "),
+            },
+            { label: "GSTIN", text: business.gstin },
+            { label: "Email", text: "support@thehim.in" },
+            { label: "Mobile", text: "+91 99111 67778" },
           ],
         },
       ]}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/color-swatch";
 import { readLocalCart, writeLocalCart } from "@/lib/cart-local";
 import { track } from "@/lib/analytics";
+import { splitInclusiveGst } from "@/lib/gst";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -153,10 +154,13 @@ export default function CartClient({
     void updateQty(item.id, Math.max(1, item.qty + delta));
   };
 
-  const subtotal = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
+  const total = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
   const shipping = 0;
-  const tax = Math.round(subtotal * 0.07);
-  const total = subtotal + shipping + tax;
+  const { taxableCents, taxCents } = splitInclusiveGst(
+    Math.round(total * 100),
+  );
+  const subtotal = taxableCents / 100;
+  const tax = taxCents / 100;
   const itemCount = cart.reduce((acc, i) => acc + i.qty, 0);
 
   if (loading) {
@@ -325,7 +329,7 @@ export default function CartClient({
                 <div className="cart-summary-rows">
                   {[
                     {
-                      label: `Subtotal (${itemCount} items)`,
+                      label: `Taxable value (${itemCount} items)`,
                       value: fmt(subtotal),
                     },
                     {
@@ -333,7 +337,7 @@ export default function CartClient({
                       value: shipping === 0 ? "Free" : fmt(shipping),
                       emphasize: shipping === 0,
                     },
-                    { label: "Estimated Tax", value: fmt(tax) },
+                    { label: "GST (18%)", value: fmt(tax) },
                   ].map(({ label, value, emphasize }) => (
                     <div key={label} className="cart-summary-row">
                       <span>{label}</span>
@@ -353,6 +357,7 @@ export default function CartClient({
                   <span>Total</span>
                   <span>{fmt(total)}</span>
                 </div>
+                <p className="cart-gst-note">Inclusive of 18% GST</p>
 
                 <p className="cart-promo-label">PROMO CODE</p>
                 <div className="cart-promo">
@@ -782,8 +787,15 @@ export default function CartClient({
           align-items: baseline;
           padding-top: 16px;
           border-top: 1px solid ${RULE};
-          margin-bottom: 24px;
+          margin-bottom: 4px;
           gap: 12px;
+        }
+        .cart-gst-note {
+          margin: 0 0 24px;
+          font-size: 11px;
+          letter-spacing: 0.04em;
+          color: ${MUTED};
+          text-align: right;
         }
         .cart-summary-total span:first-child {
           font-family: ${SANS};
