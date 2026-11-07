@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   useEffect,
   useId,
@@ -34,10 +35,14 @@ const ICON_STROKE = 1.25;
 const NAV_FONT = "var(--font-nav), monospace";
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 
-const leftLinks: { label: string; href: string; concierge?: boolean }[] = [
-  { label: "EXPLORE", href: "/collection" },
-  { label: "CONCIERGE", href: "/contact?tab=concierge", concierge: true },
-];
+const leftLinks = [
+  { label: "Explore", href: "/collection", match: "/collection" },
+  { label: "Concierge", href: "/contact?tab=concierge", match: "/contact" },
+] as const;
+
+function isLeftNavActive(pathname: string, match: string) {
+  return pathname === match || pathname.startsWith(`${match}/`);
+}
 
 type SearchProduct = {
   id: number;
@@ -107,6 +112,7 @@ type NavbarProps = {
 
 export default function Navbar({ variant = "transparent" }: NavbarProps) {
   const solid = variant === "solid";
+  const pathname = usePathname() || "/";
   const { isAuthenticated } = useSession();
   const { itemCount } = useCart();
   const {
@@ -117,6 +123,11 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
   const accountHref = isAuthenticated
     ? "/account"
     : buildLoginHref("/account");
+  const leftActiveMatch =
+    leftLinks.find((link) => isLeftNavActive(pathname, link.match))?.match ??
+    null;
+  /* Figma shows Concierge lit by default when neither route is current. */
+  const leftSpotlightMatch = leftActiveMatch ?? "/contact";
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -470,17 +481,33 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
       aria-label="Primary"
     >
       <div className="him-nav-row relative flex w-full items-center justify-between">
-        <ul className="him-nav-desktop-links flex items-center list-none m-0 p-0">
-          {leftLinks.map((link) => (
-            <li key={link.label}>
-              <Link
-                href={link.href}
-                className={`him-nav-link${link.concierge ? " him-nav-link--concierge" : ""}`}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+        <ul className="him-nav-desktop-links him-nav-pill list-none m-0 p-0">
+          {leftLinks.map((link, index) => {
+            const current = leftActiveMatch === link.match;
+            const lit = leftSpotlightMatch === link.match;
+            const side = index === 0 ? "left" : "right";
+            return (
+              <li key={link.label} data-side={side}>
+                {lit ? (
+                  <img
+                    className="him-nav-pill-torch"
+                    src="/nav/flashlight.png?v=5"
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                  />
+                ) : null}
+                <Link
+                  href={link.href}
+                  className={`him-nav-pill-link${lit ? " is-active" : ""}`}
+                  data-side={side}
+                  aria-current={current ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         <Link href="/" className="him-nav-logo" aria-label="HIM home">
@@ -626,144 +653,130 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
         }
 
         .him-nav-desktop-links {
-          gap: 24px;
           z-index: 1;
         }
 
-        .him-nav-link {
+        /* Explore | Concierge — black capsule, golden inner rim */
+        .him-nav-pill {
           position: relative;
-          display: inline-block;
-          font-family: ${NAV_FONT};
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          text-decoration: none;
-          white-space: nowrap;
-          transition:
-            color 220ms ease,
-            letter-spacing 320ms cubic-bezier(0.22, 1, 0.36, 1);
+          display: inline-flex;
+          align-items: stretch;
+          gap: 0;
+          height: 50px;
+          border-radius: 999px;
+          border: 1px solid #3c281f;
+          background: #0a0705;
+          box-sizing: border-box;
+          /* visible so the active torch bloom can spill outside the pill */
+          overflow: visible;
         }
 
-        .him-nav-link::after {
+        /* Inner shadow around the pill — #4C2619 */
+        .him-nav-pill::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          box-shadow:
+            inset 0 5px 16px rgba(76, 38, 25, 0.7),
+            inset 0 -4px 14px rgba(76, 38, 25, 0.55),
+            inset 0 0 22px rgba(76, 38, 25, 0.45),
+            inset 0 0 32px rgba(76, 38, 25, 0.35);
+          pointer-events: none;
+          z-index: 4;
+        }
+
+        .him-nav-pill > li {
+          position: relative;
+          display: flex;
+          flex: 1 1 0;
+          margin: 0;
+          padding: 0;
+          min-width: 0;
+          overflow: visible;
+        }
+
+        /* Full-height seam only — flashlight PNG carries the active glow */
+        .him-nav-pill > li + li::before {
           content: "";
           position: absolute;
           left: 0;
-          right: 0;
-          bottom: -4px;
-          height: 1px;
-          transform: scaleX(0);
-          transform-origin: left center;
-          transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          top: 0;
+          bottom: 0;
+          width: 1px;
+          background: rgba(196, 137, 85, 0.55);
+          z-index: 7;
           pointer-events: none;
         }
 
-        .him-nav-link:hover,
-        .him-nav-link:focus-visible {
-          letter-spacing: 0.2em;
+        /*
+          Active flashlight — new Figma PNG.
+          Hard left edge on the middle seam; width 90% of the half;
+          height sized so the source ≈60% of pill and the V spills outside.
+        */
+        .him-nav-pill-torch {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          width: 90%;
+          height: 118px;
+          transform: translateY(-50%);
+          pointer-events: none;
+          z-index: 5;
+          object-fit: fill;
+          object-position: left center;
+          user-select: none;
+          transition: width 180ms ease;
         }
 
-        .him-nav-link:hover::after,
-        .him-nav-link:focus-visible::after {
-          transform: scaleX(1);
+        .him-nav-pill > li[data-side="left"] > .him-nav-pill-torch {
+          left: auto;
+          right: 0;
+          transform: translateY(-50%) scaleX(-1);
         }
 
-        .him-nav--transparent .him-nav-link {
-          color: rgba(255, 255, 255, 0.92);
-          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
-          animation: him-nav-link-idle 3.6s ease-in-out infinite;
+        /* Concierge hover — flashlight fills the full half */
+        .him-nav-pill > li[data-side="right"]:hover > .him-nav-pill-torch {
+          width: 100%;
         }
 
-        .him-nav--transparent .him-nav-link::after {
-          background: rgba(255, 255, 255, 0.9);
+        .him-nav-pill-link {
+          position: relative;
+          top: -2px;
+          z-index: 6;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          min-height: 50px;
+          padding: 0 28px;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 16px;
+          font-weight: 500;
+          letter-spacing: 0.01em;
+          text-decoration: none;
+          white-space: nowrap;
+          color: rgba(255, 255, 255, 0.72);
+          transition: color 180ms ease;
+          background: transparent;
         }
 
-        .him-nav--transparent .him-nav-link:hover,
-        .him-nav--transparent .him-nav-link:focus-visible {
-          color: #fff;
-          animation: none;
+        .him-nav-pill-link.is-active,
+        .him-nav-pill-link:hover,
+        .him-nav-pill-link:focus-visible {
+          color: #ffffff;
         }
 
-        .him-nav--solid .him-nav-link {
-          color: rgba(17, 17, 17, 0.88);
-        }
-
-        .him-nav--solid .him-nav-link::after {
-          background: rgba(17, 17, 17, 0.85);
-        }
-
-        .him-nav--solid .him-nav-link:hover,
-        .him-nav--solid .him-nav-link:focus-visible {
-          color: #111;
-        }
-
-        @keyframes him-nav-link-idle {
-          0%,
-          100% {
-            opacity: 0.78;
-          }
-          50% {
-            opacity: 1;
-          }
+        .him-nav--solid .him-nav-pill {
+          border-color: #3c281f;
+          background: #0a0705;
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .him-nav-link,
-          .him-nav-link::after {
+          .him-nav-pill-link,
+          .him-nav-pill-torch {
             transition: none;
-            animation: none !important;
           }
-
-          .him-nav-link:hover,
-          .him-nav-link:focus-visible {
-            letter-spacing: 0.14em;
-          }
-
-          .him-nav-link:hover::after,
-          .him-nav-link:focus-visible::after {
-            transform: scaleX(1);
-          }
-        }
-
-        /* ── Concierge pill button ───────────────────────────────────── */
-
-        .him-nav-link--concierge {
-          padding: 7px 14px;
-          border: 1px solid #c4a574;
-          border-radius: 999px;
-          background: rgba(196, 165, 116, 0.18);
-          color: #f3e6c8 !important;
-          text-shadow: none !important;
-          letter-spacing: 1.8px;
-          animation: none !important;
-          transition:
-            color 160ms ease,
-            background 160ms ease,
-            border-color 160ms ease,
-            letter-spacing 160ms ease;
-        }
-
-        .him-nav-link--concierge::after {
-          display: none;
-        }
-
-        .him-nav-link--concierge:hover,
-        .him-nav-link--concierge:focus-visible {
-          background: rgba(196, 165, 116, 0.32);
-          color: #fff8ea !important;
-          letter-spacing: 1.8px;
-        }
-
-        .him-nav--solid .him-nav-link--concierge {
-          background: rgba(196, 165, 116, 0.12);
-          border-color: #c4a574;
-          color: #c4a574 !important;
-        }
-
-        .him-nav--solid .him-nav-link--concierge:hover,
-        .him-nav--solid .him-nav-link--concierge:focus-visible {
-          background: rgba(196, 165, 116, 0.22);
-          color: #1a120c !important;
         }
 
         .him-nav-logo {
