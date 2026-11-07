@@ -17,7 +17,10 @@ export type Address = {
 
 export type OrderRow = {
 	id: number;
+	/** Display label, e.g. `#HIM…`. */
 	orderNumber: string;
+	/** Raw `orders.order_number` for hrefs (no `#`). */
+	orderNumberKey: string;
 	date: string;
 	items: number;
 	status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -127,9 +130,11 @@ export async function getAccountPayload(
 	const orders: OrderRow[] = (orderRows ?? []).map((row) => {
 		const status = String(row.status) as OrderRow["status"];
 		const meta = STATUS_META[status] ?? STATUS_META.processing;
+		const orderNumberKey = String(row.order_number);
 		return {
 			id: Number(row.id),
-			orderNumber: `#${row.order_number}`,
+			orderNumber: `#${orderNumberKey}`,
+			orderNumberKey,
 			date: formatOrderDate(row.placed_at as Date | string),
 			items: Number(row.item_count),
 			status,

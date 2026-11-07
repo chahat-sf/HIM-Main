@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
@@ -12,6 +12,21 @@ import type { AccountPayload } from "@/lib/account";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { toCardImage } from "@/lib/card-image";
 import { firstNameFromFullName, formatDisplayDate } from "@/lib/format";
+
+type AccountTab = "details" | "orders" | "saved";
+
+const ACCOUNT_TABS: { id: AccountTab; label: string }[] = [
+  { id: "details", label: "Details" },
+  { id: "orders", label: "Orders" },
+  { id: "saved", label: "Saved" },
+];
+
+function parseAccountTab(value: string | null): AccountTab {
+  if (value === "orders" || value === "saved" || value === "details") {
+    return value;
+  }
+  return "details";
+}
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -74,8 +89,12 @@ function dash(value: string | null | undefined) {
   return value?.trim() ? value : "—";
 }
 
-export default function AccountPage() {
+function AccountPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<AccountTab>(() =>
+    parseAccountTab(searchParams.get("tab")),
+  );
   const [data, setData] = useState<AccountPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -83,6 +102,22 @@ export default function AccountPage() {
   const [editingAddress, setEditingAddress] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    setTab(parseAccountTab(searchParams.get("tab")));
+  }, [searchParams]);
+
+  const selectTab = useCallback(
+    (next: AccountTab) => {
+      setTab(next);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "details") params.delete("tab");
+      else params.set("tab", next);
+      const qs = params.toString();
+      router.replace(qs ? `/account?${qs}` : "/account", { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -345,306 +380,357 @@ export default function AccountPage() {
 
           {data && (
             <>
-              <div className="acc-two-col">
-                <Card>
-                  <SectionHeader
-                    title="PERSONAL DETAILS"
-                    action={editingProfile ? "CANCEL" : "EDIT"}
-                    onAction={() => {
-                      setFormError("");
-                      if (editingProfile) hydrateForms(data);
-                      setEditingProfile((v) => !v);
-                    }}
-                  />
-                  {editingProfile ? (
-                    <form className="acc-form" onSubmit={onSaveProfile}>
-                      <label>
-                        Full name
-                        <input
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Email
-                        <input value={data.user.email} disabled />
-                      </label>
-                      <label>
-                        Phone
-                        <input
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 …"
-                        />
-                      </label>
-                      <label>
-                        Date of birth
-                        <input
-                          type="date"
-                          value={dateOfBirth}
-                          onChange={(e) => setDateOfBirth(e.target.value)}
-                        />
-                      </label>
-                      <button
-                        type="submit"
-                        className="acc-save"
-                        disabled={saving}
-                        style={{ background: GOLD, color: "#111" }}
-                      >
-                        {saving ? "Saving…" : "Save details"}
-                      </button>
-                    </form>
-                  ) : (
-                    <table className="acc-details-table">
-                      <tbody>
-                        {detailRows.map(([label, value]) => (
-                          <tr key={label}>
-                            <td className="acc-detail-label">{label}</td>
-                            <td className="acc-detail-value">{value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </Card>
+              <nav className="acc-tabs" aria-label="Account sections">
+                {ACCOUNT_TABS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`acc-tab${tab === item.id ? " is-active" : ""}`}
+                    aria-selected={tab === item.id}
+                    onClick={() => selectTab(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
 
-                <Card>
-                  <SectionHeader
-                    title="ADDRESSES"
-                    action={editingAddress ? "CANCEL" : "ADD ADDRESS"}
-                    onAction={() => {
-                      setFormError("");
-                      if (!editingAddress) {
-                        clearAddressForm(data.addresses.length > 0);
-                      }
-                      setEditingAddress((v) => !v);
-                    }}
-                  />
-                  {editingAddress ? (
-                    <form className="acc-form" onSubmit={onSaveAddress}>
-                      <label>
-                        Label
-                        <input
-                          value={addrLabel}
-                          onChange={(e) => setAddrLabel(e.target.value)}
-                        />
-                      </label>
-                      <label>
-                        Address line 1
-                        <input
-                          value={line1}
-                          onChange={(e) => setLine1(e.target.value)}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Address line 2
-                        <input
-                          value={line2}
-                          onChange={(e) => setLine2(e.target.value)}
-                        />
-                      </label>
-                      <label>
-                        City
-                        <input
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          required
-                        />
-                      </label>
-                      <label>
-                        State
-                        <input
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Postal code
-                        <input
-                          value={postalCode}
-                          onChange={(e) => setPostalCode(e.target.value)}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Country
-                        <input
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                        />
-                      </label>
-                      {data.addresses.length > 0 ? (
-                        <label className="acc-check">
+              {tab === "details" ? (
+                <div className="acc-two-col">
+                  <Card>
+                    <SectionHeader
+                      title="PERSONAL DETAILS"
+                      action={editingProfile ? "CANCEL" : "EDIT"}
+                      onAction={() => {
+                        setFormError("");
+                        if (editingProfile) hydrateForms(data);
+                        setEditingProfile((v) => !v);
+                      }}
+                    />
+                    {editingProfile ? (
+                      <form className="acc-form" onSubmit={onSaveProfile}>
+                        <label>
+                          Full name
                           <input
-                            type="checkbox"
-                            checked={makeDefaultAddress}
-                            onChange={(e) =>
-                              setMakeDefaultAddress(e.target.checked)
-                            }
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            required
                           />
-                          Set as default shipping address
                         </label>
-                      ) : null}
-                      <button
-                        type="submit"
-                        className="acc-save"
-                        disabled={saving}
-                        style={{ background: GOLD, color: "#111" }}
-                      >
-                        {saving ? "Saving…" : "Add address"}
-                      </button>
-                    </form>
-                  ) : null}
-                  {!editingAddress && data.addresses.length === 0 ? (
-                    <p className="acc-empty">No addresses yet</p>
-                  ) : null}
-                  {data.addresses.length > 0 ? (
-                    <div className="acc-address-list">
-                      {data.addresses.map((addr) => (
-                        <div key={addr.id} className="acc-address-box">
-                          <div className="acc-address-head">
-                            <p className="acc-address-label">{addr.label}</p>
-                            {addr.isDefault ? (
-                              <span className="acc-address-badge">Default</span>
-                            ) : null}
-                          </div>
-                          {addr.lines.map((line) => (
-                            <p
-                              key={`${addr.id}-${line}`}
-                              className="acc-address-line"
-                            >
-                              {line}
-                            </p>
+                        <label>
+                          Email
+                          <input value={data.user.email} disabled />
+                        </label>
+                        <label>
+                          Phone
+                          <input
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="+91 …"
+                          />
+                        </label>
+                        <label>
+                          Date of birth
+                          <input
+                            type="date"
+                            value={dateOfBirth}
+                            onChange={(e) => setDateOfBirth(e.target.value)}
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className="acc-save"
+                          disabled={saving}
+                          style={{ background: GOLD, color: "#111" }}
+                        >
+                          {saving ? "Saving…" : "Save details"}
+                        </button>
+                      </form>
+                    ) : (
+                      <table className="acc-details-table">
+                        <tbody>
+                          {detailRows.map(([label, value]) => (
+                            <tr key={label}>
+                              <td className="acc-detail-label">{label}</td>
+                              <td className="acc-detail-value">{value}</td>
+                            </tr>
                           ))}
-                          <div className="acc-address-actions">
-                            {!addr.isDefault ? (
+                        </tbody>
+                      </table>
+                    )}
+                  </Card>
+
+                  <Card>
+                    <SectionHeader
+                      title="ADDRESSES"
+                      action={editingAddress ? "CANCEL" : "ADD ADDRESS"}
+                      onAction={() => {
+                        setFormError("");
+                        if (!editingAddress) {
+                          clearAddressForm(data.addresses.length > 0);
+                        }
+                        setEditingAddress((v) => !v);
+                      }}
+                    />
+                    {editingAddress ? (
+                      <form className="acc-form" onSubmit={onSaveAddress}>
+                        <label>
+                          Label
+                          <input
+                            value={addrLabel}
+                            onChange={(e) => setAddrLabel(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          Address line 1
+                          <input
+                            value={line1}
+                            onChange={(e) => setLine1(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Address line 2
+                          <input
+                            value={line2}
+                            onChange={(e) => setLine2(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          City
+                          <input
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          State
+                          <input
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Postal code
+                          <input
+                            value={postalCode}
+                            onChange={(e) => setPostalCode(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Country
+                          <input
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                          />
+                        </label>
+                        {data.addresses.length > 0 ? (
+                          <label className="acc-check">
+                            <input
+                              type="checkbox"
+                              checked={makeDefaultAddress}
+                              onChange={(e) =>
+                                setMakeDefaultAddress(e.target.checked)
+                              }
+                            />
+                            Set as default shipping address
+                          </label>
+                        ) : null}
+                        <button
+                          type="submit"
+                          className="acc-save"
+                          disabled={saving}
+                          style={{ background: GOLD, color: "#111" }}
+                        >
+                          {saving ? "Saving…" : "Add address"}
+                        </button>
+                      </form>
+                    ) : null}
+                    {!editingAddress && data.addresses.length === 0 ? (
+                      <p className="acc-empty">No addresses yet</p>
+                    ) : null}
+                    {data.addresses.length > 0 ? (
+                      <div className="acc-address-list">
+                        {data.addresses.map((addr) => (
+                          <div key={addr.id} className="acc-address-box">
+                            <div className="acc-address-head">
+                              <p className="acc-address-label">{addr.label}</p>
+                              {addr.isDefault ? (
+                                <span className="acc-address-badge">Default</span>
+                              ) : null}
+                            </div>
+                            {addr.lines.map((line) => (
+                              <p
+                                key={`${addr.id}-${line}`}
+                                className="acc-address-line"
+                              >
+                                {line}
+                              </p>
+                            ))}
+                            <div className="acc-address-actions">
+                              {!addr.isDefault ? (
+                                <button
+                                  type="button"
+                                  className="acc-address-action"
+                                  disabled={saving}
+                                  onClick={() => void onSetDefaultAddress(addr.id)}
+                                >
+                                  Set as default
+                                </button>
+                              ) : null}
                               <button
                                 type="button"
                                 className="acc-address-action"
                                 disabled={saving}
-                                onClick={() => void onSetDefaultAddress(addr.id)}
+                                onClick={() => void onDeleteAddress(addr.id)}
                               >
-                                Set as default
+                                Remove
                               </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="acc-address-action"
-                              disabled={saving}
-                              onClick={() => void onDeleteAddress(addr.id)}
-                            >
-                              Remove
-                            </button>
+                            </div>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </Card>
+                </div>
+              ) : null}
+
+              {tab === "orders" ? (
+                <Card>
+                  <SectionHeader title="ORDERS" />
+                  {data.orders.length === 0 ? (
+                    <p className="acc-empty">No orders yet</p>
+                  ) : (
+                    <div className="acc-orders-scroll">
+                      <table className="acc-orders-table">
+                        <thead>
+                          <tr>
+                            {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL", "", ""].map(
+                              (h, i) => (
+                                <th key={h || `pad-${i}`}>{h}</th>
+                              ),
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.orders.map((order) => {
+                            const successHref = `/checkout/success?order=${encodeURIComponent(order.orderNumberKey)}`;
+                            const invoiceHref = `/account/orders/${encodeURIComponent(order.orderNumberKey)}/invoice`;
+                            return (
+                              <tr key={order.id} className="acc-order-row">
+                                <td className="acc-order-id">
+                                  <Link href={successHref} className="acc-order-link">
+                                    {order.orderNumber}
+                                  </Link>
+                                </td>
+                                <td>
+                                  <Link href={successHref} className="acc-order-link muted">
+                                    {order.date}
+                                  </Link>
+                                </td>
+                                <td>
+                                  <Link href={successHref} className="acc-order-link muted">
+                                    {order.items}{" "}
+                                    {order.items === 1 ? "item" : "items"}
+                                  </Link>
+                                </td>
+                                <td>
+                                  <Link href={successHref} className="acc-order-link">
+                                    <span
+                                      className="acc-status"
+                                      style={{ color: order.statusColor }}
+                                    >
+                                      <span
+                                        className="acc-status-dot"
+                                        style={{ background: order.statusColor }}
+                                      />
+                                      {order.statusLabel}
+                                    </span>
+                                  </Link>
+                                </td>
+                                <td className="acc-order-total">
+                                  <Link href={successHref} className="acc-order-link">
+                                    {order.total}
+                                  </Link>
+                                </td>
+                                <td className="acc-order-invoice">
+                                  <Link href={invoiceHref} className="acc-invoice-link">
+                                    Invoice
+                                  </Link>
+                                </td>
+                                <td className="acc-order-chevron">
+                                  <Link
+                                    href={successHref}
+                                    aria-label={`View order ${order.orderNumberKey}`}
+                                    className="acc-order-link"
+                                  >
+                                    <Chevron />
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              ) : null}
+
+              {tab === "saved" ? (
+                <section className="acc-saved" aria-label="Saved items">
+                  <div className="acc-section-header" style={{ marginBottom: 16 }}>
+                    <p className="acc-section-title">SAVED ITEMS</p>
+                    <Link href="/collection" className="acc-action-link">
+                      VIEW ALL
+                    </Link>
+                  </div>
+                  {data.savedItems.length === 0 ? (
+                    <p className="acc-empty">
+                      No saved items yet.{" "}
+                      <Link href="/collection" className="acc-inline-link">
+                        Browse the collection
+                      </Link>
+                    </p>
+                  ) : (
+                    <div className="acc-saved-grid">
+                      {data.savedItems.map((item) => (
+                        <Link
+                          key={item.slug}
+                          href={`/collection/${item.slug}`}
+                          className="acc-saved-card"
+                        >
+                          <div className="acc-saved-img him-card-media">
+                            <Image
+                              src={toCardImage(item.image)}
+                              alt={item.name}
+                              fill
+                              quality={75}
+                              sizes="(max-width: 768px) 50vw, 28vw"
+                              className="object-cover object-top"
+                              style={{ objectFit: "cover", objectPosition: "top center" }}
+                            />
+                          </div>
+                          <p className="acc-saved-name">{item.name}</p>
+                          <p className="acc-saved-price">{item.price}</p>
+                          {item.swatches.length > 0 && (
+                            <div className="acc-saved-swatches">
+                              {item.swatches.map((c, i) => (
+                                <span
+                                  key={`${item.slug}-${c}-${i}`}
+                                  style={{ background: c }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </Link>
                       ))}
                     </div>
-                  ) : null}
-                </Card>
-              </div>
-
-              <Card>
-                <SectionHeader title="ORDER HISTORY" />
-                {data.orders.length === 0 ? (
-                  <p className="acc-empty">No orders yet</p>
-                ) : (
-                  <div className="acc-orders-scroll">
-                    <table className="acc-orders-table">
-                      <thead>
-                        <tr>
-                          {["ORDER #", "DATE", "ITEMS", "STATUS", "TOTAL", ""].map(
-                            (h, i) => (
-                              <th key={h || `pad-${i}`}>{h}</th>
-                            ),
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.orders.map((order) => (
-                          <tr key={order.id}>
-                            <td className="acc-order-id">{order.orderNumber}</td>
-                            <td>{order.date}</td>
-                            <td>
-                              {order.items}{" "}
-                              {order.items === 1 ? "item" : "items"}
-                            </td>
-                            <td>
-                              <span
-                                className="acc-status"
-                                style={{ color: order.statusColor }}
-                              >
-                                <span
-                                  className="acc-status-dot"
-                                  style={{ background: order.statusColor }}
-                                />
-                                {order.statusLabel}
-                              </span>
-                            </td>
-                            <td className="acc-order-total">{order.total}</td>
-                            <td className="acc-order-chevron">
-                              <Chevron />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-
-              <section className="acc-saved" aria-label="Saved items">
-                <div className="acc-section-header" style={{ marginBottom: 16 }}>
-                  <p className="acc-section-title">SAVED ITEMS</p>
-                  <Link href="/collection" className="acc-action-link">
-                    VIEW ALL
-                  </Link>
-                </div>
-                {data.savedItems.length === 0 ? (
-                  <p className="acc-empty">
-                    No saved items yet.{" "}
-                    <Link href="/collection" className="acc-inline-link">
-                      Browse the collection
-                    </Link>
-                  </p>
-                ) : (
-                  <div className="acc-saved-grid">
-                    {data.savedItems.map((item) => (
-                      <Link
-                        key={item.slug}
-                        href={`/collection/${item.slug}`}
-                        className="acc-saved-card"
-                      >
-                        <div className="acc-saved-img him-card-media">
-                          <Image
-                            src={toCardImage(item.image)}
-                            alt={item.name}
-                            fill
-                            quality={75}
-                            sizes="(max-width: 768px) 50vw, 28vw"
-                            className="object-cover object-top"
-                            style={{ objectFit: "cover", objectPosition: "top center" }}
-                          />
-                        </div>
-                        <p className="acc-saved-name">{item.name}</p>
-                        <p className="acc-saved-price">{item.price}</p>
-                        {item.swatches.length > 0 && (
-                          <div className="acc-saved-swatches">
-                            {item.swatches.map((c, i) => (
-                              <span
-                                key={`${item.slug}-${c}-${i}`}
-                                style={{ background: c }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+                  )}
+                </section>
+              ) : null}
             </>
           )}
         </div>
@@ -1044,6 +1130,35 @@ export default function AccountPage() {
           cursor: wait;
         }
 
+        .acc-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 28px;
+          margin: 0 0 28px;
+          border-bottom: 1px solid ${RULE};
+        }
+        .acc-tab {
+          appearance: none;
+          border: none;
+          background: transparent;
+          padding: 0 0 12px;
+          margin: 0;
+          font-family: ${SANS};
+          font-size: 11px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: ${MUTED};
+          cursor: pointer;
+          border-bottom: 1px solid transparent;
+          margin-bottom: -1px;
+        }
+        .acc-tab:hover {
+          color: ${INK};
+        }
+        .acc-tab.is-active {
+          color: ${GOLD};
+          border-bottom-color: ${GOLD};
+        }
         .acc-orders-scroll {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
@@ -1051,7 +1166,7 @@ export default function AccountPage() {
         .acc-orders-table {
           width: 100%;
           border-collapse: collapse;
-          min-width: 560px;
+          min-width: 620px;
         }
         .acc-orders-table th {
           padding: 0 12px 12px 0;
@@ -1081,6 +1196,16 @@ export default function AccountPage() {
         .acc-orders-table tr:last-child td {
           border-bottom: none;
         }
+        .acc-order-row:hover td {
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .acc-order-link {
+          color: inherit;
+          text-decoration: none;
+        }
+        .acc-order-link.muted {
+          color: ${MUTED_SOFT};
+        }
         .acc-order-id {
           color: ${INK} !important;
           font-weight: 500;
@@ -1088,6 +1213,19 @@ export default function AccountPage() {
         .acc-order-total {
           color: ${INK} !important;
           font-weight: 500;
+        }
+        .acc-order-invoice {
+          padding-right: 8px !important;
+        }
+        .acc-invoice-link {
+          font-size: 10px;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: ${GOLD};
+          text-decoration: none;
+        }
+        .acc-invoice-link:hover {
+          text-decoration: underline;
         }
         .acc-order-chevron {
           padding-right: 0 !important;
@@ -1184,5 +1322,13 @@ export default function AccountPage() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<RouteLoading />}>
+      <AccountPageInner />
+    </Suspense>
   );
 }

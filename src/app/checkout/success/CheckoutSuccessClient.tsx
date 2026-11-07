@@ -199,7 +199,10 @@ export default function CheckoutSuccessClient({
 												DOWNLOAD INVOICE
 											</a>
 										) : null}
-										<Link href="/account" className="cs-btn-secondary">
+										<Link
+											href="/account?tab=orders"
+											className="cs-btn-secondary"
+										>
 											VIEW ACCOUNT
 										</Link>
 										<Link href="/collection" className="cs-btn-secondary">
@@ -211,7 +214,7 @@ export default function CheckoutSuccessClient({
 						</div>
 					) : (
 						<div className="cs-actions cs-actions-solo">
-							<Link href="/account" className="cs-btn-primary">
+							<Link href="/account?tab=orders" className="cs-btn-primary">
 								VIEW ACCOUNT
 							</Link>
 							<Link href="/collection" className="cs-btn-secondary">
