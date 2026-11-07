@@ -34,9 +34,9 @@ const ICON_STROKE = 1.25;
 const NAV_FONT = "var(--font-nav), monospace";
 const SERIF = 'var(--font-room-serif, "Cormorant Garamond"), Georgia, serif';
 
-const leftLinks = [
+const leftLinks: { label: string; href: string; concierge?: boolean }[] = [
   { label: "EXPLORE", href: "/collection" },
-  { label: "CONCIERGE", href: "/contact?tab=concierge" },
+  { label: "CONCIERGE", href: "/contact?tab=concierge", concierge: true },
 ];
 
 type SearchProduct = {
@@ -473,7 +473,10 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
         <ul className="him-nav-desktop-links flex items-center list-none m-0 p-0">
           {leftLinks.map((link) => (
             <li key={link.label}>
-              <Link href={link.href} className="him-nav-link">
+              <Link
+                href={link.href}
+                className={`him-nav-link${link.concierge ? " him-nav-link--concierge" : ""}`}
+              >
                 {link.label}
               </Link>
             </li>
@@ -720,6 +723,47 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           .him-nav-link:focus-visible::after {
             transform: scaleX(1);
           }
+        }
+
+        /* ── Concierge pill button ───────────────────────────────────── */
+
+        .him-nav-link--concierge {
+          padding: 7px 14px;
+          border: 1px solid #c4a574;
+          border-radius: 999px;
+          background: rgba(196, 165, 116, 0.18);
+          color: #f3e6c8 !important;
+          text-shadow: none !important;
+          letter-spacing: 1.8px;
+          animation: none !important;
+          transition:
+            color 160ms ease,
+            background 160ms ease,
+            border-color 160ms ease,
+            letter-spacing 160ms ease;
+        }
+
+        .him-nav-link--concierge::after {
+          display: none;
+        }
+
+        .him-nav-link--concierge:hover,
+        .him-nav-link--concierge:focus-visible {
+          background: rgba(196, 165, 116, 0.32);
+          color: #fff8ea !important;
+          letter-spacing: 1.8px;
+        }
+
+        .him-nav--solid .him-nav-link--concierge {
+          background: rgba(196, 165, 116, 0.12);
+          border-color: #c4a574;
+          color: #c4a574 !important;
+        }
+
+        .him-nav--solid .him-nav-link--concierge:hover,
+        .him-nav--solid .him-nav-link--concierge:focus-visible {
+          background: rgba(196, 165, 116, 0.22);
+          color: #1a120c !important;
         }
 
         .him-nav-logo {
