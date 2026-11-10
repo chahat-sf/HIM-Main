@@ -1,12 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
-  <g stroke="#111111" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <!-- handle -->
-    <path d="M176 196 C176 128, 336 128, 336 196" />
-    <!-- bag body -->
-    <path d="M128 196 H384 V400 C384 424 364 444 340 444 H172 C148 444 128 424 128 400 Z" />
-    <!-- plus -->
-    <path d="M256 292 V372" />
-    <path d="M216 332 H296" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Handle -->
+  <path d="M 8.5 7.5 V 4.8 A 3.5 3.5 0 0 1 15.5 4.8 V 7.5" />
+  <!-- Body outline with cutout -->
+  <path d="M 8.5 7.5 H 5.5 A 2 2 0 0 0 3.5 9.5 V 19.5 A 2 2 0 0 0 5.5 21.5 H 12.5" />
+  <path d="M 15.5 7.5 H 18.5 A 2 2 0 0 1 20.5 9.5 V 12.5" />
+  <!-- Plus mark -->
+  <line x1="14.5" y1="17.5" x2="22" y2="17.5" />
+  <line x1="18.25" y1="13.75" x2="18.25" y2="21.25" />
 </svg>

@@ -626,7 +626,7 @@ function ExistingProductsGrid({
                   }}
                 >
                   <Image
-                    src="/icons/bag-plus.png"
+                    src="/icons/bag-plus-v2.png"
                     alt=""
                     width={22}
                     height={22}
