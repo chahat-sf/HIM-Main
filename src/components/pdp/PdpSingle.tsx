@@ -16,6 +16,8 @@ import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import SizeChartModal from "@/components/pdp/SizeChartModal";
+import PdpView360 from "@/components/pdp/PdpView360";
+import View360Button from "@/components/pdp/View360Button";
 import {
   useEffect,
   useRef,
@@ -28,6 +30,7 @@ import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
+import { resolvePdp360 } from "@/lib/pdp-360";
 import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 import {
   PDP_POLICY_SECTIONS,
@@ -40,40 +43,6 @@ function PlayBadge() {
     <span className="pdp-thumb-play" aria-hidden="true">
       <Play size={10} strokeWidth={1.25} absoluteStrokeWidth={false} fill="currentColor" />
     </span>
-  );
-}
-
-function View360Button({
-  className,
-  productName,
-  compact = false,
-}: {
-  className?: string;
-  productName: string;
-  compact?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className={["view-360", className].filter(Boolean).join(" ")}
-      aria-label={`View ${productName} in 360 degrees`}
-      tabIndex={-1}
-    >
-      <Image
-        src="/products/view-360-icon.png"
-        alt=""
-        width={80}
-        height={61}
-        className="view-360__icon"
-        draggable={false}
-      />
-      {!compact ? (
-        <>
-          <span className="view-360__divider" />
-          <span className="view-360__label">VIEW IN 360°</span>
-        </>
-      ) : null}
-    </button>
   );
 }
 
@@ -154,6 +123,7 @@ export default function PdpSingle({
   const [wishPop, setWishPop] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [view360Open, setView360Open] = useState(false);
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
@@ -164,6 +134,7 @@ export default function PdpSingle({
   const carouselPointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
   activeImgRef.current = activeImg;
+  const view360 = resolvePdp360(product);
   const { addItem, items } = useCart();
   const inCart = items.some(
     (i) => i.slug === slug || i.productId === product.id,
@@ -521,11 +492,14 @@ export default function PdpSingle({
                     </button>
                   </>
                 )}
-                <View360Button
-                  className="view-360--carousel"
-                  productName={PRODUCT.name}
-                  compact
-                />
+                {view360 ? (
+                  <View360Button
+                    className="view-360--carousel"
+                    productName={PRODUCT.name}
+                    compact
+                    onClick={() => setView360Open(true)}
+                  />
+                ) : null}
               </div>
               {imageCount > 1 && (
                 <div
@@ -642,10 +616,13 @@ export default function PdpSingle({
           <div className="pdp-right pdp-single-right">
             <div className="pdp-title-row">
               <h1 className="pdp-title">{PRODUCT.name}</h1>
-              <View360Button
-                className="view-360--title"
-                productName={PRODUCT.name}
-              />
+              {view360 ? (
+                <View360Button
+                  className="view-360--title"
+                  productName={PRODUCT.name}
+                  onClick={() => setView360Open(true)}
+                />
+              ) : null}
             </div>
             {PRODUCT.title ? (
               <p className="pdp-subtitle">{PRODUCT.title}</p>
@@ -877,6 +854,15 @@ export default function PdpSingle({
         open={sizeChartOpen}
         onClose={() => setSizeChartOpen(false)}
       />
+
+      {view360 ? (
+        <PdpView360
+          open={view360Open}
+          assets={view360}
+          productName={PRODUCT.name}
+          onClose={() => setView360Open(false)}
+        />
+      ) : null}
 
       {lightboxOpen && lightboxCount > 0 ? (
         <div
@@ -1230,52 +1216,8 @@ export default function PdpSingle({
           color: var(--pdp-ink);
         }
 
-        .view-360 {
-          flex: 0 0 auto;
-          align-self: center;
-          min-width: 0;
-          height: 40px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 0 12px;
-          color: var(--pdp-ink);
-          background: linear-gradient(145deg, #fff, #f7f6f4);
-          border: 1px solid #ebe8e4;
-          border-radius: 10px;
-          box-shadow: none;
-          cursor: default;
-          pointer-events: none;
-          font: inherit;
-          -webkit-tap-highlight-color: transparent;
-          user-select: none;
-        }
-
         .view-360--carousel {
           display: none;
-        }
-
-        .view-360__icon {
-          width: 34px;
-          height: auto;
-          display: block;
-          flex: 0 0 auto;
-          object-fit: contain;
-        }
-
-        .view-360__divider {
-          width: 1px;
-          height: 18px;
-          background: #c9c5c0;
-        }
-
-        .view-360__label {
-          white-space: nowrap;
-          font-family: var(--pdp-sans);
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.14em;
         }
 
         .pdp-subtitle {
@@ -1838,7 +1780,7 @@ export default function PdpSingle({
           }
 
           .view-360--title {
-            display: none;
+            display: none !important;
           }
 
           .view-360--carousel {
@@ -1846,19 +1788,23 @@ export default function PdpSingle({
             right: 12px;
             bottom: 12px;
             z-index: 4;
-            display: inline-flex;
-            width: 48px;
-            min-width: 48px;
-            height: 48px;
-            padding: 6px;
-            gap: 0;
-            border-radius: 12px;
-            pointer-events: none;
+            display: inline-flex !important;
+            width: 48px !important;
+            min-width: 48px !important;
+            height: 48px !important;
+            padding: 5px !important;
+            gap: 0 !important;
+            border-radius: 50% !important;
           }
 
-          .view-360--carousel .view-360__icon {
-            width: 34px;
-            height: auto;
+          .view-360--carousel :global(.view-360__icon) {
+            width: 36px !important;
+            height: auto !important;
+          }
+
+          .view-360--carousel :global(.view-360__divider),
+          .view-360--carousel :global(.view-360__label) {
+            display: none !important;
           }
 
           .pdp-s-carousel-stage {

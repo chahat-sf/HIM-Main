@@ -17,6 +17,8 @@ import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import SizeChartModal from "@/components/pdp/SizeChartModal";
+import PdpView360 from "@/components/pdp/PdpView360";
+import View360Button from "@/components/pdp/View360Button";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -25,6 +27,7 @@ import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
+import { resolvePdp360 } from "@/lib/pdp-360";
 import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 import {
   PDP_POLICY_SECTIONS,
@@ -121,12 +124,14 @@ export default function PdpOutfit({
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [wishPop, setWishPop] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const [view360Open, setView360Open] = useState(false);
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const view360 = resolvePdp360(product);
   const { addItem, items } = useCart();
   const inCart = items.some(
     (i) => i.slug === slug || i.productId === product.id,
@@ -387,7 +392,18 @@ export default function PdpOutfit({
 
           {/* ── RIGHT: PRODUCT INFO PANEL ──────────────── */}
           <div className="pdp-right" ref={rightRef}>
-            <h1 className="pdp-title" data-pdp-focus="intro">{PRODUCT.name}</h1>
+            <div className="pdp-title-row">
+              <h1 className="pdp-title" data-pdp-focus="intro">
+                {PRODUCT.name}
+              </h1>
+              {view360 ? (
+                <View360Button
+                  className="view-360--title"
+                  productName={PRODUCT.name}
+                  onClick={() => setView360Open(true)}
+                />
+              ) : null}
+            </div>
             {PRODUCT.title ? (
               <p className="pdp-subtitle">{PRODUCT.title}</p>
             ) : null}
@@ -616,6 +632,15 @@ export default function PdpOutfit({
       </main>
 
       <Footer />
+
+      {view360 ? (
+        <PdpView360
+          open={view360Open}
+          assets={view360}
+          productName={PRODUCT.name}
+          onClose={() => setView360Open(false)}
+        />
+      ) : null}
 
       <SizeChartModal
         open={sizeChartOpen}
@@ -849,8 +874,17 @@ export default function PdpOutfit({
           }
         }
 
+        .pdp-title-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
         .pdp-title {
           margin: 0;
+          flex: 1;
+          min-width: 0;
           font-family: var(--pdp-serif);
           font-size: max(26px, calc(36 * var(--u)));
           font-weight: 500;
@@ -1450,6 +1484,10 @@ export default function PdpOutfit({
         @media (max-width: 768px) {
           .pdp-main {
             --pdp-nav-h: 56px;
+          }
+
+          .view-360--title {
+            display: none !important;
           }
 
           /* Single column — image on top, info below */
