@@ -12,6 +12,8 @@ export type CatalogProduct = {
 	marketingLine: string;
 	alternatives: string[];
 	details: string[];
+	/** What’s included with the product, e.g. "Blazer" or "Jacket and trousers" */
+	includes: string;
 	category: string;
 	image: string;
 	images: string[];

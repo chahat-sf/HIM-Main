@@ -16,7 +16,6 @@ import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import SizeChartModal from "@/components/pdp/SizeChartModal";
-import PdpView360 from "@/components/pdp/PdpView360";
 import View360Button from "@/components/pdp/View360Button";
 import {
   useEffect,
@@ -30,7 +29,6 @@ import type { CatalogProduct } from "@/lib/catalog-types";
 import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
-import { resolvePdp360 } from "@/lib/pdp-360";
 import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 import {
   PDP_POLICY_SECTIONS,
@@ -110,6 +108,7 @@ export default function PdpSingle({
     sizes: product.sizes,
     images: product.images,
     details: product.details,
+    includes: product.includes,
     fabric: product.fabric,
   };
   const mainImageAlt =
@@ -123,7 +122,6 @@ export default function PdpSingle({
   const [wishPop, setWishPop] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [view360Open, setView360Open] = useState(false);
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
@@ -134,7 +132,6 @@ export default function PdpSingle({
   const carouselPointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
   activeImgRef.current = activeImg;
-  const view360 = resolvePdp360(product);
   const { addItem, items } = useCart();
   const inCart = items.some(
     (i) => i.slug === slug || i.productId === product.id,
@@ -155,6 +152,8 @@ export default function PdpSingle({
   }, [product.slug, product.name, product.id, product.price]);
 
   const imageCount = MEDIA.length;
+  const videoIndex = MEDIA.findIndex((item) => item.kind === "video");
+  const hasVideo = videoIndex >= 0;
   const lightboxImageIndices = MEDIA.reduce<number[]>((acc, item, i) => {
     if (item.kind === "image") acc.push(i);
     return acc;
@@ -334,6 +333,12 @@ export default function PdpSingle({
     });
   };
 
+  const goToVideo = () => {
+    if (videoIndex < 0) return;
+    scrollToShot(videoIndex);
+    scrollCarouselTo(videoIndex);
+  };
+
   const handleAddToBag = async () => {
     if (!selectedSize) {
       setBagError("Please select a size");
@@ -492,12 +497,12 @@ export default function PdpSingle({
                     </button>
                   </>
                 )}
-                {view360 ? (
+                {hasVideo ? (
                   <View360Button
                     className="view-360--carousel"
                     productName={PRODUCT.name}
                     compact
-                    onClick={() => setView360Open(true)}
+                    onClick={goToVideo}
                   />
                 ) : null}
               </div>
@@ -616,11 +621,11 @@ export default function PdpSingle({
           <div className="pdp-right pdp-single-right">
             <div className="pdp-title-row">
               <h1 className="pdp-title">{PRODUCT.name}</h1>
-              {view360 ? (
+              {hasVideo ? (
                 <View360Button
                   className="view-360--title"
                   productName={PRODUCT.name}
-                  onClick={() => setView360Open(true)}
+                  onClick={goToVideo}
                 />
               ) : null}
             </div>
@@ -747,6 +752,9 @@ export default function PdpSingle({
             <div className="pdp-accordions">
               <Accordion label={`About ${PRODUCT.title}`} defaultOpen>
                 {PRODUCT.description && <p>{PRODUCT.description}</p>}
+                {PRODUCT.includes ? (
+                  <p>Includes: {PRODUCT.includes}</p>
+                ) : null}
                 {PRODUCT.details.length > 0 && (
                   <ul className="pdp-details-list">
                     {PRODUCT.details.map((item) => (
@@ -866,15 +874,6 @@ export default function PdpSingle({
         open={sizeChartOpen}
         onClose={() => setSizeChartOpen(false)}
       />
-
-      {view360 ? (
-        <PdpView360
-          open={view360Open}
-          assets={view360}
-          productName={PRODUCT.name}
-          onClose={() => setView360Open(false)}
-        />
-      ) : null}
 
       {lightboxOpen && lightboxCount > 0 ? (
         <div

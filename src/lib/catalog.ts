@@ -27,6 +27,7 @@ type ProductRow = RowDataPacket & {
 	marketing_line: string | null;
 	alternatives_json: unknown;
 	details_json: unknown;
+	includes: string | null;
 	category: string | null;
 	image_url: string;
 	images_json: unknown;
@@ -88,6 +89,7 @@ function mapRow(row: ProductRow): CatalogProduct {
 		marketingLine: row.marketing_line ?? "",
 		alternatives: parseJsonArray<string>(row.alternatives_json, []),
 		details: parseJsonArray<string>(row.details_json, []),
+		includes: row.includes?.trim() || "",
 		category: row.category ?? "",
 		image,
 		// Gallery excludes card signatures; PDP uses this list, cards use `image`.
@@ -106,7 +108,7 @@ function mapRow(row: ProductRow): CatalogProduct {
 
 const SELECT_COLS = `
   id, slug, name, title, fabric, description, marketing_line,
-  alternatives_json, details_json, category, image_url, images_json,
+  alternatives_json, details_json, includes, category, image_url, images_json,
   video_url, price_cents, swatches_json, colors_json, sizes_json, size_fit,
   shipping, pdp_layout
 `;
