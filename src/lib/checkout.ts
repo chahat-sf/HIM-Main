@@ -35,6 +35,32 @@ export type AddressSnapshot = {
 	postalCode: string;
 	country: string;
 	fullName: string;
+	email?: string;
+	phone?: string;
+};
+
+/** Client-trusted identity fields only — prices are always resolved server-side. */
+export type GuestCartLineInput = {
+	productId?: number | null;
+	slug: string;
+	size: string;
+	color: string;
+	qty: number;
+};
+
+export type GuestContactInput = {
+	fullName: string;
+	email: string;
+	phone: string;
+};
+
+export type GuestAddressInput = {
+	line1: string;
+	line2?: string | null;
+	city: string;
+	state: string;
+	postalCode: string;
+	country: string;
 };
 
 export type CheckoutTotals = {
@@ -169,18 +195,180 @@ export async function clearCart(userId: number): Promise<void> {
 	});
 }
 
-export async function createCheckoutOrder(
-	user: PublicUser,
-	addressId: number,
-): Promise<CreateCheckoutResult> {
-	assertRazorpayConfigured();
+function normalizeEmail(email: string): string {
+	return email.trim().toLowerCase();
+}
 
-	const address = await getAddressForUser(user.id, addressId, user.fullName);
-	if (!address) {
-		throw new CheckoutError("Address not found.", 400);
+function asPublicUser(row: RowDataPacket): PublicUser {
+	return {
+		id: Number(row.id),
+		fullName: String(row.full_name || ""),
+		email: String(row.email || ""),
+		phone: row.phone != null ? String(row.phone) : null,
+		dateOfBirth: row.date_of_birth
+			? new Date(row.date_of_birth).toISOString().slice(0, 10)
+			: null,
+	};
+}
+
+/**
+ * Find user by email or create a lightweight guest row (password_hash NULL).
+ * Existing accounts are attached silently — no login required.
+ */
+export async function resolveCheckoutUserByEmail(
+	contact: GuestContactInput,
+): Promise<PublicUser> {
+	const email = normalizeEmail(contact.email);
+	const fullName = contact.fullName.trim().slice(0, 120);
+	const phone = contact.phone.trim().slice(0, 40);
+	if (!email || !fullName || !phone) {
+		throw new CheckoutError("Name, email, and phone are required.", 400);
 	}
 
-	const lines = await loadCheckoutLines(user.id);
+	const db = getDb();
+	const [existing] = await db.query<RowDataPacket[]>(
+		`SELECT id, full_name, email, phone, date_of_birth
+     FROM users WHERE email = :email LIMIT 1`,
+		{ email },
+	);
+	const row = existing?.[0];
+	if (row) {
+		const user = asPublicUser(row);
+		// Fill missing phone on silent attach so invoices/Razorpay have contact.
+		if (!user.phone && phone) {
+			await db.execute(
+				`UPDATE users SET phone = :phone WHERE id = :id AND (phone IS NULL OR phone = '')`,
+				{ phone, id: user.id },
+			);
+			user.phone = phone;
+		}
+		return user;
+	}
+
+	const [insert] = await db.execute<ResultSetHeader>(
+		`INSERT INTO users (full_name, email, phone, password_hash)
+     VALUES (:fullName, :email, :phone, NULL)`,
+		{ fullName, email, phone },
+	);
+	return {
+		id: Number(insert.insertId),
+		fullName,
+		email,
+		phone,
+		dateOfBirth: null,
+	};
+}
+
+/** Reprice guest cart lines from catalog — never trust client prices. */
+export async function resolveGuestCheckoutLines(
+	inputs: GuestCartLineInput[],
+): Promise<CheckoutLine[]> {
+	if (!Array.isArray(inputs) || inputs.length === 0) {
+		throw new CheckoutError("Your cart is empty.", 400);
+	}
+	if (inputs.length > 40) {
+		throw new CheckoutError("Too many items in cart.", 400);
+	}
+
+	const db = getDb();
+	const lines: CheckoutLine[] = [];
+
+	for (const raw of inputs) {
+		const slug = String(raw.slug ?? "").trim();
+		const productIdRaw = raw.productId;
+		const productId =
+			productIdRaw == null || !Number.isFinite(Number(productIdRaw))
+				? null
+				: Number(productIdRaw);
+		const qty = Math.min(99, Math.max(1, Number(raw.qty) || 1));
+		const size = String(raw.size ?? "")
+			.trim()
+			.slice(0, 40);
+		const color = String(raw.color ?? "")
+			.trim()
+			.slice(0, 80);
+
+		if (!slug && (productId == null || !Number.isFinite(productId))) {
+			throw new CheckoutError("Invalid cart item.", 400);
+		}
+
+		let rows: RowDataPacket[] = [];
+		if (productId != null && Number.isFinite(productId) && productId > 0) {
+			const [byId] = await db.query<RowDataPacket[]>(
+				`SELECT id, slug, name, image_url, price_cents
+         FROM products WHERE id = :id LIMIT 1`,
+				{ id: productId },
+			);
+			rows = byId ?? [];
+		}
+		if (rows.length === 0 && slug) {
+			const [bySlug] = await db.query<RowDataPacket[]>(
+				`SELECT id, slug, name, image_url, price_cents
+         FROM products WHERE slug = :slug LIMIT 1`,
+				{ slug },
+			);
+			rows = bySlug ?? [];
+		}
+
+		const product = rows[0];
+		if (!product) {
+			throw new CheckoutError(
+				`Product not found${slug ? `: ${slug}` : ""}.`,
+				400,
+			);
+		}
+
+		lines.push({
+			productId: Number(product.id),
+			slug: String(product.slug),
+			name: String(product.name),
+			size,
+			color,
+			qty,
+			unitPriceCents: Math.max(0, Number(product.price_cents) || 0),
+			image: String(product.image_url || ""),
+		});
+	}
+
+	return lines;
+}
+
+function snapshotFromGuestAddress(
+	contact: GuestContactInput,
+	address: GuestAddressInput,
+): AddressSnapshot {
+	const line1 = address.line1.trim();
+	const city = address.city.trim();
+	const state = address.state.trim();
+	const postalCode = address.postalCode.trim();
+	const country = (address.country || "India").trim() || "India";
+	if (!line1 || !city || !state || !postalCode) {
+		throw new CheckoutError("A complete shipping address is required.", 400);
+	}
+	return {
+		id: 0,
+		label: "SHIPPING ADDRESS",
+		line1,
+		line2: address.line2?.trim() ? address.line2.trim() : null,
+		city,
+		state,
+		postalCode,
+		country,
+		fullName: contact.fullName.trim(),
+		email: normalizeEmail(contact.email),
+		phone: contact.phone.trim(),
+	};
+}
+
+async function persistCheckoutOrder(params: {
+	user: PublicUser;
+	address: AddressSnapshot;
+	lines: CheckoutLine[];
+	customer: { name: string; email: string; contact: string | null };
+}): Promise<CreateCheckoutResult> {
+	const { user, address, lines, customer } = params;
+	assertRazorpayConfigured();
+
 	if (lines.length === 0) {
 		throw new CheckoutError("Your cart is empty.", 400);
 	}
@@ -283,21 +471,64 @@ export async function createCheckoutOrder(
 		razorpayOrderId: razorpayOrder.id,
 		amount: razorpayOrder.amount,
 		currency: razorpayOrder.currency,
+		customer,
+	};
+}
+
+export async function createGuestCheckoutOrder(input: {
+	contact: GuestContactInput;
+	address: GuestAddressInput;
+	items: GuestCartLineInput[];
+}): Promise<CreateCheckoutResult> {
+	const user = await resolveCheckoutUserByEmail(input.contact);
+	const address = snapshotFromGuestAddress(input.contact, input.address);
+	const lines = await resolveGuestCheckoutLines(input.items);
+	return persistCheckoutOrder({
+		user,
+		address,
+		lines,
+		customer: {
+			name: input.contact.fullName.trim(),
+			email: normalizeEmail(input.contact.email),
+			contact: input.contact.phone.trim(),
+		},
+	});
+}
+
+export async function createCheckoutOrder(
+	user: PublicUser,
+	addressId: number,
+): Promise<CreateCheckoutResult> {
+	const address = await getAddressForUser(user.id, addressId, user.fullName);
+	if (!address) {
+		throw new CheckoutError("Address not found.", 400);
+	}
+
+	const lines = await loadCheckoutLines(user.id);
+	return persistCheckoutOrder({
+		user,
+		address: {
+			...address,
+			email: user.email,
+			phone: user.phone ?? undefined,
+		},
+		lines,
 		customer: {
 			name: user.fullName,
 			email: user.email,
 			contact: user.phone,
 		},
-	};
+	});
 }
 
 export async function verifyCheckoutPayment(
-	user: PublicUser,
 	input: {
 		razorpayOrderId: string;
 		razorpayPaymentId: string;
 		razorpaySignature: string;
 	},
+	/** When set, order must belong to this user. Guests omit it. */
+	user?: PublicUser | null,
 ): Promise<VerifyCheckoutResult> {
 	const ok = verifyPaymentSignature({
 		razorpayOrderId: input.razorpayOrderId,
@@ -310,11 +541,18 @@ export async function verifyCheckoutPayment(
 
 	const db = getDb();
 	const [rows] = await db.query<RowDataPacket[]>(
-		`SELECT id, order_number, total_cents, currency, payment_status, status
-     FROM orders
-     WHERE user_id = :userId AND razorpay_order_id = :razorpayOrderId
-     LIMIT 1`,
-		{ userId: user.id, razorpayOrderId: input.razorpayOrderId },
+		user
+			? `SELECT id, user_id, order_number, total_cents, currency, payment_status, status
+         FROM orders
+         WHERE user_id = :userId AND razorpay_order_id = :razorpayOrderId
+         LIMIT 1`
+			: `SELECT id, user_id, order_number, total_cents, currency, payment_status, status
+         FROM orders
+         WHERE razorpay_order_id = :razorpayOrderId
+         LIMIT 1`,
+		user
+			? { userId: user.id, razorpayOrderId: input.razorpayOrderId }
+			: { razorpayOrderId: input.razorpayOrderId },
 	);
 
 	const row = rows?.[0];
@@ -323,6 +561,7 @@ export async function verifyCheckoutPayment(
 	}
 
 	const orderId = Number(row.id);
+	const ownerUserId = Number(row.user_id);
 	const orderNumber = String(row.order_number);
 	const totalCents = Number(row.total_cents);
 	const currency = String(row.currency || "INR");
@@ -334,15 +573,14 @@ export async function verifyCheckoutPayment(
            payment_status = 'paid',
            razorpay_payment_id = :paymentId,
            placed_at = CURRENT_TIMESTAMP
-       WHERE id = :id AND user_id = :userId AND payment_status <> 'paid'`,
+       WHERE id = :id AND payment_status <> 'paid'`,
 			{
 				id: orderId,
-				userId: user.id,
 				paymentId: input.razorpayPaymentId,
 			},
 		);
 
-		await clearCart(user.id);
+		await clearCart(ownerUserId);
 
 		// Only the request that flipped the order to paid sends the email.
 		if (updateResult.affectedRows > 0) {
@@ -350,7 +588,7 @@ export async function verifyCheckoutPayment(
 		}
 	}
 
-	const confirmation = await getOrderConfirmation(user.id, orderNumber);
+	const confirmation = await getOrderConfirmation(ownerUserId, orderNumber);
 
 	return {
 		orderId,

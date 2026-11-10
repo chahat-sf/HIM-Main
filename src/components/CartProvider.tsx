@@ -114,6 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 	const addItem = useCallback(
 		async (input: CartItemInput) => {
+			let usedServer = false;
 			if (isAuthenticated) {
 				const res = await fetch("/api/cart", {
 					method: "POST",
@@ -121,9 +122,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(input),
 				});
-				if (!res.ok) throw new Error("Unable to add to cart");
-				const body = (await res.json()) as { items?: CartItem[] };
-				setItems(body.items ?? []);
+				// Stale client session after logout → fall back to guest cart.
+				if (res.status === 401) {
+					setItems(addLocalCartItem(input));
+				} else if (!res.ok) {
+					throw new Error("Unable to add to cart");
+				} else {
+					const body = (await res.json()) as { items?: CartItem[] };
+					setItems(body.items ?? []);
+					usedServer = true;
+				}
 			} else {
 				setItems(addLocalCartItem(input));
 			}
@@ -136,7 +144,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 				qty: input.qty ?? 1,
 				size: input.size,
 				color: input.color,
-				authenticated: isAuthenticated,
+				authenticated: usedServer,
 			});
 		},
 		[isAuthenticated],
@@ -144,6 +152,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 	const updateQty = useCallback(
 		async (id: string, qty: number) => {
+			let usedServer = false;
 			if (isAuthenticated) {
 				const res = await fetch("/api/cart", {
 					method: "PATCH",
@@ -151,16 +160,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ id, qty }),
 				});
-				if (!res.ok) throw new Error("Unable to update cart");
-				const body = (await res.json()) as { items?: CartItem[] };
-				setItems(body.items ?? []);
+				if (res.status === 401) {
+					setItems(updateLocalCartQty(id, qty));
+				} else if (!res.ok) {
+					throw new Error("Unable to update cart");
+				} else {
+					const body = (await res.json()) as { items?: CartItem[] };
+					setItems(body.items ?? []);
+					usedServer = true;
+				}
 			} else {
 				setItems(updateLocalCartQty(id, qty));
 			}
 			track("cart_updated", {
 				item_id: id,
 				qty,
-				authenticated: isAuthenticated,
+				authenticated: usedServer,
 			});
 		},
 		[isAuthenticated],
@@ -168,20 +183,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 	const removeItem = useCallback(
 		async (id: string) => {
+			let usedServer = false;
 			if (isAuthenticated) {
 				const res = await fetch(`/api/cart?id=${encodeURIComponent(id)}`, {
 					method: "DELETE",
 					credentials: "include",
 				});
-				if (!res.ok) throw new Error("Unable to remove cart item");
-				const body = (await res.json()) as { items?: CartItem[] };
-				setItems(body.items ?? []);
+				if (res.status === 401) {
+					setItems(removeLocalCartItem(id));
+				} else if (!res.ok) {
+					throw new Error("Unable to remove cart item");
+				} else {
+					const body = (await res.json()) as { items?: CartItem[] };
+					setItems(body.items ?? []);
+					usedServer = true;
+				}
 			} else {
 				setItems(removeLocalCartItem(id));
 			}
 			track("remove_from_cart", {
 				item_id: id,
-				authenticated: isAuthenticated,
+				authenticated: usedServer,
 			});
 		},
 		[isAuthenticated],

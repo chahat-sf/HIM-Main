@@ -10,7 +10,7 @@ import RouteLoading from "@/components/RouteLoading";
 import OrderSummaryPanel from "@/components/checkout/OrderSummaryPanel";
 import type { AccountPayload, Address } from "@/lib/account";
 import { buildLoginHref } from "@/lib/auth-redirect";
-import { notifyCartChanged } from "@/lib/cart-local";
+import { clearLocalCart, notifyCartChanged } from "@/lib/cart-local";
 import { track } from "@/lib/analytics";
 import { useCart } from "@/hooks/useCart";
 import {
@@ -275,6 +275,10 @@ export default function CheckoutClient() {
 	const [postalCode, setPostalCode] = useState("");
 	const [country, setCountry] = useState("India");
 
+	const [guestFullName, setGuestFullName] = useState("");
+	const [guestEmail, setGuestEmail] = useState("");
+	const [guestPhone, setGuestPhone] = useState("");
+
 	function clearAddressForm() {
 		setLine1("");
 		setLine2("");
@@ -283,6 +287,18 @@ export default function CheckoutClient() {
 		setPostalCode("");
 		setCountry("India");
 	}
+
+	const guestAddressReady =
+		Boolean(line1.trim()) &&
+		Boolean(city.trim()) &&
+		Boolean(state.trim()) &&
+		Boolean(postalCode.trim()) &&
+		Boolean(country.trim());
+	const guestContactReady =
+		Boolean(guestFullName.trim()) &&
+		Boolean(guestEmail.trim()) &&
+		Boolean(guestPhone.trim());
+	const guestReady = guestContactReady && guestAddressReady;
 
 	function closeAddressModal() {
 		setAddressModalOpen(false);
@@ -307,7 +323,11 @@ export default function CheckoutClient() {
 			try {
 				const res = await fetch("/api/account", { credentials: "include" });
 				if (res.status === 401) {
-					router.replace(buildLoginHref("/checkout"));
+					// Guest checkout — no account required.
+					if (!cancelled) {
+						setAccount(null);
+						setSelectedAddressId(null);
+					}
 					return;
 				}
 				if (!res.ok) {
@@ -332,7 +352,7 @@ export default function CheckoutClient() {
 		return () => {
 			cancelled = true;
 		};
-	}, [router]);
+	}, []);
 
 	const total = useMemo(
 		() => items.reduce((acc, i) => acc + i.price * i.qty, 0),
@@ -422,6 +442,9 @@ export default function CheckoutClient() {
 			throw new Error(body.error || "Payment verification failed.");
 		}
 
+		if (!isAuthenticated) {
+			clearLocalCart();
+		}
 		notifyCartChanged();
 		track("order_completed", {
 			order_id: body.orderNumber,
@@ -435,12 +458,19 @@ export default function CheckoutClient() {
 	}
 
 	async function onPay() {
-		if (!selectedAddressId) {
-			setError("Please add a shipping address.");
-			return;
-		}
 		if (items.length === 0) {
 			setError("Your cart is empty.");
+			return;
+		}
+
+		const payingAsGuest = !isAuthenticated;
+		if (payingAsGuest) {
+			if (!guestReady) {
+				setError("Please fill in your contact details and shipping address.");
+				return;
+			}
+		} else if (!selectedAddressId) {
+			setError("Please add a shipping address.");
 			return;
 		}
 
@@ -452,7 +482,33 @@ export default function CheckoutClient() {
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ addressId: selectedAddressId }),
+				body: JSON.stringify(
+					payingAsGuest
+						? {
+							guest: true,
+							contact: {
+								fullName: guestFullName.trim(),
+								email: guestEmail.trim(),
+								phone: guestPhone.trim(),
+							},
+							address: {
+								line1: line1.trim(),
+								line2: line2.trim() || null,
+								city: city.trim(),
+								state: state.trim(),
+								postalCode: postalCode.trim(),
+								country: country.trim() || "India",
+							},
+							items: items.map((item) => ({
+								productId: item.productId,
+								slug: item.slug,
+								size: item.size,
+								color: item.color,
+								qty: item.qty,
+							})),
+						}
+						: { addressId: selectedAddressId },
+				),
 			});
 			const created = (await createRes.json()) as CreateCheckoutResponse;
 			if (!createRes.ok) {
@@ -512,16 +568,15 @@ export default function CheckoutClient() {
 		return <RouteLoading />;
 	}
 
-	if (!isAuthenticated) {
-		return <RouteLoading />;
-	}
-
 	const addresses: Address[] = account?.addresses ?? [];
 	const selectedAddress =
 		addresses.find((a) => a.id === selectedAddressId) ??
 		addresses.find((a) => a.isDefault) ??
 		addresses[0] ??
 		null;
+	const canPay = isAuthenticated
+		? Boolean(selectedAddressId)
+		: guestReady;
 
 	const addressForm = (
 		<CheckoutAddressForm
@@ -587,38 +642,147 @@ export default function CheckoutClient() {
 					) : (
 						<div className="co-grid">
 							<section className="co-panel" aria-label="Shipping">
-								<div className="co-panel-head">
-									<p className="co-panel-title">SHIPPING ADDRESS</p>
-									{addresses.length > 0 ? (
-										<button
-											type="button"
-											className="co-text-btn"
-											onClick={openAddressModal}
-										>
-											Change address
-										</button>
-									) : null}
-								</div>
-
-								{selectedAddress ? (
-									<div className="co-address-current">
-										<span className="co-address-label">
-											{selectedAddress.label}
-											{selectedAddress.isDefault ? (
-												<span className="co-address-default">
-													{" "}
-													· Default
-												</span>
-											) : null}
-										</span>
-										{selectedAddress.lines.map((line) => (
-											<span key={line} className="co-address-line">
-												{line}
-											</span>
-										))}
-									</div>
+								{!isAuthenticated ? (
+									<>
+										<div className="co-panel-head">
+											<p className="co-panel-title">YOUR DETAILS</p>
+											<Link
+												href={buildLoginHref("/checkout")}
+												className="co-text-btn"
+											>
+												Have an account? Log in
+											</Link>
+										</div>
+										<div className="caf" style={{ marginBottom: 28 }}>
+											<label className="caf-field">
+												<span>Full name</span>
+												<input
+													value={guestFullName}
+													onChange={(e) => setGuestFullName(e.target.value)}
+													required
+													autoComplete="name"
+												/>
+											</label>
+											<label className="caf-field">
+												<span>Email</span>
+												<input
+													type="email"
+													value={guestEmail}
+													onChange={(e) => setGuestEmail(e.target.value)}
+													required
+													autoComplete="email"
+												/>
+											</label>
+											<label className="caf-field">
+												<span>Phone</span>
+												<input
+													type="tel"
+													value={guestPhone}
+													onChange={(e) => setGuestPhone(e.target.value)}
+													required
+													autoComplete="tel"
+												/>
+											</label>
+										</div>
+										<div className="co-panel-head">
+											<p className="co-panel-title">SHIPPING ADDRESS</p>
+										</div>
+										<div className="caf">
+											<label className="caf-field">
+												<span>Address line 1</span>
+												<input
+													value={line1}
+													onChange={(e) => setLine1(e.target.value)}
+													required
+													autoComplete="address-line1"
+												/>
+											</label>
+											<label className="caf-field">
+												<span>Address line 2</span>
+												<input
+													value={line2}
+													onChange={(e) => setLine2(e.target.value)}
+													autoComplete="address-line2"
+												/>
+											</label>
+											<div className="caf-row">
+												<label className="caf-field">
+													<span>City</span>
+													<input
+														value={city}
+														onChange={(e) => setCity(e.target.value)}
+														required
+														autoComplete="address-level2"
+													/>
+												</label>
+												<label className="caf-field">
+													<span>State</span>
+													<input
+														value={state}
+														onChange={(e) => setState(e.target.value)}
+														required
+														autoComplete="address-level1"
+													/>
+												</label>
+											</div>
+											<div className="caf-row">
+												<label className="caf-field">
+													<span>Postal code</span>
+													<input
+														value={postalCode}
+														onChange={(e) => setPostalCode(e.target.value)}
+														required
+														autoComplete="postal-code"
+													/>
+												</label>
+												<label className="caf-field">
+													<span>Country</span>
+													<input
+														value={country}
+														onChange={(e) => setCountry(e.target.value)}
+														required
+														autoComplete="country-name"
+													/>
+												</label>
+											</div>
+										</div>
+									</>
 								) : (
-									addressForm
+									<>
+										<div className="co-panel-head">
+											<p className="co-panel-title">SHIPPING ADDRESS</p>
+											{addresses.length > 0 ? (
+												<button
+													type="button"
+													className="co-text-btn"
+													onClick={openAddressModal}
+												>
+													Change address
+												</button>
+											) : null}
+										</div>
+
+										{selectedAddress ? (
+											<div className="co-address-current">
+												<span className="co-address-label">
+													{selectedAddress.label}
+													{selectedAddress.isDefault ? (
+														<span className="co-address-default">
+															{" "}
+															· Default
+														</span>
+													) : null}
+												</span>
+												{selectedAddress.lines.map((line) => (
+													<span key={line} className="co-address-line">
+														{line}
+													</span>
+												))}
+											</div>
+										) : (
+											addressForm
+										)}
+									</>
 								)}
 							</section>
 
@@ -640,7 +804,7 @@ export default function CheckoutClient() {
 										type="button"
 										className="co-btn-primary co-pay-btn"
 										onClick={() => void onPay()}
-										disabled={paying || !selectedAddressId}
+										disabled={paying || !canPay}
 									>
 										{paying ? "PROCESSING…" : "PAY WITH RAZORPAY"}{" "}
 										{!paying && (
@@ -844,6 +1008,40 @@ export default function CheckoutClient() {
 				.co-panel > .co-panel-title {
 					margin-bottom: 18px;
 				}
+				.caf {
+					display: grid;
+					gap: 14px;
+					width: 100%;
+				}
+				.caf-field {
+					display: grid;
+					gap: 6px;
+					font-size: 11px;
+					letter-spacing: 0.12em;
+					color: ${MUTED};
+					text-transform: uppercase;
+					min-width: 0;
+				}
+				.caf-field input {
+					width: 100%;
+					box-sizing: border-box;
+					background: transparent;
+					border: 1px solid ${BORDER};
+					color: ${INK};
+					padding: 10px 12px;
+					font-size: 14px;
+					letter-spacing: 0;
+					text-transform: none;
+					outline: none;
+				}
+				.caf-field input:focus {
+					border-color: ${GOLD};
+				}
+				.caf-row {
+					display: grid;
+					grid-template-columns: 1fr 1fr;
+					gap: 12px;
+				}
 				.co-address-current {
 					border: 1px solid ${RULE};
 					padding: 14px;
@@ -949,6 +1147,7 @@ export default function CheckoutClient() {
 					color: ${GOLD};
 					cursor: pointer;
 					border-bottom: 1px solid transparent;
+					text-decoration: none;
 				}
 				.co-text-btn:hover:not(:disabled) {
 					border-bottom-color: ${GOLD};
@@ -997,6 +1196,11 @@ export default function CheckoutClient() {
 				}
 				@media (max-width: 860px) {
 					.co-grid {
+						grid-template-columns: 1fr;
+					}
+				}
+				@media (max-width: 520px) {
+					.caf-row {
 						grid-template-columns: 1fr;
 					}
 				}

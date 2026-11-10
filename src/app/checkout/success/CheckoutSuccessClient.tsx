@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import RouteLoading from "@/components/RouteLoading";
 import OrderSummaryPanel from "@/components/checkout/OrderSummaryPanel";
 import SendInvoiceEmail from "@/components/checkout/SendInvoiceEmail";
+import { useSession } from "@/hooks/useSession";
 import type { OrderConfirmation } from "@/lib/orders";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -39,6 +40,7 @@ export default function CheckoutSuccessClient({
 }: {
 	orderNumber: string | null;
 }) {
+	const { isAuthenticated } = useSession();
 	const [order, setOrder] = useState<OrderConfirmation | null>(null);
 	const [loading, setLoading] = useState(Boolean(orderNumber));
 	const [error, setError] = useState("");
@@ -121,9 +123,10 @@ export default function CheckoutSuccessClient({
 	}
 
 	const addressLines = order ? formatAddressLines(order) : [];
-	const invoiceHref = order
-		? `/account/orders/${encodeURIComponent(order.orderNumber)}/invoice`
-		: null;
+	const invoiceHref =
+		order && isAuthenticated
+			? `/account/orders/${encodeURIComponent(order.orderNumber)}/invoice`
+			: null;
 
 	return (
 		<>
@@ -173,11 +176,17 @@ export default function CheckoutSuccessClient({
 										Payment ref · {order.paymentId}
 									</p>
 								) : null}
-								<SendInvoiceEmail
-									orderNumber={order.orderNumber}
-									registeredEmail={order.customerEmail}
-									variant="dark"
-								/>
+								{isAuthenticated ? (
+									<SendInvoiceEmail
+										orderNumber={order.orderNumber}
+										registeredEmail={order.customerEmail}
+										variant="dark"
+									/>
+								) : (
+									<p className="cs-muted">
+										Your tax invoice was emailed to {order.customerEmail}.
+									</p>
+								)}
 							</section>
 
 							<OrderSummaryPanel
@@ -199,12 +208,14 @@ export default function CheckoutSuccessClient({
 												DOWNLOAD INVOICE
 											</a>
 										) : null}
-										<Link
-											href="/account?tab=orders"
-											className="cs-btn-secondary"
-										>
-											VIEW ACCOUNT
-										</Link>
+										{isAuthenticated ? (
+											<Link
+												href="/account?tab=orders"
+												className="cs-btn-secondary"
+											>
+												VIEW ACCOUNT
+											</Link>
+										) : null}
 										<Link href="/collection" className="cs-btn-secondary">
 											CONTINUE SHOPPING
 										</Link>
@@ -214,9 +225,11 @@ export default function CheckoutSuccessClient({
 						</div>
 					) : (
 						<div className="cs-actions cs-actions-solo">
-							<Link href="/account?tab=orders" className="cs-btn-primary">
-								VIEW ACCOUNT
-							</Link>
+							{isAuthenticated ? (
+								<Link href="/account?tab=orders" className="cs-btn-primary">
+									VIEW ACCOUNT
+								</Link>
+							) : null}
 							<Link href="/collection" className="cs-btn-secondary">
 								CONTINUE SHOPPING
 							</Link>

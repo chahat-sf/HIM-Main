@@ -194,7 +194,8 @@ function AccountPageInner() {
     const { track } = await import("@/lib/analytics");
     track("logged_out");
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    router.push("/login");
+    // Full navigation so SessionProvider / cart rehydrate as guest.
+    window.location.assign("/login");
   }
 
   async function onSaveProfile(event: FormEvent) {

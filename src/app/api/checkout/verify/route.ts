@@ -13,17 +13,15 @@ type VerifyBody = {
 export async function POST(request: Request) {
 	try {
 		const user = await getSessionUser();
-		if (!user) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-		}
-
 		const ip = clientIp(request);
+
 		if (
 			!rateLimit(`checkout:verify:${ip}`, { limit: 30, windowMs: 60_000 }) ||
-			!rateLimit(`checkout:verify:user:${user.id}`, {
-				limit: 20,
-				windowMs: 60_000,
-			})
+			(user &&
+				!rateLimit(`checkout:verify:user:${user.id}`, {
+					limit: 20,
+					windowMs: 60_000,
+				}))
 		) {
 			return tooManyRequests();
 		}
@@ -43,11 +41,14 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const result = await verifyCheckoutPayment(user, {
-			razorpayOrderId,
-			razorpayPaymentId,
-			razorpaySignature,
-		});
+		const result = await verifyCheckoutPayment(
+			{
+				razorpayOrderId,
+				razorpayPaymentId,
+				razorpaySignature,
+			},
+			user,
+		);
 
 		return NextResponse.json(result);
 	} catch (error) {

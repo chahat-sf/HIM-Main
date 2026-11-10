@@ -387,20 +387,38 @@ export default function CartClient({
                     <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
                   </Link>
                 ) : (
-                  <Link
-                    href="/login?next=%2Fcheckout"
-                    className="cart-btn-primary"
-                    onClick={() =>
-                      track("checkout_clicked", {
-                        authenticated: false,
-                        item_count: itemCount,
-                        subtotal,
-                      })
-                    }
-                  >
-                    LOGIN TO CHECKOUT{" "}
-                    <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
-                  </Link>
+                  <>
+                    <Link
+                      href="/checkout"
+                      className="cart-btn-primary"
+                      onClick={() =>
+                        track("checkout_clicked", {
+                          authenticated: false,
+                          guest: true,
+                          item_count: itemCount,
+                          subtotal,
+                        })
+                      }
+                    >
+                      CONTINUE AS GUEST{" "}
+                      <ArrowRight size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                    </Link>
+                    <Link
+                      href="/login?next=%2Fcheckout"
+                      className="cart-btn-secondary"
+                      onClick={() =>
+                        track("checkout_clicked", {
+                          authenticated: false,
+                          guest: false,
+                          item_count: itemCount,
+                          subtotal,
+                        })
+                      }
+                      style={{ marginBottom: 10 }}
+                    >
+                      LOGIN TO CHECKOUT
+                    </Link>
+                  </>
                 )}
                 <Link href="/collection" className="cart-btn-secondary">
                   CONTINUE SHOPPING

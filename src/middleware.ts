@@ -59,9 +59,6 @@ export const config = {
   matcher: [
     "/account",
     "/account/orders/:path*",
-    "/checkout",
-    "/checkout/success",
-    "/checkout/failed",
     "/login",
     "/signup",
   ],

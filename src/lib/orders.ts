@@ -47,6 +47,8 @@ function parseAddressSnapshot(raw: unknown): AddressSnapshot | null {
 			postalCode: String(a.postalCode || ""),
 			country: String(a.country || ""),
 			fullName: String(a.fullName || ""),
+			email: a.email ? String(a.email) : undefined,
+			phone: a.phone ? String(a.phone) : undefined,
 		};
 	} catch {
 		return null;
@@ -105,17 +107,13 @@ export async function getOrderConfirmation(
 		subtotalCents: Number(order.subtotal_cents) || 0,
 		taxCents: Number(order.tax_cents) || 0,
 		totalCents: Number(order.total_cents) || 0,
-		placedAt: order.placed_at
-			? new Date(order.placed_at).toISOString()
-			: null,
+		placedAt: order.placed_at ? new Date(order.placed_at).toISOString() : null,
 		paymentId: order.razorpay_payment_id
 			? String(order.razorpay_payment_id)
 			: null,
-		customerName: String(
-			address?.fullName || order.full_name || "",
-		),
-		customerEmail: String(order.email || ""),
-		customerPhone: String(order.phone ?? ""),
+		customerName: String(address?.fullName || order.full_name || ""),
+		customerEmail: String(address?.email || order.email || ""),
+		customerPhone: String(address?.phone || order.phone || ""),
 		address,
 		items: (items ?? []).map((row) => ({
 			name: String(row.product_name),
@@ -127,4 +125,27 @@ export async function getOrderConfirmation(
 			image: String(row.image_url ?? ""),
 		})),
 	};
+}
+
+/**
+ * Load an order by number without a session (guest success/failed pages).
+ * Order numbers are unguessable enough for v1; only returns known statuses.
+ */
+export async function getOrderConfirmationByNumber(
+	orderNumber: string,
+): Promise<OrderConfirmation | null> {
+	const trimmed = orderNumber.trim();
+	if (!trimmed) return null;
+
+	const db = getDb();
+	const [orders] = await db.query<RowDataPacket[]>(
+		`SELECT o.user_id
+     FROM orders o
+     WHERE o.order_number = :orderNumber
+     LIMIT 1`,
+		{ orderNumber: trimmed },
+	);
+	const order = orders?.[0];
+	if (!order) return null;
+	return getOrderConfirmation(Number(order.user_id), trimmed);
 }
