@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <g stroke="#111111" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- handle -->
+    <path d="M176 196 C176 128, 336 128, 336 196" />
+    <!-- bag body -->
+    <path d="M128 196 H384 V400 C384 424 364 444 340 444 H172 C148 444 128 424 128 400 Z" />
+    <!-- plus -->
+    <path d="M256 292 V372" />
+    <path d="M216 332 H296" />
+  </g>
+</svg>

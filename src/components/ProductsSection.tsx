@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  ShoppingBag,
 } from "lucide-react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { CatalogProduct } from "@/lib/catalog-types";
@@ -613,7 +612,7 @@ function ExistingProductsGrid({
                 {/* BAG BUTTON */}
                 <Link
                   href={`/collection/${product.slug}`}
-                  aria-label={`View ${product.name}`}
+                  aria-label={`Add ${product.name} to bag`}
                   className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                   style={{
                     padding: 0,
@@ -622,11 +621,19 @@ function ExistingProductsGrid({
                     color: "var(--fg)",
                     flex: "0 0 auto",
                     alignSelf: "center",
-                    opacity: 0.75,
+                    opacity: 0.85,
                     lineHeight: 0,
                   }}
                 >
-                  <ShoppingBag size={22} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                  <Image
+                    src="/icons/bag-plus.png"
+                    alt=""
+                    width={22}
+                    height={22}
+                    className="bs-bag-icon"
+                    draggable={false}
+                    aria-hidden
+                  />
                 </Link>
               </div>
             </article>
@@ -690,6 +697,13 @@ function ExistingProductsGrid({
 
         .bs-wish-btn.is-pop :global(svg) {
           animation: bs-wish-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .bs-bag-icon {
+          width: 22px;
+          height: 22px;
+          display: block;
+          object-fit: contain;
         }
 
         @keyframes bs-wish-pop {
