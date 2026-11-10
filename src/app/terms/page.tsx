@@ -106,8 +106,14 @@ export default function TermsPage() {
           ],
         },
         {
-          heading: "15. Contact",
-          body: "HIM.CLOTHING LLP, F-17, First Floor, Royal Residency, Sushant Lok Phase 2, Gurugram, Haryana 122003 · support@thehim.in",
+          heading: "15. Contact Information",
+          body: "For any questions or notices regarding these Terms & Conditions, please contact us at:",
+          items: [
+            "HIM.CLOTHING LLP",
+            "Registered Address: FIRST FLOOR, F-17, ROYAL RESIDENCY, Sushant Lok Phase 2, Gurugram, Haryana 122003, India",
+            "GSTIN: 06AATFH7402G1ZA",
+            "Email: support@thehim.in",
+          ],
         },
       ]}
     />

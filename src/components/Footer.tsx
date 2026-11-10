@@ -8,10 +8,7 @@ import { buildLoginHref } from "@/lib/auth-redirect";
 import { useSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import RevealOnScroll from "@/components/RevealOnScroll";
-import {
-  formatBusinessFooterLine,
-  getBusinessProfile,
-} from "@/lib/business";
+import { getBusinessProfile } from "@/lib/business";
 
 type FooterLink = { label: string; href: string };
 
@@ -336,9 +333,6 @@ export default function Footer() {
           </p>
           <p className="him-footer-locale">INDIA</p>
         </div>
-        <p className="him-footer-legal-entity">
-          {formatBusinessFooterLine()}
-        </p>
 
         <style jsx>{`
         .him-footer {
@@ -593,27 +587,27 @@ export default function Footer() {
         }
 
         .him-footer-bottom {
+          position: relative;
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
           gap: 16px;
           max-width: 1200px;
           margin: 0 auto;
         }
 
-        .him-footer-legal-entity {
-          margin: 14px 0 0;
+        .him-footer-copyright {
+          margin: 0;
+          font-size: 9px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: rgba(245, 241, 233, 0.65);
           text-align: center;
-          font-size: 10px;
-          letter-spacing: 0.04em;
-          line-height: 1.5;
-          color: rgba(245, 241, 233, 0.45);
-          max-width: 720px;
-          margin-left: auto;
-          margin-right: auto;
         }
-        .him-footer-copyright,
+
         .him-footer-locale {
+          position: absolute;
+          right: 0;
           margin: 0;
           font-size: 9px;
           letter-spacing: 1px;
@@ -678,6 +672,10 @@ export default function Footer() {
             flex-direction: column;
             text-align: center;
             gap: 10px;
+          }
+
+          .him-footer-locale {
+            position: static;
           }
         }
 
