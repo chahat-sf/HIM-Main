@@ -548,6 +548,12 @@ function CollectionPageInner({
           color: #111;
         }
 
+        .product-card-bag img {
+          width: 20px;
+          height: 20px;
+          display: block;
+        }
+
         /* ── LOAD MORE ── */
         .collection-load-more {
           display: flex;

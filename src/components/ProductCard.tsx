@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState, type PointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
@@ -238,41 +239,86 @@ export default function ProductCard({
       </div>
 
       <div className="product-card-body">
-        <Link
-          href={`/collection/${product.slug}`}
-          style={{ textDecoration: "none", color: "inherit" }}
-        >
-          <p className="product-card-name">{product.name}</p>
-        </Link>
+        <div className="product-card-meta">
+          <div className="product-card-meta-text">
+            <Link
+              href={`/collection/${product.slug}`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <p className="product-card-name">{product.name}</p>
+            </Link>
 
-        {product.swatches.length > 0 && (
-          <div
-            className="flex items-center"
-            style={{ gap: "4px", marginTop: "6px" }}
-          >
-            {product.swatches.map((swatch, i) => (
-              <span
-                key={`${swatch}-${i}`}
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: swatch,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  display: "inline-block",
-                  flex: "0 0 auto",
-                }}
-              />
-            ))}
+            {product.swatches.length > 0 && (
+              <div
+                className="flex items-center"
+                style={{ gap: "4px", marginTop: "6px" }}
+              >
+                {product.swatches.map((swatch, i) => (
+                  <span
+                    key={`${swatch}-${i}`}
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: swatch,
+                      border: "1px solid rgba(0,0,0,0.15)",
+                      display: "inline-block",
+                      flex: "0 0 auto",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            <p className="product-card-price">₹{product.price}</p>
           </div>
-        )}
 
-        <p className="product-card-price">₹{product.price}</p>
+          <Link
+            href={`/collection/${product.slug}`}
+            className="product-card-bag"
+            aria-label={`Add ${product.name} to bag`}
+          >
+            <Image
+              src="/icons/bag-plus.png"
+              alt=""
+              width={22}
+              height={22}
+              draggable={false}
+              aria-hidden
+            />
+          </Link>
+        </div>
       </div>
 
       <style jsx>{`
         .product-card-body {
           transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .product-card-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .product-card-meta-text {
+          min-width: 0;
+        }
+
+        .product-card-bag {
+          flex: 0 0 auto;
+          align-self: center;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 0;
+          opacity: 0.85;
+          transition: opacity 200ms ease;
+        }
+
+        .product-card-bag:hover {
+          opacity: 0.6;
         }
 
         @media (hover: hover) {
