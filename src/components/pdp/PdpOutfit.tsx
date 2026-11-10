@@ -17,7 +17,6 @@ import Footer from "@/components/Footer";
 import Dropdown from "@/components/Dropdown";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import SizeChartModal from "@/components/pdp/SizeChartModal";
-import PdpView360 from "@/components/pdp/PdpView360";
 import View360Button from "@/components/pdp/View360Button";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/hooks/useCart";
@@ -27,7 +26,6 @@ import { buildPdpMedia } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
 import { selectedColorSwatches } from "@/lib/color-swatch";
 import { DUMMY_BLOCKS, FOCUS, focusTransform } from "@/lib/pdp-chrome";
-import { resolvePdp360 } from "@/lib/pdp-360";
 import { SIZE_FIT_HEADLINE, SIZE_FIT_NOTE } from "@/lib/size-chart";
 import {
   PDP_POLICY_SECTIONS,
@@ -113,6 +111,7 @@ export default function PdpOutfit({
     sizes: product.sizes,
     images: product.images,
     details: product.details,
+    includes: product.includes,
     fabric: product.fabric,
   };
   const mainImageAlt = productSeo?.mainImageAlt ?? PRODUCT.name;
@@ -124,14 +123,12 @@ export default function PdpOutfit({
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [wishPop, setWishPop] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
-  const [view360Open, setView360Open] = useState(false);
   const [added, setAdded] = useState(false);
   const [adding, setAdding] = useState(false);
   const [bagError, setBagError] = useState("");
   const [focusId, setFocusId] = useState("intro");
   const rightRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const view360 = resolvePdp360(product);
   const { addItem, items } = useCart();
   const inCart = items.some(
     (i) => i.slug === slug || i.productId === product.id,
@@ -195,9 +192,16 @@ export default function PdpOutfit({
   }, []);
 
   const imageCount = MEDIA.length;
-  const videoIndex = product.videoUrl ? imageCount - 1 : -1;
+  const videoIndex = MEDIA.findIndex((item) => item.kind === "video");
+  const hasVideo = videoIndex >= 0;
   const angle = imageCount > 0 ? Math.round((activeImg * 360) / imageCount) : 0;
   const rotate = (step: number) => setActiveImg((i) => (i + step + imageCount) % imageCount);
+
+  const goToVideo = () => {
+    if (videoIndex < 0) return;
+    setActiveImg(videoIndex);
+    videoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -396,11 +400,11 @@ export default function PdpOutfit({
               <h1 className="pdp-title" data-pdp-focus="intro">
                 {PRODUCT.name}
               </h1>
-              {view360 ? (
+              {hasVideo ? (
                 <View360Button
                   className="view-360--title"
                   productName={PRODUCT.name}
-                  onClick={() => setView360Open(true)}
+                  onClick={goToVideo}
                 />
               ) : null}
             </div>
@@ -528,6 +532,9 @@ export default function PdpOutfit({
             <div className="pdp-accordions">
               <Accordion label={`About ${PRODUCT.title}`} focus="details" defaultOpen>
                 {PRODUCT.description && <p>{PRODUCT.description}</p>}
+                {PRODUCT.includes ? (
+                  <p>Includes: {PRODUCT.includes}</p>
+                ) : null}
                 {PRODUCT.details.length > 0 && (
                   <ul className="pdp-details-list">
                     {PRODUCT.details.map((item) => (
@@ -644,15 +651,6 @@ export default function PdpOutfit({
       </main>
 
       <Footer />
-
-      {view360 ? (
-        <PdpView360
-          open={view360Open}
-          assets={view360}
-          productName={PRODUCT.name}
-          onClose={() => setView360Open(false)}
-        />
-      ) : null}
 
       <SizeChartModal
         open={sizeChartOpen}

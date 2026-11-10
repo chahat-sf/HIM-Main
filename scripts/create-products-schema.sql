@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS products (
   marketing_line VARCHAR(512) NULL,
   alternatives_json JSON NULL,
   details_json JSON NULL,
+  includes VARCHAR(255) NULL,
   category VARCHAR(80) NULL,
   image_url VARCHAR(512) NOT NULL,
   images_json JSON NULL,
