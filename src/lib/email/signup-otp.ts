@@ -1,7 +1,4 @@
-import {
-	formatBusinessFooterLine,
-	getBusinessProfile,
-} from "@/lib/business";
+import { formatBusinessFooterLine, getBusinessProfile } from "@/lib/business";
 import { siteUrl } from "@/lib/email/order-confirmation";
 
 const BRAND = {
@@ -33,7 +30,7 @@ export function renderSignupOtpEmail(
 	const base = siteUrl();
 	const logoUrl = cids.logo
 		? `cid:${cids.logo}`
-		: `${base}/email/him-logo.png`;
+		: `${base}/homepage/him-logo-dark.png`;
 	const host = base.replace(/^https?:\/\//, "");
 	const legal = (label: string, path: string) =>
 		`<a href="${base}${path}" style="color:${BRAND.ink};text-decoration:none;">${label}</a>`;
@@ -58,7 +55,7 @@ export function renderSignupOtpEmail(
 <tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${BRAND.bg};font-family:${SANS};">
   <tr><td align="center" style="padding:40px 32px 0;">
-    <a href="${base}"><img src="${esc(logoUrl)}" width="90" alt="him" style="display:block;border:0;"></a>
+    <a href="${base}"><img src="${esc(logoUrl)}" width="88" alt="him" style="display:block;border:0;"></a>
   </td></tr>
   <tr><td align="center" style="padding:36px 32px 0;">
     <div style="font-size:12px;letter-spacing:3px;color:${BRAND.muted};text-transform:uppercase;">Verify your email</div>

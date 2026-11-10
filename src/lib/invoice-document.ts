@@ -8,6 +8,9 @@ export type InvoiceLineInput = {
 	unitPriceCents: number;
 };
 
+/** Cropped dark logo for light invoice / PDF / email backgrounds. */
+export const INVOICE_LOGO_PATH = "/homepage/him-logo-dark.png";
+
 export type InvoiceDocumentModel = {
 	invoiceNumber: string;
 	orderNumber: string;
@@ -21,6 +24,11 @@ export type InvoiceDocumentModel = {
 	gst: GstBreakup;
 	billTo: string[];
 	items: InvoiceLineInput[];
+	/**
+	 * Logo image src. Web pages use the public path; PDF embeds a data URI
+	 * so Chromium can render without network access.
+	 */
+	logoSrc?: string;
 };
 
 export function formatInvoiceMoney(cents: number, currency = "INR"): string {
@@ -76,9 +84,20 @@ export const INVOICE_SHEET_CSS = `
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	box-sizing: border-box;
 }
+.inv-logo-wrap {
+	display: flex;
+	justify-content: center;
+	margin: 0 0 28px;
+}
+.inv-logo {
+	display: block;
+	width: 88px;
+	height: auto;
+}
 .inv-header {
 	display: flex;
 	justify-content: space-between;
+	align-items: flex-start;
 	gap: 24px;
 	flex-wrap: wrap;
 	margin-bottom: 28px;
@@ -102,6 +121,10 @@ export const INVOICE_SHEET_CSS = `
 	font-size: 12px;
 	line-height: 1.5;
 	color: #444;
+}
+.inv-meta {
+	margin-left: auto;
+	align-self: flex-end;
 }
 .inv-meta p {
 	margin: 0 0 6px;
@@ -264,6 +287,7 @@ export function renderInvoiceSheetHtml(model: InvoiceDocumentModel): string {
 		gst,
 		billTo,
 		items,
+		logoSrc = INVOICE_LOGO_PATH,
 	} = model;
 
 	const addressMeta = business.addressLines
@@ -301,7 +325,12 @@ export function renderInvoiceSheetHtml(model: InvoiceDocumentModel): string {
 		? `<p><strong>Payment ref</strong> ${escHtml(paymentId)}</p>`
 		: "";
 
+	const logoHtml = logoSrc
+		? `<div class="inv-logo-wrap"><img class="inv-logo" src="${escHtml(logoSrc)}" width="88" alt="HIM" /></div>`
+		: "";
+
 	return `<article class="inv-sheet">
+  ${logoHtml}
   <header class="inv-header">
     <div class="inv-supplier">
       <p class="inv-doc-label">Tax invoice</p>

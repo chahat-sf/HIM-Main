@@ -1,9 +1,12 @@
+import { promises as fs } from "fs";
+import path from "path";
 import chromium from "@sparticuz/chromium";
 import puppeteer, { type Browser } from "puppeteer-core";
 import { getBusinessProfile, splitGstForPlaceOfSupply } from "@/lib/business";
 import {
 	buildInvoicePdfHtmlDocument,
 	formatInvoiceDate,
+	INVOICE_LOGO_PATH,
 	type InvoiceDocumentModel,
 } from "@/lib/invoice-document";
 import type { OrderEmailData } from "@/lib/email/order-confirmation";
@@ -13,7 +16,19 @@ export type InvoicePdfData = OrderEmailData & {
 	buyerState: string | null;
 };
 
-function toDocumentModel(data: InvoicePdfData): InvoiceDocumentModel {
+async function invoiceLogoDataUri(): Promise<string | undefined> {
+	const rel = INVOICE_LOGO_PATH.replace(/^\/+/, "");
+	try {
+		const buf = await fs.readFile(path.join(process.cwd(), "public", rel));
+		return `data:image/png;base64,${buf.toString("base64")}`;
+	} catch {
+		return undefined;
+	}
+}
+
+async function toDocumentModel(
+	data: InvoicePdfData,
+): Promise<InvoiceDocumentModel> {
 	const business = getBusinessProfile();
 	const gst = splitGstForPlaceOfSupply(
 		data.taxCents,
@@ -39,6 +54,7 @@ function toDocumentModel(data: InvoicePdfData): InvoiceDocumentModel {
 		business,
 		gst,
 		billTo,
+		logoSrc: (await invoiceLogoDataUri()) || INVOICE_LOGO_PATH,
 		items: data.items.map((item) => ({
 			name: item.name,
 			size: item.size,
@@ -94,7 +110,7 @@ async function launchBrowser(): Promise<Browser> {
  * Renders shared invoice HTML via Chromium (no react-dom/server).
  */
 export async function buildInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
-	const model = toDocumentModel(data);
+	const model = await toDocumentModel(data);
 	const html = buildInvoicePdfHtmlDocument(model);
 
 	let browser: Browser | null = null;

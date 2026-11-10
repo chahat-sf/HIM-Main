@@ -1,7 +1,4 @@
-import {
-	formatBusinessFooterLine,
-	getBusinessProfile,
-} from "@/lib/business";
+import { formatBusinessFooterLine, getBusinessProfile } from "@/lib/business";
 import { getSiteUrl } from "@/lib/site-url";
 
 export type OrderEmailItem = {
@@ -115,9 +112,7 @@ function itemRow(
 		value
 			? `<div style="font-size:15px;line-height:24px;color:${BRAND.muted};">${label}: ${esc(value)}</div>`
 			: "";
-	const src = item.image
-		? imgSrc(imageCid, absolute(item.image))
-		: "";
+	const src = item.image ? imgSrc(imageCid, absolute(item.image)) : "";
 	const img = src
 		? `<img src="${esc(src)}" width="170" alt="${esc(item.name)}" style="display:block;width:170px;border-radius:14px;border:0;">`
 		: "";
@@ -160,7 +155,7 @@ export function renderOrderConfirmationEmail(
 ): string {
 	const base = siteUrl();
 	const heroUrl = imgSrc(cids.hero, `${base}/homepage/3-man-image.webp`);
-	const logoUrl = imgSrc(cids.logo, `${base}/email/him-logo.png`);
+	const logoUrl = imgSrc(cids.logo, `${base}/homepage/him-logo-dark.png`);
 	const instagram =
 		process.env.SOCIAL_INSTAGRAM_URL || "https://www.instagram.com/itshimworld";
 	const whatsapp = process.env.SOCIAL_WHATSAPP_URL || "";
@@ -181,9 +176,7 @@ export function renderOrderConfirmationEmail(
 		.join("");
 
 	const rows = data.items
-		.map((item, index) =>
-			itemRow(item, data.currency, cids.items?.[index]),
-		)
+		.map((item, index) => itemRow(item, data.currency, cids.items?.[index]))
 		.join("");
 	const tax =
 		data.taxCents > 0
@@ -218,7 +211,10 @@ export function renderOrderConfirmationEmail(
 <tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${BRAND.bg};">
   <tr><td style="font-size:0;line-height:0;"><img src="${esc(heroUrl)}" width="600" alt="HIM" style="display:block;width:100%;height:auto;border:0;"></td></tr>
-  <tr><td align="center" style="padding:32px 24px 0;font-family:${SANS};">
+  <tr><td align="center" style="padding:28px 24px 0;font-family:${SANS};">
+    <a href="${base}"><img src="${esc(logoUrl)}" width="88" alt="him" style="display:block;border:0;margin:0 auto;"></a>
+  </td></tr>
+  <tr><td align="center" style="padding:24px 24px 0;font-family:${SANS};">
     <div style="font-size:14px;letter-spacing:3px;color:${BRAND.muted};text-transform:uppercase;">Order placed</div>
     <h1 style="margin:18px 0 0;font-family:${SERIF};font-weight:500;font-size:46px;line-height:50px;color:${BRAND.ink};">Your order is placed</h1>
     <p style="margin:20px 0 0;font-size:16px;line-height:22px;color:${BRAND.ink};">Your payment has reached us, and your order is<br>now in our hands. Your tax invoice is attached as a PDF.<br>Here are the details:</p>
@@ -275,7 +271,7 @@ export function renderOrderConfirmationEmail(
   <tr><td style="padding:36px 36px 36px;font-family:${SANS};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td><a href="${base}"><img src="${esc(logoUrl)}" width="90" alt="him" style="display:block;border:0;"></a></td>
+        <td><a href="${base}"><img src="${esc(logoUrl)}" width="80" alt="him" style="display:block;border:0;"></a></td>
         <td align="right">${social}</td>
       </tr>
     </table>

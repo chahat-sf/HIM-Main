@@ -549,81 +549,85 @@ function ExistingProductsGrid({
               </div>
 
               {/* PRODUCT INFO */}
-              <div style={{ paddingTop: "10px", color: "var(--fg)" }}>
-                <div className="flex items-start justify-between" style={{ gap: "8px" }}>
-                  <div>
-                    <Link
-                      href={`/collection/${product.slug}`}
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
-                      <p
-                        style={{
-                          margin: 0,
-                          fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                          fontSize: "13px",
-                          fontWeight: 500,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {product.name}
-                      </p>
-                    </Link>
-
-                    {product.swatches.length > 0 && (
-                      <div
-                        className="flex items-center"
-                        style={{ gap: "4px", marginTop: "6px" }}
-                      >
-                        {product.swatches.map((swatch, i) => (
-                          <span
-                            key={`${swatch}-${i}`}
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              background: swatch,
-                              display: "inline-block",
-                              flex: "0 0 auto",
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* BAG BUTTON */}
+              <div
+                className="flex items-center justify-between"
+                style={{
+                  padding: "10px 6px 0",
+                  color: "var(--fg)",
+                  gap: "8px",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
                   <Link
                     href={`/collection/${product.slug}`}
-                    aria-label={`View ${product.name}`}
-                    className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontFamily: "Inter, Arial, Helvetica, sans-serif",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {product.name}
+                    </p>
+                  </Link>
+
+                  {product.swatches.length > 0 && (
+                    <div
+                      className="flex items-center"
+                      style={{ gap: "4px", marginTop: "6px" }}
+                    >
+                      {product.swatches.map((swatch, i) => (
+                        <span
+                          key={`${swatch}-${i}`}
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: swatch,
+                            display: "inline-block",
+                            flex: "0 0 auto",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* PRICE */}
+                  <p
                     style={{
-                      width: "20px",
-                      height: "23px",
-                      padding: 0,
-                      borderRadius: "3px",
-                      border: "1px solid var(--fg)",
-                      background: "transparent",
-                      color: "var(--fg)",
-                      flex: "0 0 auto",
-                      opacity: 0.8,
+                      margin: "8px 0 0",
+                      fontFamily: "Inter, Arial, Helvetica, sans-serif",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      lineHeight: 1,
                     }}
                   >
-                    <ShoppingBag size={11} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
-                  </Link>
+                    {product.price}
+                  </p>
                 </div>
 
-                {/* PRICE */}
-                <p
+                {/* BAG BUTTON */}
+                <Link
+                  href={`/collection/${product.slug}`}
+                  aria-label={`View ${product.name}`}
+                  className="flex items-center justify-center transition-opacity duration-200 hover:opacity-60"
                   style={{
-                    margin: "8px 0 0",
-                    fontFamily: "Inter, Arial, Helvetica, sans-serif",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    lineHeight: 1,
+                    padding: 0,
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--fg)",
+                    flex: "0 0 auto",
+                    alignSelf: "center",
+                    opacity: 0.75,
+                    lineHeight: 0,
                   }}
                 >
-                  {product.price}
-                </p>
+                  <ShoppingBag size={22} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />
+                </Link>
               </div>
             </article>
           );

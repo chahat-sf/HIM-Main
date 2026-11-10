@@ -1,6 +1,7 @@
 import {
 	formatInvoiceMoney,
 	invoiceLineAmounts,
+	INVOICE_LOGO_PATH,
 	type InvoiceDocumentModel,
 } from "@/lib/invoice-document";
 
@@ -22,10 +23,21 @@ export default function TaxInvoiceDocument({
 		gst,
 		billTo,
 		items,
+		logoSrc = INVOICE_LOGO_PATH,
 	} = model;
 
 	return (
 		<article className="inv-sheet">
+			<div className="inv-logo-wrap">
+				{/* eslint-disable-next-line @next/next/no-img-element -- print-friendly public asset */}
+				<img
+					className="inv-logo"
+					src={logoSrc}
+					width={88}
+					height={47}
+					alt="HIM"
+				/>
+			</div>
 			<header className="inv-header">
 				<div className="inv-supplier">
 					<p className="inv-doc-label">Tax invoice</p>

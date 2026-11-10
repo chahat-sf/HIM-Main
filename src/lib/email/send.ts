@@ -144,7 +144,7 @@ async function buildOrderEmailAssets(
 	};
 
 	cids.hero = await push("homepage/3-man-image.webp", "him-hero");
-	cids.logo = await push("email/him-logo.png", "him-logo");
+	cids.logo = await push("homepage/him-logo-dark.png", "him-logo");
 	cids.instagram = await push("email/instagram.png", "him-instagram");
 	if (process.env.SOCIAL_WHATSAPP_URL) {
 		cids.whatsapp = await push("email/whatsapp.png", "him-whatsapp");
@@ -177,7 +177,7 @@ export async function sendSignupOtpEmail(
 		return false;
 	}
 	try {
-		const logo = await loadEmailAsset("email/him-logo.png", "him-logo");
+		const logo = await loadEmailAsset("homepage/him-logo-dark.png", "him-logo");
 		const attachments: MailAttachment[] = logo ? [asInline(logo)] : [];
 		await mailer.sendMail({
 			from: process.env.EMAIL_FROM || process.env.SMTP_USER,
