@@ -9,167 +9,160 @@ import {
 } from "react";
 import type { Pdp360Assets } from "@/lib/pdp-360";
 
-const FETCH_CONCURRENCY = 8;
-const CACHE_LIMIT = 16;
-const PREFETCH_AHEAD = 10;
-const PREFETCH_BEHIND = 4;
-const NEAREST_RANGE = 8;
+const FETCH_CONCURRENCY = 10;
+const DECODE_CONCURRENCY = 8;
+const MAX_LONG_EDGE = 1920;
+
+const GATE_BG =
+  "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
+
+function displaySize(cssW: number, cssH: number) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let w = Math.max(1, Math.round(cssW * dpr));
+  let h = Math.max(1, Math.round(cssH * dpr));
+  const long = Math.max(w, h);
+  if (long > MAX_LONG_EDGE) {
+    const scale = MAX_LONG_EDGE / long;
+    w = Math.max(1, Math.round(w * scale));
+    h = Math.max(1, Math.round(h * scale));
+  }
+  return { w, h };
+}
+
+/** Cover-fit resize target for a source frame into the display box. */
+function coverResize(
+  srcW: number,
+  srcH: number,
+  boxW: number,
+  boxH: number,
+) {
+  const scale = Math.max(boxW / srcW, boxH / srcH);
+  return {
+    resizeWidth: Math.max(1, Math.round(srcW * scale)),
+    resizeHeight: Math.max(1, Math.round(srcH * scale)),
+  };
+}
 
 class PdpFrameRing {
   readonly count: number;
   private readonly frameUrl: (index: number) => string;
-  private blobs: (Blob | null)[];
-  private bitmaps = new Map<number, ImageBitmap>();
-  private decoding = new Map<number, Promise<void>>();
-  private fetchDone = 0;
+  private bitmaps: (ImageBitmap | null)[];
   private token = 0;
-  private loading = false;
-  private center = 0;
-  onFirstFrame: (() => void) | null = null;
+  private decoded = 0;
+  onReady: (() => void) | null = null;
 
   constructor(assets: Pdp360Assets) {
     this.count = assets.count;
     this.frameUrl = assets.frameUrl;
-    this.blobs = Array(assets.count).fill(null);
+    this.bitmaps = Array(assets.count).fill(null);
   }
 
   get ready() {
-    return this.fetchDone === this.count;
+    return this.decoded === this.count && this.count > 0;
   }
 
-  load() {
-    if (this.loading || this.fetchDone === this.count) {
-      if (this.fetchDone === this.count) this.warm(this.center);
-      return;
-    }
-    this.loading = true;
+  async load(cssW: number, cssH: number) {
     const token = ++this.token;
-    let next = 0;
+    this.decoded = 0;
+    for (const b of this.bitmaps) b?.close();
+    this.bitmaps = Array(this.count).fill(null);
 
-    const worker = async () => {
+    const { w: boxW, h: boxH } = displaySize(cssW, cssH);
+    const blobs: (Blob | null)[] = Array(this.count).fill(null);
+
+    // 1) Fetch all WebPs
+    let nextFetch = 0;
+    const fetchWorker = async () => {
       while (token === this.token) {
-        const i = next++;
+        const i = nextFetch++;
         if (i >= this.count) return;
-        if (this.blobs[i]) {
-          this.fetchDone++;
-          continue;
-        }
         try {
           const res = await fetch(this.frameUrl(i));
           if (!res.ok) throw new Error(String(res.status));
           const blob = await res.blob();
           if (token !== this.token) return;
-          this.blobs[i] = blob;
-          if (i === this.center || (this.center === 0 && i === 0)) {
-            void this.decode(i);
-          }
+          blobs[i] = blob;
         } catch {
-          /* skip missing frame */
+          /* leave null — decode will skip */
         }
-        this.fetchDone++;
+      }
+    };
+    await Promise.all(
+      Array.from({ length: FETCH_CONCURRENCY }, () => fetchWorker()),
+    );
+    if (token !== this.token) return;
+
+    // Probe first available blob for intrinsic size
+    let srcW = boxW;
+    let srcH = boxH;
+    const probe = blobs.find(Boolean);
+    if (probe) {
+      try {
+        const meta = await createImageBitmap(probe);
+        if (token !== this.token) {
+          meta.close();
+          return;
+        }
+        srcW = meta.width;
+        srcH = meta.height;
+        meta.close();
+      } catch {
+        /* use box size */
+      }
+    }
+
+    const { resizeWidth, resizeHeight } = coverResize(srcW, srcH, boxW, boxH);
+
+    // 2) Decode all at display size
+    let nextDecode = 0;
+    const decodeWorker = async () => {
+      while (token === this.token) {
+        const i = nextDecode++;
+        if (i >= this.count) return;
+        const blob = blobs[i];
+        if (!blob) {
+          this.decoded++;
+          continue;
+        }
+        try {
+          const bitmap = await createImageBitmap(blob, {
+            resizeWidth,
+            resizeHeight,
+            resizeQuality: "high",
+          });
+          if (token !== this.token) {
+            bitmap.close();
+            return;
+          }
+          this.bitmaps[i] = bitmap;
+        } catch {
+          /* skip */
+        }
+        this.decoded++;
       }
     };
 
-    void Promise.all(Array.from({ length: FETCH_CONCURRENCY }, worker)).then(
-      () => {
-        if (token !== this.token) return;
-        this.loading = false;
-        this.warm(this.center);
-      },
+    await Promise.all(
+      Array.from({ length: DECODE_CONCURRENCY }, () => decodeWorker()),
     );
-  }
+    if (token !== this.token) return;
 
-  warm(index: number) {
-    this.prefetch(index, 1);
-  }
-
-  beginDrag(index: number) {
-    this.prefetch(index, 1);
-    this.prefetch(index, -1);
-  }
-
-  prefetch(index: number, direction: number) {
-    this.center = this.wrap(index);
-    const forward = direction >= 0 ? 1 : -1;
-    void this.decode(this.center);
-    for (let k = 1; k <= PREFETCH_AHEAD; k++) {
-      if (this.decoding.size >= 8) return;
-      void this.decode(this.wrap(this.center + forward * k));
-      if (k <= PREFETCH_BEHIND) {
-        void this.decode(this.wrap(this.center - forward * k));
-      }
-    }
+    // Count only successful bitmaps as decoded for ready check
+    this.decoded = this.bitmaps.filter(Boolean).length;
+    if (this.decoded > 0) this.onReady?.();
   }
 
   frame(index: number) {
-    const i = this.wrap(index);
-    const hit = this.bitmaps.get(i);
-    if (hit) return hit;
-    for (let k = 1; k <= NEAREST_RANGE; k++) {
-      const a = this.bitmaps.get(this.wrap(i - k));
-      if (a) return a;
-      const b = this.bitmaps.get(this.wrap(i + k));
-      if (b) return b;
-    }
-    return null;
+    const i = ((index % this.count) + this.count) % this.count;
+    return this.bitmaps[i] ?? null;
   }
 
   release() {
     this.token++;
-    this.loading = false;
-    this.decoding.clear();
-    for (const bitmap of this.bitmaps.values()) bitmap.close();
-    this.bitmaps.clear();
-    this.blobs.fill(null);
-    this.fetchDone = 0;
-  }
-
-  private wrap(i: number) {
-    return ((i % this.count) + this.count) % this.count;
-  }
-
-  private decode(i: number): Promise<void> {
-    if (this.bitmaps.has(i)) return Promise.resolve();
-    const pending = this.decoding.get(i);
-    if (pending) return pending;
-    const blob = this.blobs[i];
-    if (!blob) return Promise.resolve();
-    const token = this.token;
-    const job = createImageBitmap(blob)
-      .then((bitmap) => {
-        this.decoding.delete(i);
-        if (token !== this.token) {
-          bitmap.close();
-          return;
-        }
-        this.bitmaps.set(i, bitmap);
-        this.evict();
-        if (i === 0) this.onFirstFrame?.();
-      })
-      .catch(() => {
-        this.decoding.delete(i);
-      });
-    this.decoding.set(i, job);
-    return job;
-  }
-
-  private evict() {
-    while (this.bitmaps.size > CACHE_LIMIT) {
-      let farthest = -1;
-      let farthestDistance = -1;
-      for (const key of this.bitmaps.keys()) {
-        if (key === this.center) continue;
-        const d = Math.abs(key - this.center);
-        const distance = Math.min(d, this.count - d);
-        if (distance > farthestDistance) {
-          farthestDistance = distance;
-          farthest = key;
-        }
-      }
-      if (farthest < 0) break;
-      this.bitmaps.get(farthest)?.close();
-      this.bitmaps.delete(farthest);
-    }
+    this.onReady = null;
+    for (const b of this.bitmaps) b?.close();
+    this.bitmaps = Array(this.count).fill(null);
+    this.decoded = 0;
   }
 }
 
@@ -208,7 +201,10 @@ export default function PdpView360({
     const h = canvas.clientHeight;
     if (w <= 0 || h <= 0) return;
 
-    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    if (
+      canvas.width !== Math.round(w * dpr) ||
+      canvas.height !== Math.round(h * dpr)
+    ) {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
     }
@@ -219,7 +215,6 @@ export default function PdpView360({
     const bitmap = ring.frame(Math.round(posRef.current));
     if (!bitmap) return;
 
-    // Cover the viewport — fill screen, crop edges as needed.
     const scale = Math.max(w / bitmap.width, h / bitmap.height);
     const dw = bitmap.width * scale;
     const dh = bitmap.height * scale;
@@ -246,19 +241,20 @@ export default function PdpView360({
     setHint(true);
     setDragging(false);
 
-    ring.onFirstFrame = () => {
+    ring.onReady = () => {
       setReady(true);
       schedulePaint();
     };
-    ring.load();
-    // Nudge decode of frame 0 even before full fetch finishes.
-    const poll = window.setInterval(() => {
-      if (ring.frame(0)) {
-        setReady(true);
-        schedulePaint();
-        window.clearInterval(poll);
-      }
-    }, 50);
+
+    const startLoad = () => {
+      const stage = stageRef.current;
+      const cssW = stage?.clientWidth || window.innerWidth;
+      const cssH = stage?.clientHeight || window.innerHeight;
+      void ring.load(cssW, cssH);
+    };
+
+    // Wait one frame so the stage has layout size.
+    const raf = requestAnimationFrame(startLoad);
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -272,7 +268,7 @@ export default function PdpView360({
     window.addEventListener("resize", onResize);
 
     return () => {
-      window.clearInterval(poll);
+      cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
       document.body.style.overflow = prevOverflow;
@@ -282,7 +278,6 @@ export default function PdpView360({
       ringRef.current = null;
       dragRef.current = null;
     };
-    // assets.folder identity is enough; avoid re-init on stable open
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, assets.folder, onClose]);
 
@@ -296,7 +291,6 @@ export default function PdpView360({
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!ready || !ringRef.current) return;
     if ((e.target as Element).closest("button")) return;
-    ringRef.current.beginDrag(posRef.current);
     dragRef.current = {
       id: e.pointerId,
       x: e.clientX,
@@ -316,7 +310,6 @@ export default function PdpView360({
     const span = Math.min(900, Math.max(320, window.innerWidth * 0.8));
     const target = drag.p0 + ((drag.x - e.clientX) * ring.count) / span;
     posRef.current = ((target % ring.count) + ring.count) % ring.count;
-    ring.prefetch(Math.round(posRef.current), e.clientX < drag.x ? 1 : -1);
     schedulePaint();
   };
 
@@ -362,11 +355,28 @@ export default function PdpView360({
         onPointerCancel={onPointerUp}
       >
         <canvas ref={canvasRef} className="pdp-360-canvas" aria-hidden />
+
         {!ready ? (
-          <p className="pdp-360-loading" aria-live="polite">
-            Loading 360°…
-          </p>
+          <div
+            className="pdp-360-loader"
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            aria-label="Loading 360 view"
+          >
+            {/* Native <img> so animated GIF frames play (next/image can flatten). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/him-loader.gif"
+              alt=""
+              width={160}
+              height={284}
+              aria-hidden
+              draggable={false}
+            />
+          </div>
         ) : null}
+
         {ready && hint ? (
           <p className="pdp-360-hint" aria-hidden>
             Drag to rotate
@@ -393,7 +403,7 @@ export default function PdpView360({
           position: absolute;
           top: max(16px, env(safe-area-inset-top));
           right: max(16px, env(safe-area-inset-right));
-          z-index: 2;
+          z-index: 3;
           width: 44px;
           height: 44px;
           display: grid;
@@ -431,10 +441,27 @@ export default function PdpView360({
           pointer-events: none;
         }
 
-        .pdp-360-loading,
+        .pdp-360-loader {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${GATE_BG};
+          pointer-events: none;
+        }
+
+        .pdp-360-loader img {
+          width: min(160px, 28vw);
+          height: auto;
+          object-fit: contain;
+        }
+
         .pdp-360-hint {
           position: absolute;
           left: 50%;
+          bottom: max(28px, env(safe-area-inset-bottom));
           transform: translateX(-50%);
           margin: 0;
           font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -444,15 +471,6 @@ export default function PdpView360({
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.72);
           pointer-events: none;
-        }
-
-        .pdp-360-loading {
-          top: 50%;
-          transform: translate(-50%, -50%);
-        }
-
-        .pdp-360-hint {
-          bottom: max(28px, env(safe-area-inset-bottom));
         }
       `}</style>
     </div>
