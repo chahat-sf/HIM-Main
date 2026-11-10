@@ -662,7 +662,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           display: inline-flex;
           align-items: stretch;
           gap: 0;
-          height: 50px;
+          height: 36px;
           border-radius: 999px;
           border: 1px solid #3c281f;
           background: #0a0705;
@@ -719,7 +719,7 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
           top: 50%;
           left: 0;
           width: 90%;
-          height: 118px;
+          height: 84px;
           transform: translateY(-50%);
           pointer-events: none;
           z-index: 5;
@@ -742,16 +742,16 @@ export default function Navbar({ variant = "transparent" }: NavbarProps) {
 
         .him-nav-pill-link {
           position: relative;
-          top: -2px;
+          top: -1px;
           z-index: 6;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           width: 100%;
-          min-height: 50px;
-          padding: 0 28px;
+          min-height: 36px;
+          padding: 0 18px;
           font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 500;
           letter-spacing: 0.01em;
           text-decoration: none;
