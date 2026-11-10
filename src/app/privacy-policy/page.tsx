@@ -1,180 +1,162 @@
 import LegalPageShell from "@/components/LegalPageShell";
-import { getBusinessProfile } from "@/lib/business";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 
 export const metadata = buildPageMetadata(PAGE_SEO.privacy);
 
 export default function PrivacyPolicyPage() {
-  const business = getBusinessProfile();
   return (
     <LegalPageShell
-      title="Privacy Policy"
+      title="Privacy & Cookie Policy"
+      lead="Last updated: 10 November 2026"
       showDisclaimer={false}
       sections={[
         {
-          heading: "1. Introduction",
-          body: [
-            `At HIM World (${business.legalName}), we value your privacy and are committed to handling your personal information responsibly. This Privacy Policy explains how we collect, use, store, and protect your information when you visit our website, place an order, or interact with our services.`,
-            "By using our website, you acknowledge the practices described in this Privacy Policy, subject to applicable data protection laws.",
-          ],
+          heading: "1. Who we are",
+          body: 'This Privacy Policy explains how HIM.CLOTHING LLP ("HIM World", "we", "us") collects, uses and protects your personal data when you use our website (the "Site"). It is drafted in line with India\'s Digital Personal Data Protection Act, 2023, the Information Technology Act, 2000 and its rules, and reflects GDPR principles for customers in the EU and UK.',
         },
         {
-          heading: "2. Information We Collect",
-          body: "HIM World may collect the following categories of information when you use our website or services:",
+          heading: "2. Data we collect",
           labeled: [
             {
-              label: "Personal Information",
-              text: "Your name, email address, phone number, billing address, shipping address, and other details you provide when placing an order or contacting us.",
+              label: "Identity & contact",
+              text: "Name, phone number, email address — for order confirmation, delivery updates and support.",
             },
             {
-              label: "Order and Transaction Information",
-              text: "Details relating to your purchases, order history, delivery preferences, returns, exchanges, and refunds.",
+              label: "Delivery details",
+              text: "Shipping and billing address, delivery instructions — for shipping your order.",
             },
             {
-              label: "Payment Information",
-              text: "Payments are processed through the payment methods and service providers available at checkout. We may receive transaction references, payment status, and related information necessary to process and manage your orders. Full payment card details are generally handled by the relevant payment service provider.",
+              label: "Fit data",
+              text: "Size selections and body measurements — for making your made-to-order garment.",
             },
             {
-              label: "Technical Information",
-              text: "Information such as your IP address, browser type, device information, operating system, website interactions, and usage data may be collected when you access our website.",
+              label: "Order history",
+              text: "Products bought, order value, returns — for service, after-care and records.",
             },
             {
-              label: "Communication Preferences",
-              text: "Information you provide when subscribing to updates, participating in promotions, responding to surveys, or communicating with our customer support team.",
+              label: "Payment data",
+              text: "Payment tokens and transaction IDs from our gateway, never your full card number or CVV — for processing payments and refunds.",
+            },
+            {
+              label: "Technical data",
+              text: "IP address, device, browser, pages visited — for security, fraud prevention and site improvement.",
+            },
+            {
+              label: "Communications",
+              text: "Emails, chats, messages, marketing preferences — for support and consented marketing.",
             },
           ],
         },
         {
-          heading: "3. How We Use Your Information",
-          body: "We use your information for legitimate business purposes, including:",
+          heading: "3. How we use your data",
           items: [
-            "Processing and fulfilling orders, payments, deliveries, returns, and refunds.",
-            "Providing customer support and responding to enquiries.",
-            "Sending order confirmations, shipping updates, and other service-related communications.",
-            "Improving our website, products, services, and shopping experience.",
-            "Sharing relevant brand updates, promotional offers, and product announcements where permitted and, where required, with your consent.",
-            "Detecting and preventing fraudulent transactions, unauthorised activities, and security risks.",
-            "Complying with applicable legal, regulatory, accounting, and tax obligations.",
+            "To process, make, ship and deliver your orders.",
+            "To verify payments, prevent fraud and secure high-value deliveries.",
+            "To handle returns, exchanges, refunds and alterations.",
+            "To send transactional updates (order, dispatch, delivery).",
+            "To send marketing by email, SMS or WhatsApp, only with your consent. You can unsubscribe at any time.",
+            "To analyse and improve the Site and personalise your experience.",
+            "To meet legal, tax (GST) and accounting obligations.",
           ],
         },
         {
-          heading: "4. Cookies and Similar Technologies",
-          body: [
-            "Our website may use cookies and similar technologies to support website functionality, remember preferences, understand website usage, and improve the overall shopping experience.",
-            "Where applicable, these technologies may also be used for analytics and personalised advertising, subject to your preferences and applicable law.",
-            "You may manage or disable certain cookies through your browser settings or any cookie preference tools made available on our website. Disabling essential cookies may affect some website features.",
-          ],
-        },
-        {
-          heading: "5. Sharing of Information",
-          body: [
-            "HIM World does not sell customers' personal information as part of its ordinary business operations.",
-            "We may share relevant information with trusted third parties when necessary to provide our services, including:",
-          ],
+          heading: "4. How we protect your data",
           items: [
-            "Payment processors and financial service providers.",
-            "Shipping, courier, and logistics partners.",
-            "Website hosting, technology, analytics, and customer support providers.",
-            "Marketing and communication service providers, where permitted.",
-            "Professional advisers, auditors, and legal representatives.",
-            "Government authorities or other parties where disclosure is required or permitted by law.",
+            "All pages are served over SSL/TLS (HTTPS) encryption.",
+            "Card payments are processed by PCI-DSS compliant payment gateways. We store only payment tokens, never full card numbers or CVV.",
+            "Passwords are stored as one-way hashes.",
+            "Access to customer data is limited to staff and partners who need it to fulfil your order.",
+            "We review the security practices of our service providers regularly.",
+          ],
+        },
+        {
+          heading: "5. Third-party sharing",
+          body: "We never sell or rent your personal data. We share it only with:",
+          items: [
+            "Logistics and courier partners: name, phone and address for delivery.",
+            "Payment gateways: to process payments and refunds.",
+            "Analytics and advertising platforms: Google Analytics and Meta Pixel receive device and browsing data to measure site usage and ad performance, only with your cookie consent.",
+            "Hosting and IT providers, email and customer-support tools.",
+            "Our production team: order and measurement details to make your garment.",
+            "Government or law enforcement: where required by law.",
           ],
           after:
-            "Such sharing is limited to what is reasonably necessary for the relevant purpose, subject to applicable law and appropriate safeguards.",
+            "Some providers may process data outside India. We use reputable providers with appropriate safeguards.",
         },
         {
-          heading: "6. Data Security",
-          body: [
-            "HIM World takes reasonable technical and organisational measures to protect personal information against unauthorised access, loss, misuse, alteration, or disclosure.",
-            "However, no method of electronic transmission or storage can be guaranteed to be completely secure. While we take appropriate precautions, we cannot guarantee absolute security.",
-          ],
-        },
-        {
-          heading: "7. Data Retention",
-          body: [
-            "We retain personal information only for as long as reasonably necessary to fulfil the purposes described in this Privacy Policy, including order processing, customer service, dispute resolution, recordkeeping, and compliance with legal obligations.",
-            "When information is no longer required, it will be deleted, anonymised, or securely disposed of, as appropriate and as permitted by applicable law.",
-          ],
-        },
-        {
-          heading: "8. Your Privacy Rights",
-          body: "Depending on the laws applicable to you, you may have the right to:",
+          heading: "6. Your rights",
+          body: "You may at any time:",
           items: [
-            "Request access to your personal information.",
-            "Request correction of inaccurate or incomplete information.",
-            "Request deletion of personal information where legally applicable.",
-            "Withdraw consent for processing activities based on consent.",
-            "Opt out of promotional emails or marketing communications.",
-            "Raise concerns or submit a complaint regarding the handling of your personal information.",
+            "Access a copy of the personal data we hold about you.",
+            "Correct inaccurate or incomplete data.",
+            "Erase your data, subject to records we must keep by law, such as invoices.",
+            "Withdraw consent for marketing or optional cookies.",
+            "Nominate a person to exercise your rights in case of death or incapacity.",
+            "EU/UK customers may also object to or restrict processing, request portability, and complain to their local data authority.",
           ],
           after:
-            "To exercise any applicable rights, please contact HIM World through the official contact details provided on our website. We may need to verify your identity before processing certain requests.",
+            'How to make a request: email support@thehim.in from your registered email address with the subject "Data Request", stating what you want. We will verify your identity and respond within 30 days.',
         },
         {
-          heading: "9. Marketing Communications",
-          body: [
-            "If you choose to receive updates from HIM World, we may send you information about new collections, product launches, special offers, and brand announcements.",
-            "You may unsubscribe from promotional emails by using the unsubscribe link provided in the communication or by contacting us directly.",
-            "Even if you opt out of marketing communications, we may continue to send essential messages relating to your purchases, deliveries, account, or other service-related matters.",
-          ],
-        },
-        {
-          heading: "10. Third-Party Websites",
-          body: [
-            "Our website may contain links to third-party websites, platforms, or services. These external websites operate independently and may have their own privacy policies and data handling practices.",
-            "HIM World is not responsible for the privacy practices of third-party websites. We encourage you to review their privacy policies before sharing personal information with them.",
-          ],
-        },
-        {
-          heading: "11. Children's Privacy",
-          body: [
-            "HIM World's website and products are intended for a general audience, and our services are not knowingly directed towards children where restricted by applicable law.",
-            "We do not knowingly collect personal information from children in circumstances where such collection is prohibited. If we become aware that personal information has been collected unlawfully from a child, we will take appropriate steps to address the matter in accordance with applicable law.",
-          ],
-        },
-        {
-          heading: "12. International Data Transfers",
-          body: [
-            "Where HIM World uses service providers or operates across multiple countries, personal information may be processed or transferred outside your country of residence.",
-            "Any such transfer will be carried out in accordance with applicable data protection laws and any required safeguards.",
-          ],
-        },
-        {
-          heading: "13. Changes to This Privacy Policy",
-          body: [
-            "HIM World may update this Privacy Policy to reflect changes in our business practices, website functionality, service providers, or applicable legal requirements.",
-            "Any revised policy will be published on this page. We encourage you to review this page periodically to remain informed about how your information is handled.",
-          ],
-        },
-        {
-          heading: "14. Contact Us",
-          body: "If you have questions, concerns, or requests relating to this Privacy Policy or the handling of your personal information, please contact us through our official channels.",
+          heading: "7. Data retention",
           labeled: [
             {
-              label: "Brand",
-              text: "HIM World",
+              label: "Account and contact details",
+              text: "While your account is active, plus 2 years.",
             },
             {
-              label: "Legal entity",
-              text: business.legalName,
+              label: "Measurements",
+              text: "Until you delete them or close your account.",
             },
             {
-              label: "Registered address",
-              text: business.addressLines.join(", "),
+              label: "Invoices and order records",
+              text: "8 years (tax law).",
             },
             {
-              label: "GSTIN",
-              text: business.gstin,
+              label: "Marketing data",
+              text: "Until you unsubscribe.",
             },
             {
-              label: "Email",
-              text: "support@thehim.in",
-            },
-            {
-              label: "Mobile number",
-              text: "+91 99111 67778",
+              label: "Analytics and cookie data",
+              text: "Up to 13 months.",
             },
           ],
+        },
+        {
+          heading: "8. Cookie Policy",
+          body: "Cookies are small files stored on your device. We use:",
+          labeled: [
+            {
+              label: "Essential / session cookies",
+              text: "Keep you logged in, keep items in your cart (cart persistence), secure checkout. Consent not needed — the Site cannot work without them.",
+            },
+            {
+              label: "Preference cookies",
+              text: "Remember your currency, region and size choices. Consent needed.",
+            },
+            {
+              label: "Analytics cookies",
+              text: "Google Analytics, to understand how visitors use the Site. Consent needed.",
+            },
+            {
+              label: "Marketing / tracking cookies",
+              text: "Meta Pixel and similar, for personalised recommendations and relevant ads. Consent needed.",
+            },
+          ],
+          after:
+            "You can accept, reject or customise optional cookies through our cookie banner, and change your choice at any time through the Cookie Settings link in the website footer or your browser settings. Blocking essential cookies may stop the cart and checkout from working.",
+        },
+        {
+          heading: "9. Children",
+          body: "The Site is not intended for anyone under 18. We do not knowingly collect children's data without verifiable parental consent.",
+        },
+        {
+          heading: "10. Data breaches",
+          body: "If a breach affects your data, we will notify you and the relevant authorities, including the Data Protection Board of India and CERT-In where required, and act to limit the impact.",
+        },
+        {
+          heading: "11. Changes and contact",
+          body: 'We may update this policy and will show the new "Last updated" date here. For questions, email support@thehim.in or contact our Grievance Officer (see Grievance Redressal & Contact).',
         },
       ]}
     />

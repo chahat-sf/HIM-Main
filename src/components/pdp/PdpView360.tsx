@@ -10,36 +10,56 @@ import {
 import type { Pdp360Assets } from "@/lib/pdp-360";
 
 const FETCH_CONCURRENCY = 10;
-const DECODE_CONCURRENCY = 8;
-const MAX_LONG_EDGE = 1920;
+const DECODE_CONCURRENCY_DESKTOP = 8;
+const DECODE_CONCURRENCY_MOBILE = 4;
+/** Desktop decode cap — never upscale past source. */
+const MAX_LONG_EDGE_DESKTOP = 1600;
+/**
+ * Mobile must stay low: cover-sizing ultrawide frames to a tall phone
+ * viewport previously decoded ~4K bitmaps × 61 and OOM-killed iOS Safari.
+ */
+const MAX_LONG_EDGE_MOBILE = 960;
 
 const GATE_BG =
   "radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
 
-function displaySize(cssW: number, cssH: number) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  let w = Math.max(1, Math.round(cssW * dpr));
-  let h = Math.max(1, Math.round(cssH * dpr));
-  const long = Math.max(w, h);
-  if (long > MAX_LONG_EDGE) {
-    const scale = MAX_LONG_EDGE / long;
-    w = Math.max(1, Math.round(w * scale));
-    h = Math.max(1, Math.round(h * scale));
-  }
-  return { w, h };
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(max-width: 768px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
 }
 
-/** Cover-fit resize target for a source frame into the display box. */
-function coverResize(
+/**
+ * Contain-fit decode size: fit inside the stage, never upscale, honor max edge.
+ * Painting still uses CSS cover — soft upscale beats an iOS tab crash.
+ */
+function decodeTarget(
   srcW: number,
   srcH: number,
-  boxW: number,
-  boxH: number,
+  cssW: number,
+  cssH: number,
 ) {
-  const scale = Math.max(boxW / srcW, boxH / srcH);
+  const mobile = isMobileViewport();
+  const maxEdge = mobile ? MAX_LONG_EDGE_MOBILE : MAX_LONG_EDGE_DESKTOP;
+  const dpr = Math.min(mobile ? 1.5 : 2, window.devicePixelRatio || 1);
+  const boxW = Math.max(1, Math.round(cssW * dpr));
+  const boxH = Math.max(1, Math.round(cssH * dpr));
+
+  const scale = Math.min(
+    1,
+    boxW / srcW,
+    boxH / srcH,
+    maxEdge / Math.max(srcW, srcH),
+  );
+
   return {
     resizeWidth: Math.max(1, Math.round(srcW * scale)),
     resizeHeight: Math.max(1, Math.round(srcH * scale)),
+    decodeConcurrency: mobile
+      ? DECODE_CONCURRENCY_MOBILE
+      : DECODE_CONCURRENCY_DESKTOP,
   };
 }
 
@@ -67,7 +87,6 @@ class PdpFrameRing {
     for (const b of this.bitmaps) b?.close();
     this.bitmaps = Array(this.count).fill(null);
 
-    const { w: boxW, h: boxH } = displaySize(cssW, cssH);
     const blobs: (Blob | null)[] = Array(this.count).fill(null);
 
     // 1) Fetch all WebPs
@@ -93,8 +112,8 @@ class PdpFrameRing {
     if (token !== this.token) return;
 
     // Probe first available blob for intrinsic size
-    let srcW = boxW;
-    let srcH = boxH;
+    let srcW = 2520;
+    let srcH = 1080;
     const probe = blobs.find(Boolean);
     if (probe) {
       try {
@@ -107,19 +126,25 @@ class PdpFrameRing {
         srcH = meta.height;
         meta.close();
       } catch {
-        /* use box size */
+        /* keep defaults */
       }
     }
 
-    const { resizeWidth, resizeHeight } = coverResize(srcW, srcH, boxW, boxH);
+    const { resizeWidth, resizeHeight, decodeConcurrency } = decodeTarget(
+      srcW,
+      srcH,
+      cssW,
+      cssH,
+    );
 
-    // 2) Decode all at display size
+    // 2) Decode all at a memory-safe size (contain, no upscale)
     let nextDecode = 0;
     const decodeWorker = async () => {
       while (token === this.token) {
         const i = nextDecode++;
         if (i >= this.count) return;
         const blob = blobs[i];
+        blobs[i] = null; // drop compressed copy ASAP for iOS memory
         if (!blob) {
           this.decoded++;
           continue;
@@ -128,7 +153,7 @@ class PdpFrameRing {
           const bitmap = await createImageBitmap(blob, {
             resizeWidth,
             resizeHeight,
-            resizeQuality: "high",
+            resizeQuality: "medium",
           });
           if (token !== this.token) {
             bitmap.close();
@@ -143,11 +168,10 @@ class PdpFrameRing {
     };
 
     await Promise.all(
-      Array.from({ length: DECODE_CONCURRENCY }, () => decodeWorker()),
+      Array.from({ length: decodeConcurrency }, () => decodeWorker()),
     );
     if (token !== this.token) return;
 
-    // Count only successful bitmaps as decoded for ready check
     this.decoded = this.bitmaps.filter(Boolean).length;
     if (this.decoded > 0) this.onReady?.();
   }

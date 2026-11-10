@@ -35,9 +35,9 @@ export function renderSignupOtpEmail(
 	const legal = (label: string, path: string) =>
 		`<a href="${base}${path}" style="color:${BRAND.ink};text-decoration:none;">${label}</a>`;
 	const legalLinks = [
-		legal("Terms", "/terms-of-sale"),
+		legal("Terms", "/terms"),
 		legal("Privacy", "/privacy-policy"),
-		legal("Grievance Officer", "/legals"),
+		legal("Grievance Officer", "/grievance-contact"),
 	].join(`<span style="color:${BRAND.muted};">&nbsp;&middot;&nbsp;</span>`);
 	const businessLine = formatBusinessFooterLine(getBusinessProfile());
 

@@ -24,9 +24,12 @@ export type LegalSection = {
 };
 
 const CROSS_LINKS = [
-  { label: "Legals", href: "/legals" },
-  { label: "Terms of Sale", href: "/terms-of-sale" },
-  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Privacy", href: "/privacy-policy" },
+  { label: "Terms", href: "/terms" },
+  { label: "Shipping", href: "/shipping-policy" },
+  { label: "Returns", href: "/returns-refund-policy" },
+  { label: "Authenticity & Care", href: "/authenticity-care" },
+  { label: "Grievance", href: "/grievance-contact" },
 ] as const;
 
 export default function LegalPageShell({

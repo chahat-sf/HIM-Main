@@ -798,6 +798,18 @@ export default function PdpSingle({
                       </p>
                     </>
                   ) : null}
+                  {section.policyHref && section.policyLinkLabel ? (
+                    <p>
+                      See full{" "}
+                      <Link
+                        href={section.policyHref}
+                        className="pdp-policy-link"
+                      >
+                        {section.policyLinkLabel}
+                      </Link>
+                      .
+                    </p>
+                  ) : null}
                 </Accordion>
               ))}
             </div>

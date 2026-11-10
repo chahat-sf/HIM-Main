@@ -26,6 +26,16 @@ const nextConfig: NextConfig = {
 		return [
 			...productRedirects,
 			{
+				source: "/terms-of-sale",
+				destination: "/terms",
+				permanent: true,
+			},
+			{
+				source: "/legals",
+				destination: "/grievance-contact",
+				permanent: true,
+			},
+			{
 				source: "/collection",
 				has: [{ type: "query", key: "category", value: "SUITS" }],
 				destination: "/collection/suits",

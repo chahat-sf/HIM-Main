@@ -185,36 +185,71 @@ export const PAGE_SEO = {
 		ogTitle: "Contact HIM World",
 		ogDescription: "Styling advice, order support and fittings.",
 	},
-	legals: {
-		title: "Legal Information",
+	grievanceContact: {
+		title: "Contact & Grievance Redressal | HIM World",
 		description:
-			"Legal information for HIM World luxury menswear, covering website use, intellectual property, product representation and liability.",
-		path: "/legals",
+			"Contact HIM World customer care and our Grievance Officer. Find our registered business details, GSTIN and complaint resolution timelines.",
+		path: "/grievance-contact",
 		image: {
 			url: SEO_IMAGES.legal,
-			alt: "HIM World legal information",
+			alt: "HIM World grievance redressal and contact details",
 		},
-		noIndex: true,
+		absoluteTitle: true,
 	},
 	privacy: {
-		title: "Privacy Policy",
+		title: "Privacy & Cookie Policy | HIM World",
 		description:
-			"How HIM World collects, uses and protects your personal data when you shop or browse with us at our online store and Gurgaon studio.",
+			"Learn how HIM World collects, protects and uses your personal data and cookies, and how to access, correct or delete your information.",
 		path: "/privacy-policy",
 		image: {
 			url: SEO_IMAGES.legal,
-			alt: "HIM World privacy policy",
+			alt: "HIM World privacy and cookie policy",
 		},
+		absoluteTitle: true,
 	},
-	termsOfSale: {
-		title: "Terms of Sale",
+	terms: {
+		title: "Terms & Conditions | HIM World",
 		description:
-			"HIM World terms of sale covering orders, payment, delivery, 14-day exchanges and worldwide returns for all luxury menswear purchases.",
-		path: "/terms-of-sale",
+			"Read the terms governing your use of the HIM World website and purchases, including orders, pricing, intellectual property and dispute resolution.",
+		path: "/terms",
 		image: {
 			url: SEO_IMAGES.legal,
-			alt: "HIM World terms of sale",
+			alt: "HIM World terms and conditions",
 		},
+		absoluteTitle: true,
+	},
+	shipping: {
+		title: "Free Shipping & Delivery Policy | HIM World",
+		description:
+			"HIM World offers free insured shipping across India and worldwide. See made-to-order timelines, OTP-secured delivery and international customs details.",
+		path: "/shipping-policy",
+		image: {
+			url: SEO_IMAGES.legal,
+			alt: "HIM World shipping and delivery policy",
+		},
+		absoluteTitle: true,
+	},
+	returnsRefund: {
+		title: "Returns, Exchanges & Refund Policy | HIM World",
+		description:
+			"Understand HIM World’s return window, condition requirements, made-to-order exclusions and how refunds and store credit are processed.",
+		path: "/returns-refund-policy",
+		image: {
+			url: SEO_IMAGES.legal,
+			alt: "HIM World returns, exchanges and refund policy",
+		},
+		absoluteTitle: true,
+	},
+	authenticityCare: {
+		title: "Authenticity Guarantee & Product Care | HIM World",
+		description:
+			"Every HIM World piece is 100% authentic and handcrafted. Learn about colour and fabric variance, artisan details and how to care for your garments.",
+		path: "/authenticity-care",
+		image: {
+			url: SEO_IMAGES.legal,
+			alt: "HIM World authenticity guarantee and product care",
+		},
+		absoluteTitle: true,
 	},
 } as const;
 

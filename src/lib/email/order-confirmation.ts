@@ -186,11 +186,11 @@ export function renderOrderConfirmationEmail(
 	const legalLink = (label: string, path: string) =>
 		`<a href="${base}${path}" style="color:${BRAND.ink};text-decoration:none;">${label}</a>`;
 	const legalLinks = [
-		legalLink("Terms", "/terms-of-sale"),
+		legalLink("Terms", "/terms"),
 		legalLink("Privacy", "/privacy-policy"),
-		legalLink("Shipping", "/terms-of-sale"),
-		legalLink("Returns &amp; Cancellation", "/terms-of-sale"),
-		legalLink("Grievance Officer", "/legals"),
+		legalLink("Shipping", "/shipping-policy"),
+		legalLink("Returns &amp; Refunds", "/returns-refund-policy"),
+		legalLink("Grievance Officer", "/grievance-contact"),
 	].join(`<span style="color:${BRAND.muted};">&nbsp;&middot;&nbsp;</span>`);
 	const businessLine = formatBusinessFooterLine(getBusinessProfile());
 
@@ -259,7 +259,7 @@ export function renderOrderConfirmationEmail(
     <div style="font-family:${SERIF};font-size:30px;line-height:36px;color:${BRAND.ink};">Returns &amp; exchanges</div>
     <p style="margin:12px 0 0;font-size:14px;line-height:22px;color:${BRAND.ink};">Ready-to-wear and made-to-measure pieces follow different terms.<br>The full details are on our policy page.</p>
     <div style="margin-top:22px;">
-      <a href="${base}/terms-of-sale" style="display:inline-block;color:${BRAND.ink};text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:14px 38px;border:1px solid ${BRAND.ink};border-radius:40px;">View policy</a>
+      <a href="${base}/returns-refund-policy" style="display:inline-block;color:${BRAND.ink};text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:14px 38px;border:1px solid ${BRAND.ink};border-radius:40px;">View policy</a>
     </div>
     <div style="margin:30px 0 0;border-top:1px solid ${BRAND.line};height:1px;line-height:1px;font-size:0;">&nbsp;</div>
   </td></tr>

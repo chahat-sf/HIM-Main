@@ -1,5 +1,5 @@
 import RouteLoading from "@/components/RouteLoading";
 
-export default function LegalsLoading() {
+export default function ReturnsRefundPolicyLoading() {
 	return <RouteLoading />;
 }

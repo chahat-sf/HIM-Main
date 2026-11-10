@@ -9,8 +9,8 @@ import { useSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import RevealOnScroll from "@/components/RevealOnScroll";
 import {
-	formatBusinessFooterLine,
-	getBusinessProfile,
+  formatBusinessFooterLine,
+  getBusinessProfile,
 } from "@/lib/business";
 
 type FooterLink = { label: string; href: string };
@@ -18,6 +18,9 @@ type FooterLink = { label: string; href: string };
 const HELP_LINKS: FooterLink[] = [
   { label: "CONTACT", href: "/contact" },
   { label: "CONCIERGE", href: "/contact?tab=concierge" },
+  { label: "SHIPPING", href: "/shipping-policy" },
+  { label: "RETURNS & REFUNDS", href: "/returns-refund-policy" },
+  { label: "AUTHENTICITY & CARE", href: "/authenticity-care" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
@@ -32,9 +35,12 @@ const SOCIAL_LINKS: FooterLink[] = [
 ];
 
 const LEGAL_LINKS: FooterLink[] = [
-  { label: "LEGALS", href: "/legals" },
-  { label: "TERMS OF SALE", href: "/terms-of-sale" },
   { label: "PRIVACY POLICY", href: "/privacy-policy" },
+  { label: "TERMS & CONDITIONS", href: "/terms" },
+  { label: "SHIPPING POLICY", href: "/shipping-policy" },
+  { label: "RETURNS & REFUNDS", href: "/returns-refund-policy" },
+  { label: "AUTHENTICITY & CARE", href: "/authenticity-care" },
+  { label: "GRIEVANCE CONTACT", href: "/grievance-contact" },
 ];
 
 type AccordionKey = "help" | "links" | "social" | "legal" | null;
@@ -254,7 +260,7 @@ export default function Footer() {
           {/* LEGAL AND COOKIES */}
           <nav
             className="him-footer-col him-footer-col--legal"
-            aria-label="Legal and cookies"
+            aria-label="Legal"
           >
             <button
               type="button"
@@ -262,11 +268,11 @@ export default function Footer() {
               aria-expanded={open === "legal"}
               onClick={() => toggle("legal")}
             >
-              <span className="him-footer-col-title">LEGAL AND COOKIES</span>
+              <span className="him-footer-col-title">LEGAL</span>
               <AccordionChevron open={open === "legal"} />
             </button>
             <p className="him-footer-col-title him-footer-col-title--desktop">
-              LEGAL AND COOKIES
+              LEGAL
             </p>
             <div
               className={`him-footer-col-panel${open === "legal" ? " is-open" : ""}`}

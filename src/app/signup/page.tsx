@@ -312,7 +312,7 @@ function SignupForm() {
           <span>
             I agree to the{" "}
             <Link
-              href="#"
+              href="/privacy-policy"
               className="auth-link"
               style={{ borderBottom: "1px solid currentColor" }}
             >
