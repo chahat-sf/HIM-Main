@@ -43,6 +43,40 @@ function PlayBadge() {
   );
 }
 
+function View360Button({
+  className,
+  productName,
+  compact = false,
+}: {
+  className?: string;
+  productName: string;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={["view-360", className].filter(Boolean).join(" ")}
+      aria-label={`View ${productName} in 360 degrees`}
+      tabIndex={-1}
+    >
+      <Image
+        src="/products/view-360-icon.png"
+        alt=""
+        width={80}
+        height={61}
+        className="view-360__icon"
+        draggable={false}
+      />
+      {!compact ? (
+        <>
+          <span className="view-360__divider" />
+          <span className="view-360__label">VIEW IN 360°</span>
+        </>
+      ) : null}
+    </button>
+  );
+}
+
 function PlusIcon({ open }: { open: boolean }) {
   const Icon = open ? Minus : Plus;
   return <Icon size={12} strokeWidth={1.25} absoluteStrokeWidth={false} aria-hidden />;
@@ -487,6 +521,11 @@ export default function PdpSingle({
                     </button>
                   </>
                 )}
+                <View360Button
+                  className="view-360--carousel"
+                  productName={PRODUCT.name}
+                  compact
+                />
               </div>
               {imageCount > 1 && (
                 <div
@@ -601,7 +640,13 @@ export default function PdpSingle({
 
           {/* Right: same buy box as outfit — sticky while left scrolls */}
           <div className="pdp-right pdp-single-right">
-            <h1 className="pdp-title">{PRODUCT.name}</h1>
+            <div className="pdp-title-row">
+              <h1 className="pdp-title">{PRODUCT.name}</h1>
+              <View360Button
+                className="view-360--title"
+                productName={PRODUCT.name}
+              />
+            </div>
             {PRODUCT.title ? (
               <p className="pdp-subtitle">{PRODUCT.title}</p>
             ) : null}
@@ -1165,8 +1210,17 @@ export default function PdpSingle({
           }
         }
 
+        .pdp-title-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
         .pdp-title {
           margin: 0;
+          flex: 1;
+          min-width: 0;
           font-family: var(--pdp-serif);
           font-size: max(26px, calc(36 * var(--u)));
           font-weight: 500;
@@ -1174,6 +1228,54 @@ export default function PdpSingle({
           line-height: 1.1;
           letter-spacing: 0.06em;
           color: var(--pdp-ink);
+        }
+
+        .view-360 {
+          flex: 0 0 auto;
+          align-self: center;
+          min-width: 0;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 0 12px;
+          color: var(--pdp-ink);
+          background: linear-gradient(145deg, #fff, #f7f6f4);
+          border: 1px solid #ebe8e4;
+          border-radius: 10px;
+          box-shadow: none;
+          cursor: default;
+          pointer-events: none;
+          font: inherit;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+        }
+
+        .view-360--carousel {
+          display: none;
+        }
+
+        .view-360__icon {
+          width: 34px;
+          height: auto;
+          display: block;
+          flex: 0 0 auto;
+          object-fit: contain;
+        }
+
+        .view-360__divider {
+          width: 1px;
+          height: 18px;
+          background: #c9c5c0;
+        }
+
+        .view-360__label {
+          white-space: nowrap;
+          font-family: var(--pdp-sans);
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.14em;
         }
 
         .pdp-subtitle {
@@ -1733,6 +1835,30 @@ export default function PdpSingle({
             position: relative;
             width: 100%;
             background: #e9e6e1;
+          }
+
+          .view-360--title {
+            display: none;
+          }
+
+          .view-360--carousel {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            z-index: 4;
+            display: inline-flex;
+            width: 48px;
+            min-width: 48px;
+            height: 48px;
+            padding: 6px;
+            gap: 0;
+            border-radius: 12px;
+            pointer-events: none;
+          }
+
+          .view-360--carousel .view-360__icon {
+            width: 34px;
+            height: auto;
           }
 
           .pdp-s-carousel-stage {
