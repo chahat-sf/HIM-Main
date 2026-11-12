@@ -8,7 +8,7 @@ WHERE name = 'THE NOCTURNE' OR slug = 'the-nocturne-black-velvet-jacket';
 
 UPDATE products
 SET image_url = '/products/last-word/signature.webp',
-    images_json = CAST('["/products/last-word/3.webp","/products/last-word/2.webp","/products/last-word/1.webp","/products/last-word/4.webp","/products/last-word/5.webp","/products/last-word/6.webp"]' AS JSON)
+    images_json = CAST('["/products/last-word/3.webp","/products/last-word/2.webp","/products/last-word/1.webp","/products/last-word/4.webp","/products/last-word/5.webp","/products/last-word/6.webp","/products/last-word/7.webp","/products/last-word/8.webp","/products/last-word/9.webp"]' AS JSON)
 WHERE name = 'THE LAST WORD' OR slug = 'the-last-word-black-evening-tuxedo';
 
 UPDATE products
@@ -23,20 +23,25 @@ WHERE name = 'THE ARCHIVIST' OR slug = 'the-archivist-houndstooth-wool-overcoat'
 
 UPDATE products
 SET image_url = '/products/exception/signature.webp',
-    images_json = CAST('["/products/exception/1.webp","/products/exception/2.webp","/products/exception/3.webp","/products/exception/4.webp"]' AS JSON)
+    images_json = CAST('["/products/exception/1.webp","/products/exception/2.webp","/products/exception/3.webp","/products/exception/4.webp","/products/exception/5.webp","/products/exception/6.webp"]' AS JSON)
 WHERE name = 'THE EXCEPTION' OR slug = 'the-exception-double-breasted-denim-suit';
 
 UPDATE products
 SET image_url = '/products/attache/signature.webp',
-    images_json = CAST('["/products/man-image-100.webp","/products/inner-images/man-image-100-1.webp","/products/inner-images/man-image-100-2.webp"]' AS JSON)
+    images_json = CAST('["/products/attache/1.webp","/products/attache/2.webp","/products/attache/3.webp"]' AS JSON)
 WHERE name = 'THE ATTACHÉ' OR slug = 'the-attache-double-breasted-blazer';
 
 UPDATE products
 SET image_url = '/products/afterglow/signature.webp',
-    images_json = CAST('["/products/afterglow/1.webp","/products/afterglow/2.webp","/products/afterglow/3.webp","/products/afterglow/4.webp","/products/afterglow/5.webp"]' AS JSON)
+    images_json = CAST('["/products/afterglow/1.webp","/products/afterglow/2.webp","/products/afterglow/3.webp","/products/afterglow/4.webp","/products/afterglow/5.webp","/products/afterglow/6.webp","/products/afterglow/7.webp","/products/afterglow/8.webp","/products/afterglow/9.webp"]' AS JSON)
 WHERE name = 'THE AFTERGLOW' OR slug = 'the-afterglow';
 
 UPDATE products
 SET image_url = '/products/encore/signature.webp',
-    images_json = CAST('["/products/encore/1.webp","/products/encore/2.webp","/products/encore/3.webp","/products/encore/4.webp"]' AS JSON)
+    images_json = CAST('["/products/encore/1.webp","/products/encore/2.webp","/products/encore/3.webp","/products/encore/4.webp","/products/encore/5.webp","/products/encore/6.webp","/products/encore/7.webp","/products/encore/8.webp","/products/encore/9.webp"]' AS JSON)
 WHERE name = 'THE ENCORE' OR slug = 'the-encore';
+
+UPDATE products
+SET image_url = '/products/theoperator/signature.webp',
+    images_json = CAST('["/products/theoperator/theoperator-3.webp","/products/theoperator/theoperator-2.webp","/products/theoperator/theoperator-4.webp","/products/theoperator/theoperator-1.webp","/products/theoperator/theoperator-5.webp","/products/theoperator/theoperator-6.webp","/products/theoperator/theoperator-7.webp","/products/theoperator/theoperator-8.webp","/products/theoperator/theoperator-9.webp","/products/theoperator/theoperator-10.webp"]' AS JSON)
+WHERE name = 'THE OPERATOR' OR slug = 'the-operator';
