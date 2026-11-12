@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PageHeroImage from "@/components/PageHeroImage";
 import RouteLoading from "@/components/RouteLoading";
+import { toast } from "@/components/Toast";
 import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
@@ -276,7 +277,12 @@ export default function CartClient({
                       <div className="cart-item-aside">
                         <button
                           type="button"
-                          onClick={() => void removeItem(item.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void removeItem(item.id).catch(() => {
+                              toast("Unable to remove item. Please try again.");
+                            });
+                          }}
                           aria-label={`Remove ${item.name}`}
                           className="cart-item-remove"
                         >

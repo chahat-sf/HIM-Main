@@ -183,26 +183,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 	const removeItem = useCallback(
 		async (id: string) => {
+			const itemId = String(id);
+			const isNumericId = /^\d+$/.test(itemId);
 			let usedServer = false;
-			if (isAuthenticated) {
-				const res = await fetch(`/api/cart?id=${encodeURIComponent(id)}`, {
-					method: "DELETE",
-					credentials: "include",
-				});
-				if (res.status === 401) {
-					setItems(removeLocalCartItem(id));
-				} else if (!res.ok) {
-					throw new Error("Unable to remove cart item");
-				} else {
-					const body = (await res.json()) as { items?: CartItem[] };
-					setItems(body.items ?? []);
-					usedServer = true;
-				}
+
+			const removeLocally = () => {
+				setItems(removeLocalCartItem(itemId));
+			};
+
+			if (!isAuthenticated) {
+				removeLocally();
 			} else {
-				setItems(removeLocalCartItem(id));
+				try {
+					const res = await fetch(
+						`/api/cart?id=${encodeURIComponent(itemId)}`,
+						{
+							method: "DELETE",
+							credentials: "include",
+						},
+					);
+					if (res.ok) {
+						const body = (await res.json()) as { items?: CartItem[] };
+						setItems(body.items ?? []);
+						usedServer = true;
+					} else if (res.status === 401 || !isNumericId) {
+						// Stale session or guest-origin UUID still in state — drop the line locally.
+						removeLocally();
+					} else {
+						throw new Error("Unable to remove cart item");
+					}
+				} catch (error) {
+					if (!isNumericId) {
+						removeLocally();
+					} else {
+						throw error;
+					}
+				}
 			}
+
 			track("remove_from_cart", {
-				item_id: id,
+				item_id: itemId,
 				authenticated: usedServer,
 			});
 		},
