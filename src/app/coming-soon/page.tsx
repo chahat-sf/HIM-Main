@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import NotifyForm from "./NotifyForm";
 import styles from "./coming-soon.module.css";
 
@@ -12,7 +13,16 @@ export default function ComingSoonPage() {
 	return (
 		<main className={styles.page}>
 			<div className={styles.inner}>
-				<p className={styles.brand}>HIM</p>
+				<div className={styles.brand}>
+					<Image
+						src="/homepage/him-logo.webp"
+						alt="HIM"
+						width={140}
+						height={49}
+						priority
+						className={styles.brandLogo}
+					/>
+				</div>
 				<h1 className={styles.title}>Coming Soon</h1>
 				<p className={styles.sub}>
 					Luxury menswear, crafted for the man who stands out. Be first to know
