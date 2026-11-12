@@ -71,7 +71,7 @@ function LookbookFeatureVideo() {
       preload="none"
       className="summer-feature-video"
     >
-      <source src="/videos/lookbook-landscape.mp4" type="video/mp4" />
+      <source src="/videos/lookbook-landscape-24fps.mp4" type="video/mp4" />
     </video>
   );
 }
