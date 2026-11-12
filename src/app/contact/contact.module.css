@@ -13,6 +13,12 @@
   background: #0a0a0a;
 }
 
+/* Contact/concierge only — crop up 100px from top; do not use him-hero-media. */
+.heroImage {
+  object-fit: cover;
+  object-position: center -100px;
+}
+
 .heroOverlay {
   position: absolute;
   inset: 0;

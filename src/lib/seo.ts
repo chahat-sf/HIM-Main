@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 import { getProductSeo } from "@/lib/product-seo";
 
 /**
@@ -15,7 +16,7 @@ export const SEO_IMAGES = {
 	home: "/products/pdp-hero.webp",
 	collection: "/products/man-image-100.webp",
 	house: "/lookbook/man-on-car.webp",
-	contact: "/products/low/archivist/7.webp",
+	contact: ARCHIVIST_HERO,
 	legal: "/products/man-image-102.webp",
 } as const;
 

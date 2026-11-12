@@ -12,6 +12,7 @@ import {
   withNextQuery,
 } from "@/lib/auth-redirect";
 import { mergeLocalCartToServer } from "@/lib/cart-local";
+import { CART_HERO } from "@/lib/page-heroes";
 import { mergeLocalWishlistToServer } from "@/lib/wishlist-local";
 import { useSession } from "@/hooks/useSession";
 
@@ -164,7 +165,7 @@ function SignupForm() {
       eyebrow="JOIN HIM"
       title="CREATE ACCOUNT"
       subtitle="Register for a more considered wardrobe."
-      imageSrc="/products/man-image-104.webp"
+      imageSrc={CART_HERO}
     >
       <a className="auth-google" href={googleAuthHref("/signup", nextParam)}>
         <GoogleMark />

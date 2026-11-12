@@ -7,11 +7,13 @@ import { ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageHeroImage from "@/components/PageHeroImage";
 import RouteLoading from "@/components/RouteLoading";
 import type { AccountPayload } from "@/lib/account";
 import { buildLoginHref } from "@/lib/auth-redirect";
 import { toCardImage } from "@/lib/card-image";
 import { firstNameFromFullName, formatDisplayDate } from "@/lib/format";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 
 type AccountTab = "details" | "orders" | "saved";
 
@@ -335,14 +337,8 @@ function AccountPageInner() {
           className="acc-banner him-hero-media him-hero-media--center"
           aria-label="My Account"
         >
-          <Image
-            src="/products/archivist/7.webp"
-            alt=""
-            fill
-            priority
-            quality={80}
-            sizes="100vw"
-            className="object-cover"
+          <PageHeroImage
+            src={ARCHIVIST_HERO}
             style={{ objectFit: "cover", objectPosition: "center 20%" }}
           />
 

@@ -5,12 +5,14 @@ import Link from "next/link";
 import { ArrowRight, Minus, Plus, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageHeroImage from "@/components/PageHeroImage";
 import RouteLoading from "@/components/RouteLoading";
 import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import type { CartItem } from "@/lib/cart-types";
 import type { CatalogProduct } from "@/lib/catalog-types";
 import { toCardImage } from "@/lib/card-image";
+import { CART_HERO } from "@/lib/page-heroes";
 import {
   resolveCartColor,
   selectedColorSwatches,
@@ -174,14 +176,8 @@ export default function CartClient({
       <main className="cart-page">
         {/* ── HERO ── */}
         <section className="cart-hero him-hero-media him-hero-media--center" aria-label="My Cart">
-          <Image
-            src="/products/man-image-104.webp"
-            alt=""
-            fill
-            priority
-            quality={80}
-            sizes="100vw"
-            className="object-cover"
+          <PageHeroImage
+            src={CART_HERO}
             style={{ objectFit: "cover", objectPosition: "center 30%" }}
           />
           <div className="cart-hero-overlay" />

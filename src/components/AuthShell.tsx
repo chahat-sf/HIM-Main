@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageHeroImage from "@/components/PageHeroImage";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 
 export const AUTH_SERIF = '"Cormorant Garamond", Georgia, serif';
 export const AUTH_SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -27,7 +28,7 @@ export default function AuthShell({
   eyebrow,
   title,
   subtitle,
-  imageSrc = "/products/archivist/7.webp",
+  imageSrc = ARCHIVIST_HERO,
   children,
 }: AuthShellProps) {
   return (
@@ -36,12 +37,8 @@ export default function AuthShell({
       <main className="auth-page">
         <div className="auth-split">
           <section className="auth-media him-hero-media" aria-hidden="true">
-            <Image
+            <PageHeroImage
               src={imageSrc}
-              alt=""
-              fill
-              priority
-              quality={80}
               sizes="(max-width: 900px) 100vw, 50vw"
               className="object-cover object-top"
               style={{ objectFit: "cover", objectPosition: "top center" }}

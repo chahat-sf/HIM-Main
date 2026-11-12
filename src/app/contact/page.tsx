@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import { Headphones, Ruler } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageHeroImage from "@/components/PageHeroImage";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 import ContactPanels from "./ContactPanels";
 import styles from "./contact.module.css";
@@ -16,15 +17,9 @@ export default function ContactPage() {
 
 			<main className={styles.page}>
 				<section className={styles.hero} aria-label="Contact">
-					<Image
-						src="/products/low/archivist/7.webp"
-						alt=""
-						fill
-						priority
-						quality={80}
-						sizes="100vw"
-						className="object-cover"
-						style={{ objectPosition: "center 20%" }}
+					<PageHeroImage
+						src={ARCHIVIST_HERO}
+						className={styles.heroImage}
 					/>
 					<div className={styles.heroOverlay} />
 					<div className={styles.heroContent}>

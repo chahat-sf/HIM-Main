@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageHeroImage from "@/components/PageHeroImage";
 import RouteLoading from "@/components/RouteLoading";
 import { toCardImage } from "@/lib/card-image";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 import { useWishlist } from "@/hooks/useWishlist";
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -36,15 +38,9 @@ export default function WishlistPage() {
 
       <main className="wish-page">
         <section className="wish-hero" aria-label="Wishlist">
-          <Image
-            src="/products/low/archivist/7.webp"
-            alt=""
-            fill
-            priority
-            quality={80}
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: "center 20%" }}
+          <PageHeroImage
+            src={ARCHIVIST_HERO}
+            style={{ objectFit: "cover", objectPosition: "center 20%" }}
           />
           <div className="wish-hero-overlay" />
           <div className="wish-hero-content">

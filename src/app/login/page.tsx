@@ -12,6 +12,7 @@ import {
   withNextQuery,
 } from "@/lib/auth-redirect";
 import { mergeLocalCartToServer } from "@/lib/cart-local";
+import { ARCHIVIST_HERO } from "@/lib/page-heroes";
 import { mergeLocalWishlistToServer } from "@/lib/wishlist-local";
 import { useSession } from "@/hooks/useSession";
 
@@ -97,7 +98,7 @@ function LoginForm() {
       eyebrow="ACCOUNT"
       title="SIGN IN"
       subtitle="A more considered wardrobe begins here."
-      imageSrc="/products/archivist/7.webp"
+      imageSrc={ARCHIVIST_HERO}
     >
       <a className="auth-google" href={googleAuthHref("/login", nextParam)}>
         <GoogleMark />
