@@ -40,7 +40,9 @@ export function isUnreleasedAllowlisted(pathname: string): boolean {
 	return (
 		pathname === "/coming-soon" ||
 		pathname === "/api/waitlist" ||
-		pathname === "/api/site-preview"
+		pathname === "/api/site-preview" ||
+		pathname === "/api/push/subscribe" ||
+		pathname === "/sw.js"
 	);
 }
 

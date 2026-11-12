@@ -1,6 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import {
+	requestNotificationPermission,
+	subscribeWebPush,
+} from "@/lib/web-push-client";
 import styles from "./coming-soon.module.css";
 
 type Status = "idle" | "loading" | "success" | "already" | "error";
@@ -15,10 +19,17 @@ export default function NotifyForm() {
 
 	const done = status === "success" || status === "already";
 
+	async function onGetNotified() {
+		setOpen(true);
+		void requestNotificationPermission();
+	}
+
 	async function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setStatus("loading");
 		setErrorMessage("");
+
+		const trimmedEmail = email.trim();
 
 		try {
 			const res = await fetch("/api/waitlist", {
@@ -26,7 +37,7 @@ export default function NotifyForm() {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					name,
-					email,
+					email: trimmedEmail,
 					instagramUsername: instagram.trim() || undefined,
 				}),
 			});
@@ -40,6 +51,13 @@ export default function NotifyForm() {
 				setStatus("error");
 				setErrorMessage(data.error || "Unable to subscribe. Please try again.");
 				return;
+			}
+
+			// Best-effort push subscribe — never fail the waitlist success UI.
+			try {
+				await subscribeWebPush(trimmedEmail);
+			} catch {
+				/* ignore */
 			}
 
 			setStatus(data.alreadySubscribed ? "already" : "success");
@@ -66,7 +84,7 @@ export default function NotifyForm() {
 			<button
 				type="button"
 				className={styles.toggle}
-				onClick={() => setOpen(true)}
+				onClick={() => void onGetNotified()}
 			>
 				Get notified
 			</button>

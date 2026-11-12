@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:seed-products": "node scripts/seed-products.mjs",
+    "push:launch": "node scripts/send-launch-push.mjs",
     "images:cards": "node scripts/generate-image-tiers.mjs",
     "images:tiers": "node scripts/generate-image-tiers.mjs"
   },
@@ -30,7 +31,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tailwind-merge": "^3.6.0",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -40,6 +42,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.186.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "sharp": "^0.35.5",
