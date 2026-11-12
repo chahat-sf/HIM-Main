@@ -9,6 +9,7 @@ export default function NotifyForm() {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
+	const [instagram, setInstagram] = useState("");
 	const [status, setStatus] = useState<Status>("idle");
 	const [errorMessage, setErrorMessage] = useState("");
 
@@ -23,7 +24,11 @@ export default function NotifyForm() {
 			const res = await fetch("/api/waitlist", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name, email }),
+				body: JSON.stringify({
+					name,
+					email,
+					instagramUsername: instagram.trim() || undefined,
+				}),
 			});
 			const data = (await res.json().catch(() => ({}))) as {
 				ok?: boolean;
@@ -100,6 +105,24 @@ export default function NotifyForm() {
 					disabled={status === "loading"}
 					required
 					maxLength={254}
+				/>
+			</label>
+			<label className={styles.label} htmlFor="waitlist-instagram">
+				<span className={styles.labelRow}>
+					Instagram username
+					<span className={styles.optional}>Optional</span>
+				</span>
+				<input
+					id="waitlist-instagram"
+					className={styles.input}
+					name="instagram"
+					type="text"
+					autoComplete="username"
+					placeholder="@username"
+					value={instagram}
+					onChange={(e) => setInstagram(e.target.value)}
+					disabled={status === "loading"}
+					maxLength={65}
 				/>
 			</label>
 			<button

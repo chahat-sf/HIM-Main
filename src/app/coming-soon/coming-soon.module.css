@@ -96,6 +96,20 @@
 	color: rgba(247, 243, 234, 0.55);
 }
 
+.labelRow {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.optional {
+	font-size: 0.55rem;
+	letter-spacing: 0.14em;
+	color: rgba(247, 243, 234, 0.35);
+	text-transform: uppercase;
+}
+
 .input {
 	width: 100%;
 	appearance: none;
