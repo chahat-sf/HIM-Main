@@ -5,6 +5,7 @@ import {
 	previewCookieOptions,
 	previewCookieValue,
 } from "@/lib/site-gate";
+import { getRequestOrigin } from "@/lib/site-url";
 
 function timingSafeEqual(a: string, b: string): boolean {
 	if (a.length !== b.length) return false;
@@ -24,10 +25,10 @@ export async function GET(request: NextRequest) {
 	const url = request.nextUrl;
 	const clear = url.searchParams.get("clear");
 
+	const origin = getRequestOrigin(request);
+
 	if (clear === "1") {
-		const response = NextResponse.redirect(
-			new URL("/coming-soon", request.url),
-		);
+		const response = NextResponse.redirect(new URL("/coming-soon", origin));
 		response.cookies.set(PREVIEW_COOKIE, "", previewCookieOptions(0));
 		return response;
 	}
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 	}
 
 	const token = await previewCookieValue(expected);
-	const response = NextResponse.redirect(new URL("/", request.url));
+	const response = NextResponse.redirect(new URL("/", origin));
 	response.cookies.set(
 		PREVIEW_COOKIE,
 		token,
