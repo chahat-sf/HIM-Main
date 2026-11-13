@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import HimLoaderGif from "@/components/HimLoaderGif";
 
 function HouseLoaderShell() {
 	return (
@@ -26,21 +27,7 @@ function HouseLoaderShell() {
 						"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)",
 				}}
 			>
-				{/* Native <img> so animated GIF frames play (next/image can flatten). */}
-				{/* eslint-disable-next-line @next/next/no-img-element */}
-				<img
-					src="/brand/him-loader.gif"
-					alt=""
-					width={160}
-					height={284}
-					aria-hidden
-					draggable={false}
-					style={{
-						width: "min(160px, 28vw)",
-						height: "auto",
-						objectFit: "contain",
-					}}
-				/>
+				<HimLoaderGif active />
 			</div>
 		</section>
 	);

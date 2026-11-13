@@ -1,3 +1,5 @@
+import HimLoaderGif from "@/components/HimLoaderGif";
+
 type RouteLoadingProps = {
 	/** When used as a fadeable overlay; omit for static loading.tsx shells. */
 	visible?: boolean;
@@ -19,21 +21,7 @@ export default function RouteLoading({ visible = true, className = "" }: RouteLo
 				} ${className}`}
 			style={{ background: GATE_BG }}
 		>
-			{/* Native <img> so animated GIF frames play (next/image can flatten). */}
-			{/* eslint-disable-next-line @next/next/no-img-element */}
-			<img
-				src="/brand/him-loader.gif"
-				alt=""
-				width={160}
-				height={284}
-				aria-hidden
-				draggable={false}
-				style={{
-					width: "min(160px, 28vw)",
-					height: "auto",
-					objectFit: "contain",
-				}}
-			/>
+			<HimLoaderGif active={visible} />
 		</div>
 	);
 }

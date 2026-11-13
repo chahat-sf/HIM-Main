@@ -14,6 +14,7 @@ import OutfitPanel from "./OutfitPanel";
 import WindowNav from "./WindowNav";
 import Building from "./rooms/Building";
 import { useHomeLoad } from "../HomeGate";
+import HimLoaderGif from "../HimLoaderGif";
 import {
   beginDrag,
   frameCount,
@@ -773,21 +774,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
             transition: "opacity 0.35s ease",
           }}
         >
-          {/* Native <img> so animated GIF frames play (next/image can flatten). */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/him-loader.gif"
-            alt=""
-            width={160}
-            height={284}
-            aria-hidden
-            draggable={false}
-            style={{
-              width: "min(160px, 28vw)",
-              height: "auto",
-              objectFit: "contain",
-            }}
-          />
+          <HimLoaderGif active={interactLoading || outfitLoading} />
         </div>
 
         {/* Rotate control — paused for now
@@ -862,21 +849,7 @@ export default function Flythrough({ embedded = false }: { embedded?: boolean })
           transition: "opacity 0.45s ease",
         }}
       >
-        {/* Native <img> so animated GIF frames play (next/image can flatten). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brand/him-loader.gif"
-          alt=""
-          width={160}
-          height={284}
-          aria-hidden
-          draggable={false}
-          style={{
-            width: "min(160px, 28vw)",
-            height: "auto",
-            objectFit: "contain",
-          }}
-        />
+        <HimLoaderGif active={!ready} />
       </div>
     </Root>
   );
