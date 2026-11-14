@@ -198,7 +198,13 @@ export default function CartClient({
           {cart.length === 0 ? (
             <div className="cart-empty">
               <p className="cart-empty-title">Your bag is empty.</p>
-              <Link href="/collection" className="cart-btn-secondary">
+              <Link
+                href="/collection"
+                className="cart-btn-secondary"
+                onClick={() =>
+                  track("continue_shopping_clicked", { source: "empty_cart" })
+                }
+              >
                 CONTINUE SHOPPING
               </Link>
             </div>
@@ -422,7 +428,16 @@ export default function CartClient({
                     </Link>
                   </>
                 )}
-                <Link href="/collection" className="cart-btn-secondary">
+                <Link
+                  href="/collection"
+                  className="cart-btn-secondary"
+                  onClick={() =>
+                    track("continue_shopping_clicked", {
+                      source: "cart_summary",
+                      item_count: itemCount,
+                    })
+                  }
+                >
                   CONTINUE SHOPPING
                 </Link>
 

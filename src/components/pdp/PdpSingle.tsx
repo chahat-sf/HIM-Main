@@ -501,6 +501,7 @@ export default function PdpSingle({
                   <View360Button
                     className="view-360--carousel"
                     productName={PRODUCT.name}
+                    slug={slug}
                     compact
                     onClick={goToVideo}
                   />
@@ -625,6 +626,7 @@ export default function PdpSingle({
                 <View360Button
                   className="view-360--title"
                   productName={PRODUCT.name}
+                  slug={slug}
                   onClick={goToVideo}
                 />
               ) : null}

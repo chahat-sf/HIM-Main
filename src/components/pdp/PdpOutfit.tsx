@@ -404,6 +404,7 @@ export default function PdpOutfit({
                 <View360Button
                   className="view-360--title"
                   productName={PRODUCT.name}
+                  slug={slug}
                   onClick={goToVideo}
                 />
               ) : null}

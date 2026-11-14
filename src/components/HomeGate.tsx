@@ -12,6 +12,7 @@ import {
 	type ReactNode,
 } from "react";
 import RouteLoading from "@/components/RouteLoading";
+import { track } from "@/lib/analytics";
 
 const GATE_BG =
 	"radial-gradient(ellipse 70% 55% at 50% 45%, #1a120c 0%, #0a0604 55%, #050302 100%)";
@@ -344,6 +345,7 @@ export default function HomeGate({ children }: { children: ReactNode }) {
 								window.scrollTo(0, 0);
 								markHomeGateEntered();
 								setStarted(true);
+								track("home_entered");
 								// Unlock house AudioContext on the same user gesture.
 								window.dispatchEvent(new Event("him-start"));
 							}}

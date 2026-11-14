@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import type { MouseEventHandler } from "react";
+import type { MouseEvent, MouseEventHandler } from "react";
+import { track } from "@/lib/analytics";
 
 type Props = {
   className?: string;
   productName: string;
+  slug?: string;
   compact?: boolean;
   onClick?: MouseEventHandler<HTMLButtonElement>;
 };
@@ -13,15 +15,24 @@ type Props = {
 export default function View360Button({
   className,
   productName,
+  slug,
   compact = false,
   onClick,
 }: Props) {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    track("view_360_clicked", {
+      slug: slug ?? undefined,
+      product_name: productName,
+    });
+    onClick?.(event);
+  };
+
   return (
     <button
       type="button"
       className={["view-360", className].filter(Boolean).join(" ")}
       aria-label={`View ${productName} in 360 degrees`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <Image
         src="/products/view-360-icon.png"

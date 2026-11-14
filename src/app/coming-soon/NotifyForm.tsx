@@ -5,6 +5,7 @@ import {
 	requestNotificationPermission,
 	subscribeWebPush,
 } from "@/lib/web-push-client";
+import { track } from "@/lib/analytics";
 import styles from "./coming-soon.module.css";
 
 type Status = "idle" | "loading" | "success" | "already" | "error";
@@ -21,6 +22,7 @@ export default function NotifyForm() {
 
 	async function onGetNotified() {
 		setOpen(true);
+		track("waitlist_opened");
 		void requestNotificationPermission();
 	}
 
@@ -60,7 +62,11 @@ export default function NotifyForm() {
 				/* ignore */
 			}
 
-			setStatus(data.alreadySubscribed ? "already" : "success");
+			const alreadySubscribed = Boolean(data.alreadySubscribed);
+			setStatus(alreadySubscribed ? "already" : "success");
+			track("waitlist_subscribed", {
+				already_subscribed: alreadySubscribed,
+			});
 		} catch {
 			setStatus("error");
 			setErrorMessage("Unable to subscribe. Please try again.");
