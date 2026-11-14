@@ -117,6 +117,7 @@ export default function CreatorApplicationForm() {
 			const data = (await res.json().catch(() => ({}))) as { error?: string };
 
 			if (!res.ok) {
+				track("creator_application_failed", { reason: "api" });
 				setError(
 					data.error || "Unable to submit your application. Please try again.",
 				);
@@ -127,10 +128,12 @@ export default function CreatorApplicationForm() {
 			track("creator_application_submitted", {
 				platform: payload.primaryPlatform,
 				category: payload.contentCategory,
+				audience_size: payload.audienceSize,
 			});
 			form.reset();
 			resetFields();
 		} catch {
+			track("creator_application_failed", { reason: "network" });
 			setError("Unable to submit your application. Please try again.");
 		} finally {
 			setSubmitting(false);

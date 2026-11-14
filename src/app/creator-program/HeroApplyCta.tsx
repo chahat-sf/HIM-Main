@@ -2,10 +2,12 @@
 
 import type { MouseEvent } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { track } from "@/lib/analytics";
 import styles from "./creators.module.css";
 
 export default function HeroApplyCta() {
 	const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
+		track("creator_apply_clicked", { source: "hero" });
 		const target = document.getElementById("application");
 		if (!target) return;
 		event.preventDefault();

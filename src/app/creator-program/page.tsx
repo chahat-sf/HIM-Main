@@ -4,6 +4,7 @@ import PageHeroImage from "@/components/PageHeroImage";
 import { CREATORS_HERO } from "@/lib/page-heroes";
 import { buildPageMetadata, PAGE_SEO } from "@/lib/seo";
 import CreatorApplicationForm from "./CreatorApplicationForm";
+import CreatorProgramAnalytics from "./CreatorProgramAnalytics";
 import HeroApplyCta from "./HeroApplyCta";
 import styles from "./creators.module.css";
 
@@ -73,15 +74,20 @@ const PROCESS = [
 export default function CreatorsPage() {
 	return (
 		<>
-			<script
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{
-					__html: JSON.stringify(ORGANIZATION_JSON_LD),
-				}}
-			/>
+			<CreatorProgramAnalytics />
 			<Navbar />
 
 			<main className={styles.page}>
+				<script
+					type="application/ld+json"
+					suppressHydrationWarning
+					dangerouslySetInnerHTML={{
+						__html: JSON.stringify(ORGANIZATION_JSON_LD).replace(
+							/</g,
+							"\\u003c",
+						),
+					}}
+				/>
 				<section className={styles.hero} aria-label="Creator Program">
 					<PageHeroImage
 						src={CREATORS_HERO}

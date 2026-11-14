@@ -172,7 +172,7 @@
   font-family: var(--font-room-serif), "Cormorant Garamond", Georgia, serif;
   font-weight: 700;
   font-style: normal;
-  font-size: 24px;
+  font-size: 30px;
   line-height: 32px;
   letter-spacing: 0;
   color: #a25f40;
@@ -251,10 +251,10 @@
   margin: 0;
   max-width: 330px;
   font-family: var(--font-room-serif), "Cormorant Garamond", Georgia, serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 400;
   letter-spacing: 0;
-  line-height: 28px;
+  line-height: 32px;
   text-transform: uppercase;
   color: #331a11;
 }
@@ -280,25 +280,27 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 40px;
 }
 
 .step {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 28px;
+  gap: 20px;
 }
 
 .stepNum {
   flex: 0 0 auto;
   font-family: var(--font-room-serif), "Cormorant Garamond", Georgia, serif;
-  font-weight: 400;
+  font-weight: 600;
   font-style: normal;
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 28px;
+  line-height: 1;
   letter-spacing: 0;
   color: #a25f40;
+  position: relative;
+  top: -6px;
 }
 
 .stepBody {
