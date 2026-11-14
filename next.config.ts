@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
 		return [
 			...productRedirects,
 			{
+				source: "/creators",
+				destination: "/creator-program",
+				permanent: true,
+			},
+			{
 				source: "/terms-of-sale",
 				destination: "/terms",
 				permanent: true,

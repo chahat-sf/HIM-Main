@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ARCHIVIST_HERO } from "@/lib/page-heroes";
+import { ARCHIVIST_HERO, CREATORS_HERO } from "@/lib/page-heroes";
 import { getProductSeo } from "@/lib/product-seo";
 
 /**
@@ -17,6 +17,7 @@ export const SEO_IMAGES = {
 	collection: "/products/man-image-100.webp",
 	house: "/lookbook/man-on-car.webp",
 	contact: ARCHIVIST_HERO,
+	creators: CREATORS_HERO,
 	legal: "/products/man-image-102.webp",
 } as const;
 
@@ -185,6 +186,20 @@ export const PAGE_SEO = {
 		absoluteTitle: true,
 		ogTitle: "Contact HIM World",
 		ogDescription: "Styling advice, order support and fittings.",
+	},
+	creators: {
+		title: "HIM Creator Program | Collaborate with a Menswear Brand",
+		description:
+			"Join the HIM Creator Program. Partner on brand stories, get early access to new menswear drops and join a community of original voices. Apply today.",
+		path: "/creator-program",
+		image: {
+			url: SEO_IMAGES.creators,
+			alt: "HIM creator in a tailored brown jacket seated in a leather armchair",
+		},
+		absoluteTitle: true,
+		ogTitle: "HIM Creator Program | Collaborate with a Menswear Brand",
+		ogDescription:
+			"Partner on brand stories, get early access to new drops and join a community of original voices.",
 	},
 	grievanceContact: {
 		title: "Contact & Grievance Redressal | HIM World",

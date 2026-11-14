@@ -15,19 +15,20 @@ type FooterLink = { label: string; href: string };
 const HELP_LINKS: FooterLink[] = [
   { label: "CONTACT", href: "/contact" },
   { label: "CONCIERGE", href: "/contact?tab=concierge" },
-  { label: "SHIPPING", href: "/shipping-policy" },
-  { label: "RETURNS & REFUNDS", href: "/returns-refund-policy" },
-  { label: "AUTHENTICITY & CARE", href: "/authenticity-care" },
+  { label: "CREATOR PROGRAM", href: "/creator-program" },
 ];
 
 const LINKS_BASE: FooterLink[] = [
+  { label: "HOME", href: "/" },
+  { label: "COLLECTION", href: "/collection" },
+  { label: "WISHLIST", href: "/wishlist" },
   { label: "ACCOUNT", href: "/login" },
 ];
 
 const SOCIAL_LINKS: FooterLink[] = [
   {
     label: "INSTAGRAM",
-    href: "https://www.instagram.com/itshimworld?utm_source=ig_web_button_share_sheet&rpxt=ZDNlZDc0MzIxNw==",
+    href: "https://www.instagram.com/itshimworld",
   },
 ];
 

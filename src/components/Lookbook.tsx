@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import RevealOnScroll from "@/components/RevealOnScroll";
@@ -174,11 +175,12 @@ export default function Lookbook() {
                 movement and a more considered tomorrow.
               </p>
 
-              {/* <Link href="/collection" className="summer-feature-link">
+              <Link href="/creator-program" className="summer-feature-link">
                 <span className="summer-feature-cta">
-                  <span className="summer-feature-cta-label">EXPLORE COLLECTION</span>
+                  <span className="summer-feature-cta-label">CREATOR PROGRAM</span>
+                  <Arrow />
                 </span>
-              </Link> */}
+              </Link>
             </div>
           </div>
         </section>

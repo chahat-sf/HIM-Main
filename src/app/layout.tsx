@@ -25,14 +25,15 @@ const spaceMono = Space_Mono({
 
 const cormorant = Cormorant_Garamond({
 	subsets: ["latin"],
-	weight: ["500", "600"],
+	weight: ["400", "500", "600"],
+	style: ["normal", "italic"],
 	variable: "--font-room-serif",
 	display: "swap",
 });
 
 const jost = Jost({
 	subsets: ["latin"],
-	weight: ["300", "400"],
+	weight: ["300", "400", "500", "600"],
 	variable: "--font-room-sans",
 	display: "swap",
 });

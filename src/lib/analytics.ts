@@ -44,6 +44,7 @@ export type AnalyticsEvent =
 	| "wishlist_toggled"
 	| "checkout_clicked"
 	| "contact_submitted"
+	| "creator_application_submitted"
 	| "newsletter_subscribed"
 	| "search_used"
 	| "order_completed";
