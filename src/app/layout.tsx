@@ -9,11 +9,12 @@ import { CartProvider } from "@/components/CartProvider";
 import { WishlistProvider } from "@/components/WishlistProvider";
 import PostHogProviderGate from "@/components/PostHogProviderGate";
 import GoogleAuthHandoff from "@/components/GoogleAuthHandoff";
-import { getSiteUrl } from "@/lib/site-url";
+import { getSiteUrl, isSeoIndexingEnabled } from "@/lib/site-url";
 import { SEO_IMAGES } from "@/lib/seo";
 import "./globals.css";
 
 const siteUrl = getSiteUrl();
+const allowIndex = isSeoIndexingEnabled();
 const defaultOgImage = SEO_IMAGES.default;
 
 const spaceMono = Space_Mono({
@@ -47,11 +48,11 @@ export const metadata: Metadata = {
 	description:
 		"HIM World is luxury menswear from Gurgaon. Tailored suits, velvet jackets, blazers and overcoats crafted for the man who stands out.",
 	robots: {
-		index: false,
-		follow: false,
+		index: allowIndex,
+		follow: allowIndex,
 		googleBot: {
-			index: false,
-			follow: false,
+			index: allowIndex,
+			follow: allowIndex,
 		},
 	},
 	icons: {

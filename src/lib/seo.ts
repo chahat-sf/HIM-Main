@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ARCHIVIST_HERO, CREATORS_HERO } from "@/lib/page-heroes";
 import { getProductSeo } from "@/lib/product-seo";
+import { isSeoIndexingEnabled } from "@/lib/site-url";
 
 /**
  * HIM World SEO copy. OG JPG assets under /og/ are preferred when present;
@@ -94,12 +95,12 @@ export function buildPageMetadata({
 	path,
 	image,
 	absoluteTitle = false,
-	noIndex = true,
+	noIndex = false,
 	ogTitle,
 	ogDescription,
 	omitCanonical = false,
 }: PageSeoInput): Metadata {
-	void noIndex; // reserved for launch flip; sitewide noindex forced for now
+	const allowIndex = isSeoIndexingEnabled() && !noIndex;
 	const resolvedOgTitle =
 		ogTitle ?? (absoluteTitle ? title : `${title}${TITLE_JOIN}`);
 	const resolvedOgDescription = ogDescription ?? description;
@@ -116,7 +117,7 @@ export function buildPageMetadata({
 		title: absoluteTitle ? { absolute: title } : title,
 		description,
 		alternates: omitCanonical ? undefined : { canonical: path },
-		robots: { index: false, follow: false },
+		robots: { index: allowIndex, follow: allowIndex },
 		openGraph: {
 			title: resolvedOgTitle,
 			description: resolvedOgDescription,
@@ -343,11 +344,13 @@ export function productShareMetadata(input: {
 	const path = `/collection/${input.slug}`;
 	const alt = seo?.mainImageAlt ?? `${input.name} by HIM World`;
 
+	const allowIndex = isSeoIndexingEnabled();
+
 	return {
 		title: { absolute: absoluteTitle },
 		description,
 		alternates: { canonical: path },
-		robots: { index: false, follow: false },
+		robots: { index: allowIndex, follow: allowIndex },
 		openGraph: {
 			title: absoluteTitle,
 			description,

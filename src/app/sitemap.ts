@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
 import { listProductSlugs } from "@/lib/catalog";
 import { CATEGORY_SEO } from "@/lib/seo";
-import { getSiteUrl } from "@/lib/site-url";
+import { getSiteUrl, isSeoIndexingEnabled } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+	if (!isSeoIndexingEnabled()) return [];
+
 	const base = getSiteUrl();
 	let slugs: string[] = [];
 	try {

@@ -13,6 +13,29 @@ export function getSiteUrl(): string {
 	return "http://localhost:3000";
 }
 
+/**
+ * Search indexing for production (thehim.in) only.
+ * - NEXT_PUBLIC_ALLOW_INDEXING=true/1 → on
+ * - NEXT_PUBLIC_ALLOW_INDEXING=false/0 → off
+ * - Else: off on Vercel (*.vercel.app); on only for thehim.in when self-hosted
+ */
+export function isSeoIndexingEnabled(): boolean {
+	const flag = process.env.NEXT_PUBLIC_ALLOW_INDEXING?.trim().toLowerCase();
+	if (flag === "true" || flag === "1") return true;
+	if (flag === "false" || flag === "0") return false;
+
+	if (process.env.VERCEL) return false;
+
+	try {
+		const host = new URL(getSiteUrl()).hostname
+			.replace(/^www\./, "")
+			.toLowerCase();
+		return host === "thehim.in";
+	} catch {
+		return false;
+	}
+}
+
 function isLoopbackHost(host: string): boolean {
 	const hostname = host.split(":")[0]?.toLowerCase() ?? "";
 	return (
