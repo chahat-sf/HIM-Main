@@ -21,9 +21,11 @@ CREATE TABLE IF NOT EXISTS products (
   shipping TEXT NULL,
   pdp_layout ENUM('outfit', 'single') NOT NULL DEFAULT 'outfit',
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_products_slug (slug)
+  UNIQUE KEY uq_products_slug (slug),
+  KEY idx_products_sort_order (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Link cart lines to catalog products (clear existing test rows first)
